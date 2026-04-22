@@ -1,0 +1,13 @@
+$color-primary: #111827;
+$color-accent: #ff6b35;
+$color-bg: #f7f7f7;
+
+$radius-md: 12px;
+$radius-lg: 20px;
+
+
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: $color-bg;
+}
