@@ -160,7 +160,9 @@
 </template>
 
 <script>
+import { onMounted } from 'vue'
 
+onMounted(() => {
   const script = document.createElement('script')
   script.innerHTML = `
     (function(c,l,a,r,i,t,y){
@@ -170,7 +172,7 @@
     })(window, document, "clarity", "script", "wfutw3o9jt");
   `
   document.head.appendChild(script)
-
+})
 </script>
 
 
