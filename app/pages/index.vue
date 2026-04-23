@@ -8,7 +8,7 @@
       <nav class="nav-links">
         <a href="#visualizer">Visualizer</a>
         <a href="#journal">Journal</a>
-        <a href="#newsletter">Newsletter</a>
+        <!-- <a href="#newsletter">Newsletter</a> -->
       </nav>
     </div>
   </header>
@@ -160,19 +160,6 @@
 </template>
 
 <script>
-import { onMounted } from 'vue'
-
-onMounted(() => {
-  const script = document.createElement('script')
-  script.innerHTML = `
-    (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-    })(window, document, "clarity", "script", "wfutw3o9jt");
-  `
-  document.head.appendChild(script)
-})
 </script>
 
 
@@ -306,36 +293,40 @@ onMounted(() => {
     .btn-primary:hover{transform:translateY(-1px)}
     .btn-secondary{border-color:var(--border);background:rgba(255,255,255,.45);color:var(--secondary)}
 
-    .hero-art{
-      background:#ecece9;
-      border-radius:12px;
-      padding:28px;
-      position:relative;
-      min-height:520px;
-      overflow:hidden;
-      box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
+.hero-art {
+  background:#ecece9;
+  border-radius:12px;
+  padding:28px;
+  position:relative;
+  min-height:520px;
+  overflow:hidden;
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
 
-.frame {
+  .frame {
     position:absolute;
     top:28px;
     right:28px;
     bottom:28px;
-    left:28px; // makes it nearly full-size inside hero-art
-
+    left:28px;
     background:#fff;
     box-shadow:0 16px 28px rgba(0,0,0,.12);
     padding:14px;
-
     display:flex;
-
-    img {
-      width:100%;
-      height:100%;
-      object-fit:cover; // keeps it nicely scaled
-      border-radius:8px; // optional
-    }
   }
-    }
+
+  .art-image {
+    width: 100%;
+    height: 100%;
+  }
+
+  .frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    object-position: center 5px;
+  }
+}
 
 
     .scan-badge{
@@ -608,7 +599,11 @@ onMounted(() => {
         right: 16px;
         bottom: 16px;
         left: 16px;
-        width: auto;
+        padding: 10px;
+
+        img {
+          object-position: center -25px;
+        }
       }
       .hero-grid,.newsletter-card,.footer-grid{grid-template-columns:1fr}
       .hero-grid {
