@@ -4,7 +4,7 @@
 <header>
   <nav class="nav">
     <a class="logo" href="index.html">Wall<span>Vision</span></a>
-    <a class="cta" href="visualizer.html">Open Visualizer</a>
+    <a class="cta" href="/visualizer">Open Visualizer</a>
   </nav>
 </header>
 
@@ -20,7 +20,7 @@
       Instead of choosing wall art only because it looks nice online, this guide helps you think about mood,
       size, color, placement, frames, and styling. That way, your wall art feels intentional — not random.
     </p>
-    <a class="hero-link" href="visualizer.html">Test it directly in your space →</a>
+    <a class="hero-link" href="/visualizer">Test it directly in your space →</a>
   </section>
 
   <div class="image-placeholder wide-image">
@@ -135,7 +135,7 @@
       A gallery wall can tell a story with travel photos, abstract prints, family moments, typography, or vintage-inspired pieces.
       The key is to make the grouping feel intentional rather than accidental.
     </p>
-    <a class="text-link" href="visualizer.html">Test a large artwork in the visualizer →</a>
+    <a class="text-link" href="/visualizer">Test a large artwork in the visualizer →</a>
   </article>
 
   <div class="image-placeholder wide-image">
@@ -435,7 +435,7 @@
         Upload your room photo and see how a piece of wall art might look in your home.
         Perfect before deciding on style, size, color, frame, or placement.
       </p>
-      <a href="visualizer.html">Go to Visualizer →</a>
+      <a href="/visualizer">Go to Visualizer →</a>
     </div>
 
     <div class="visualizer-preview">
@@ -562,7 +562,6 @@
 
 .image-placeholder {
   width: 100%;
-  min-height: 460px;
   border: 1px solid var(--line);
   margin: 34px 0 18px;
 
@@ -724,10 +723,6 @@
       .nav {
         padding-top: 18px;
         padding-bottom: 18px;
-      }
-
-      .image-placeholder {
-        min-height: 340px;
       }
 
       .split,

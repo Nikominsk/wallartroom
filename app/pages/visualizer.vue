@@ -399,7 +399,7 @@
     .archive-link{display:inline-flex;gap:10px;align-items:center;margin-top:34px;color:#5e564b;letter-spacing:.24em;text-transform:uppercase;font-size:.72rem}
 
     .quote-section{background:#ded8d0;padding:110px 0}
-    .quote-wrap{max-width:900px;margin:0 auto;text-align:center}
+    .quote-wrap{max-width:100%;margin:0 auto;text-align:center;padding: 0 5px;}
     .quote-star{color:#c8a96a;font-size:1.5rem;margin-bottom:18px}
     blockquote{
       margin:0 auto 26px;
