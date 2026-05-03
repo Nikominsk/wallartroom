@@ -20,6 +20,11 @@
         @pinterest-schedule="openPinterestScheduler"
         @export-csv="openExport"
       />
+      <button class="meta-page__signout" title="Sign out" @click="handleSignOut">
+        <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 3h4a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4M9 14l5-4-5-4M14 10H3" />
+        </svg>
+      </button>
     </header>
 
     <!-- ── Actions bar ───────────────────────────────────────────────────── -->
@@ -278,6 +283,14 @@ const {
 } = useMetadataImages()
 
 onMounted(() => { loadImages(1); loadBoards() })
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const supabase = useSupabaseClient()
+
+async function handleSignOut() {
+  await supabase.auth.signOut()
+  navigateTo('/login')
+}
 
 // ── Pinterest boards ──────────────────────────────────────────────────────────
 const { boards, loading: boardsLoading, loadBoards, addBoard, deleteBoard } = usePinterestBoards()
@@ -695,6 +708,9 @@ async function goToPage(page) {
 
   &__toolbar {
     flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
     padding: 10px 20px;
     background: $color-bg;
     border-bottom: 1px solid #e5e7eb;
@@ -702,12 +718,36 @@ async function goToPage(page) {
   }
 
   :deep(.gallery-toolbar) {
+    flex: 1;
+    min-width: 0;
     background: transparent;
     border: none;
     border-radius: 0;
     box-shadow: none;
     padding: 0;
     margin: 0;
+  }
+
+  &__signout {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-top: 2px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+    &:hover {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #ef4444;
+    }
   }
 
   // ── Actions bar ──────────────────────────────────────────────────────────────
