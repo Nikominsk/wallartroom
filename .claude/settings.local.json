@@ -3,7 +3,10 @@
     "allow": [
       "Bash(git *)",
       "Bash(Get-ChildItem *)",
-      "PowerShell(git *)"
+      "PowerShell(git *)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx nuxt *)",
+      "Bash(dir C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\assets\\\\video *)"
     ]
   }
 }
