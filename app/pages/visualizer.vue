@@ -9,7 +9,7 @@
           <a href="#visualizer">Visualizer</a>
           <a href="#journal">Journal</a>
         </nav>
-        <a class="btn btn-nav" href="#visualizer">Try free</a>
+        <a class="btn btn-nav" href="#visualizer" @click.prevent="openSoonModal">Try free</a>
       </div>
     </header>
 
@@ -29,7 +29,7 @@
               with palette analysis baked in.
             </p>
             <div class="actions">
-              <a class="btn btn-primary" href="#visualizer">
+              <a class="btn btn-primary" href="#visualizer" @click.prevent="openSoonModal">
                 Try the Visualizer
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </a>
@@ -190,7 +190,7 @@
                 <li><span class="pf-dot"></span>Instant color harmony analysis</li>
               </ul>
               <div class="actions" style="margin-top:32px">
-                <a class="btn btn-primary" href="#visualizer">
+                <a class="btn btn-primary" href="#visualizer" @click.prevent="openSoonModal">
                   Open Visualizer
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </a>
@@ -323,7 +323,7 @@
               <h2>Your wall deserves a decision,<br><em>not a guess</em></h2>
               <p>Free to use. No account needed to preview your first artwork.</p>
               <div class="actions">
-                <a class="btn btn-primary-inv" href="#visualizer">
+                <a class="btn btn-primary-inv" href="#visualizer" @click.prevent="openSoonModal">
                   Open the Visualizer
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </a>
@@ -341,6 +341,38 @@
       </section>
 
     </main>
+
+    <!-- ════ COMING-SOON MODAL ════ -->
+    <Transition name="soon">
+      <div v-if="showSoonModal" class="soon-overlay" @click.self="closeSoonModal" role="dialog" aria-modal="true" aria-labelledby="soon-title">
+        <div class="soon-card">
+          <button class="soon-close" type="button" aria-label="Close" @click="closeSoonModal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M6 18 18 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+
+          <div class="soon-badge">
+            <span class="soon-badge-dot"></span>
+            In Development
+          </div>
+
+          <h3 id="soon-title" class="soon-title">
+            The Visualizer is<br><em>almost ready</em>
+          </h3>
+          <p class="soon-text">
+            We're putting the finishing touches on the live editor. Soon you'll be able to upload
+            your room, drop in any artwork, and preview the perfect fit — right here.
+          </p>
+
+          <div class="soon-actions">
+            <button class="btn btn-primary" type="button" @click="closeSoonModal">
+              Got it
+            </button>
+          </div>
+
+          <div class="soon-foot">Thanks for your patience — it's worth the wait.</div>
+        </div>
+      </div>
+    </Transition>
 
     <footer>
       <div class="container footer-grid">
@@ -366,6 +398,17 @@ import { ref, onMounted, onUnmounted } from 'vue'
 const compareEl     = ref(null)
 const pos           = ref(100)         // 100 = fully "before", 0 = fully "after"
 const hasInteracted = ref(false)
+const showSoonModal = ref(false)
+
+const openSoonModal = () => {
+  showSoonModal.value = true
+  if (typeof document !== 'undefined') document.body.style.overflow = 'hidden'
+}
+const closeSoonModal = () => {
+  showSoonModal.value = false
+  if (typeof document !== 'undefined') document.body.style.overflow = ''
+}
+const onKeydown = (e) => { if (e.key === 'Escape' && showSoonModal.value) closeSoonModal() }
 
 let observer = null
 let dragging = false
@@ -393,6 +436,8 @@ const endDrag = (e) => {
 }
 
 onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+
   // ── Scroll-reveal ─────────────────────────────────────────────────
   observer = new IntersectionObserver((entries) => {
     entries.forEach(e => {
@@ -454,6 +499,8 @@ onMounted(() => {
 onUnmounted(() => {
   if (introRaf) cancelAnimationFrame(introRaf)
   observer?.disconnect()
+  window.removeEventListener('keydown', onKeydown)
+  if (typeof document !== 'undefined') document.body.style.overflow = ''
 })
 </script>
 
@@ -1662,6 +1709,138 @@ footer { padding: 36px 0 52px; }
   .demo-palette { animation: none !important; opacity: 1 !important; transform: none !important; }
   .dp-sw, .cr-sw { animation: none !important; transform: scale(1) !important; }
   .sd-fill { transition: none !important; }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   COMING-SOON MODAL
+═══════════════════════════════════════════════════════════════════ */
+.soon-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(20,17,14,.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.soon-card {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  background: var(--neutral);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 44px 36px 32px;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(20,17,14,.35);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -120px; left: 50%;
+    transform: translateX(-50%);
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(197,160,89,.16), transparent 70%);
+    pointer-events: none;
+  }
+}
+.soon-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.6);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+  &:hover { background: #fff; color: var(--secondary); border-color: var(--secondary); }
+}
+.soon-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  background: rgba(197,160,89,.12);
+  border: 1px solid rgba(197,160,89,.3);
+  color: var(--primary);
+  font-size: .64rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.soon-badge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: soon-pulse 1.6s ease-in-out infinite;
+}
+@keyframes soon-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.6); opacity: .5; }
+}
+.soon-title {
+  position: relative;
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -.02em;
+  margin: 0 0 14px;
+  color: var(--secondary);
+  em { font-style: italic; font-weight: 400; color: var(--primary); }
+}
+.soon-text {
+  position: relative;
+  font-size: .92rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 26px;
+}
+.soon-actions {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+  .btn { min-width: 160px; }
+}
+.soon-foot {
+  position: relative;
+  font-size: .66rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #9a8c77;
+}
+
+/* Transition */
+.soon-enter-active, .soon-leave-active {
+  transition: opacity .28s ease;
+  .soon-card {
+    transition: transform .32s var(--ease-out), opacity .28s ease;
+  }
+}
+.soon-enter-from, .soon-leave-to {
+  opacity: 0;
+  .soon-card { transform: translateY(14px) scale(.96); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soon-badge-dot { animation: none !important; }
+  .soon-enter-active, .soon-leave-active,
+  .soon-enter-active .soon-card, .soon-leave-active .soon-card {
+    transition: none !important;
+  }
 }
 
 </style>
