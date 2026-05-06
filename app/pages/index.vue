@@ -767,6 +767,8 @@ main {
 .hero-compare {
   position: relative;
   width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 80vh;
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: 0 36px 80px rgba(45,41,38,.18), 0 0 0 1px rgba(45,41,38,.06);
@@ -776,19 +778,22 @@ main {
   cursor: ew-resize;
 }
 .hc-stage {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
 }
 .hc-layer {
   overflow: hidden;
 }
 .hc-before {
-  position: relative;
-  display: block;
+  position: absolute;
+  inset: 0;
 }
 .hc-before .hc-room {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
   display: block;
   pointer-events: none;
 }
@@ -1696,7 +1701,12 @@ footer { padding: 36px 0 52px; }
       min-height: auto;
     }
   }
-  .hero-compare { max-width: 560px; margin: 0 auto; }
+  .hero-compare {
+    max-width: 560px;
+    margin: 0 auto;
+    aspect-ratio: 4 / 5;
+    max-height: 70vh;
+  }
 }
 
 @media (max-width: 768px) {
