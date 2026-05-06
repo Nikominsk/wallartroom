@@ -2,17 +2,12 @@
 export default defineNuxtConfig({
   modules: ['@nuxtjs/supabase'],
   compatibilityDate: '2025-07-15',
+  css: ['~/assets/scss/main.scss'],
   vite: {
     css: {
         preprocessorOptions: {
             scss: {
-              additionalData: `
-$color-primary: #111827;
-$color-accent: #ff6b35;
-$color-bg: #f7f7f7;
-$radius-md: 12px;
-$radius-lg: 20px;
-`,
+              additionalData: `@use "@/assets/scss/variables" as *;`,
             },
         },
     },

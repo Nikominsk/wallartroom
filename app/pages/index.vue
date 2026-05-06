@@ -9,8 +9,7 @@
           <a href="#visualizer">Visualizer</a>
           <a href="#journal">Journal</a>
         </nav>
-        <a class="btn btn-nav" href="#visualizer" @click.prevent="openSoonModal">Try free</a>
-      </div>
+           </div>
     </header>
 
     <main>
@@ -585,7 +584,7 @@ button, input { font: inherit; }
   border-bottom: 1px solid rgba(216,208,197,.65);
 }
 .nav {
-  min-height: 72px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -676,9 +675,12 @@ main {
   max-width: 100%;
 }
 
+  #showcase {
+    padding: 25px 0 50px;
+  }
+
   .hero {
   position: relative;
-  padding: 0 0 96px;
 }
 } 
 /* ════════════════════════════════════════════════════════════════════
@@ -883,6 +885,7 @@ main {
   overflow: hidden;
   padding: 15px 0;
   border-top: 1px solid rgba(255,255,255,.04);
+  margin: 0 -30px;
 }
 .marquee-track {
   display: flex;
@@ -1059,6 +1062,7 @@ main {
   grid-template-columns: 1fr 1.35fr;
   gap: 72px;
   align-items: center;
+  padding: 0 20px;
 }
 
 .placement-content {

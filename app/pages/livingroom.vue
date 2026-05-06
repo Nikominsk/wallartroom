@@ -4,7 +4,7 @@
 
 <header>
   <nav class="nav">
-    <a class="logo" href="index.html">Wall<span>Vision</span></a>
+    <a class="logo" href="index.html">Wall<span>Art</span>Room</a>
     <a class="cta" href="/">Open Visualizer</a>
   </nav>
 </header>
@@ -24,11 +24,42 @@
     <a class="hero-link" href="/">Test it directly in your space →</a>
   </section>
 
+  <nav class="toc" aria-label="Table of contents">
+    <div class="toc-label">Contents</div>
+    <ol class="toc-list">
+      <li><a href="#idea-01" class="toc-link"><span class="toc-num">01</span>Start with the mood, not the image</a></li>
+      <li><a href="#idea-02" class="toc-link"><span class="toc-num">02</span>Choose the right size</a></li>
+      <li>
+        <a href="#idea-03" class="toc-link"><span class="toc-num">03</span>Large artworks vs. many small ones</a>
+        <ul class="toc-sublist">
+          <li><a href="#idea-03-large" class="toc-sublink">When a large artwork is better</a></li>
+          <li><a href="#idea-03-small" class="toc-sublink">When several smaller artworks are better</a></li>
+        </ul>
+      </li>
+      <li><a href="#idea-04" class="toc-link"><span class="toc-num">04</span>Minimalist art for breathing room</a></li>
+      <li><a href="#idea-05" class="toc-link"><span class="toc-num">05</span>Pick the right height</a></li>
+      <li><a href="#idea-06" class="toc-link"><span class="toc-num">06</span>Frames matter more than you think</a></li>
+      <li><a href="#idea-07" class="toc-link"><span class="toc-num">07</span>Create a color connection</a></li>
+      <li>
+        <a href="#idea-08" class="toc-link"><span class="toc-num">08</span>Gallery wall or single statement?</a>
+        <ul class="toc-sublist">
+          <li><a href="#idea-08-intentional" class="toc-sublink">How to make a gallery wall feel intentional</a></li>
+        </ul>
+      </li>
+      <li><a href="#idea-09" class="toc-link"><span class="toc-num">09</span>Think in layers, not just walls</a></li>
+      <li><a href="#idea-10" class="toc-link"><span class="toc-num">10</span>Match artwork to interior style</a></li>
+      <li><a href="#idea-11" class="toc-link"><span class="toc-num">11</span>Solve common living room problems</a></li>
+      <li><a href="#idea-12" class="toc-link"><span class="toc-num">12</span>Consider lighting</a></li>
+      <li><a href="#idea-13" class="toc-link"><span class="toc-num">13</span>Do a final check</a></li>
+      <li><a href="#idea-14" class="toc-link"><span class="toc-num">14</span>The best test is your own space</a></li>
+    </ol>
+  </nav>
+
   <div class="image-placeholder wide-image">
     <img src="@@/assets/images/blog/livingroom1.png" alt="Showcase"/>
   </div>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-01">
     <div class="section-number">Idea 01</div>
     <h2>Start with the mood, not the image.</h2>
     <p>
@@ -71,7 +102,7 @@
     </div>
   </div>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-02">
     <div class="section-number">Idea 02</div>
     <h2>Choose the right size — this changes everything.</h2>
     <p>
@@ -104,7 +135,7 @@
     </p>
   </article>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-03">
     <div class="section-number">Idea 03</div>
     <h2>Large artworks often look more premium than many small ones.</h2>
     <p>
@@ -121,7 +152,7 @@
       In that case, the collection should have a shared direction: similar colors, matching frames, related subjects,
       repeated spacing, or a consistent visual mood.
     </p>
-    <h3>When a large artwork is better</h3>
+    <h3 id="idea-03-large">When a large artwork is better</h3>
     <p>
       Choose one large artwork if you want the room to feel calm, clean, and finished. It works especially well above a sofa,
       above a long sideboard, above a fireplace, or on a large blank wall that currently feels empty.
@@ -130,7 +161,7 @@
       A large artwork is also a good choice if your interior style is minimal, Scandinavian, modern organic, Japandi,
       neutral, or contemporary. These styles often benefit from fewer, stronger visual decisions.
     </p>
-    <h3>When several smaller artworks are better</h3>
+    <h3 id="idea-03-small">When several smaller artworks are better</h3>
     <p>
       Choose several smaller artworks if you want the room to feel personal, collected, artistic, or cozy.
       A gallery wall can tell a story with travel photos, abstract prints, family moments, typography, or vintage-inspired pieces.
@@ -143,7 +174,7 @@
     <img src="@@/assets/images/blog/livingroom2.png" alt="Showcase"/>
   </div>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-04">
     <div class="section-number">Idea 04</div>
     <h2>Minimalist art gives your room space to breathe.</h2>
     <p>
@@ -181,7 +212,7 @@
     </div>
   </div>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-05">
     <div class="section-number">Idea 05</div>
     <h2>Pick the right height — it is often overlooked.</h2>
     <p>
@@ -206,7 +237,7 @@
     </p>
   </article>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-06">
     <div class="section-number">Idea 06</div>
     <h2>Frames matter more than you think.</h2>
     <p>
@@ -232,7 +263,7 @@
     </p>
   </article>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-07">
     <div class="section-number">Idea 07</div>
     <h2>Create a color connection in your room.</h2>
     <p>
@@ -258,7 +289,7 @@
     </p>
   </article>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-08">
     <div class="section-number">Idea 08</div>
     <h2>Gallery wall or single statement?</h2>
     <p>
@@ -274,7 +305,7 @@
       abstract prints, personal photos, vintage posters, or small paintings. The secret is to create order through spacing,
       color, or frames.
     </p>
-    <h3>How to make a gallery wall feel intentional</h3>
+    <h3 id="idea-08-intentional">How to make a gallery wall feel intentional</h3>
     <p>
       Choose one anchor piece first. This should be the largest or strongest artwork in the arrangement. Then build around it
       with smaller pieces. Keep the spacing between frames consistent, usually around 5–8 cm, and lay the arrangement on the floor
@@ -296,7 +327,7 @@
     </div>
   </div>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-09">
     <div class="section-number">Idea 09</div>
     <h2>Think in layers, not just walls.</h2>
     <p>
@@ -318,7 +349,7 @@
     </p>
   </article>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-10">
     <div class="section-number">Idea 10</div>
     <h2>Match the artwork style to your interior style.</h2>
     <p>
@@ -341,7 +372,7 @@
     </p>
   </article>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-11">
     <div class="section-number">Idea 11</div>
     <h2>Use wall art to solve common living room problems.</h2>
     <p>
@@ -363,7 +394,7 @@
     </p>
   </article>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-12">
     <div class="section-number">Idea 12</div>
     <h2>Consider lighting before choosing your final artwork.</h2>
     <p>
@@ -385,7 +416,7 @@
     <img src="@@/assets/images/blog/lighting.png" alt="Showcase"/>
   </div>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-13">
     <div class="section-number">Idea 13</div>
     <h2>Do a final check before you buy.</h2>
     <p>
@@ -406,7 +437,7 @@
     </p>
   </article>
 
-  <article class="article-section">
+  <article class="article-section" id="idea-14">
     <div class="section-number">Idea 14</div>
     <h2>The best test is your own space.</h2>
     <p>
@@ -457,7 +488,6 @@
 
 
 <style lang="scss">
-
 
     * {
       box-sizing: border-box;
@@ -704,6 +734,87 @@
       padding: 0 22px 46px;
       color: var(--subtext);
       font-size: 14px;
+    }
+
+    .toc {
+      max-width: 760px;
+      margin: 0 0 72px;
+      padding: 28px 0 8px;
+      border-top: 1px solid var(--line);
+    }
+
+    .toc-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--subtext);
+      margin-bottom: 22px;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      counter-reset: none;
+    }
+
+    .toc-list > li {
+      border-top: 1px solid var(--line);
+    }
+    .toc-list > li:first-child {
+      border-top: none;
+    }
+
+    .toc-link {
+      display: flex;
+      align-items: baseline;
+      gap: 18px;
+      padding: 6px 0;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--title);
+      transition: color 0.15s ease, padding-left 0.2s ease;
+    }
+    .toc-link:hover {
+      color: var(--accent);
+      padding-left: 6px;
+    }
+
+    .toc-num {
+      flex-shrink: 0;
+      width: 24px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--subtext);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .toc-sublist {
+      list-style: none;
+      padding: 0 0 6px 42px;
+      margin: -6px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toc-sublink {
+      display: block;
+      padding: 3px 0;
+      font-size: 14px;
+      color: var(--subtext);
+      transition: color 0.15s ease, padding-left 0.2s ease;
+    }
+    .toc-sublink:hover {
+      color: var(--accent);
+      padding-left: 4px;
+    }
+
+    @media (max-width: 760px) {
+      .toc-link { font-size: 15px; gap: 14px; }
+      .toc-sublist { padding-left: 36px; }
     }
 
     @media (max-width: 760px) {

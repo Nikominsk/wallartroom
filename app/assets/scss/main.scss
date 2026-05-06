@@ -1,0 +1,18 @@
+@use 'variables' as *;
+
+:root {
+  --bg:       #f5f2ed;
+  --text:     #2d2926;
+  --title:    #1a1714;
+  --subtext:  #7d7367;
+  --line:     #d8d0c5;
+  --accent:   #c5a059;
+  --accent-2: #9a8c77;
+  --dark:     #2d2926;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: $color-bg;
+}

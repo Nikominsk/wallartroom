@@ -6,7 +6,12 @@
       "PowerShell(git *)",
       "WebFetch(domain:github.com)",
       "Bash(npx nuxt *)",
-      "Bash(dir C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\assets\\\\video *)"
+      "Bash(dir C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\assets\\\\video *)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\" | Where-Object { $_.Name -ne 'node_modules' } | ForEach-Object { \"$\\($_.PSIsContainer\\) $\\($_.Name\\)\" })",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\app\" | ForEach-Object { $_.Name })",
+      "PowerShell(New-Item *)",
+      "PowerShell(Move-Item *)"
     ]
   }
 }
