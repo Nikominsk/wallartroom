@@ -428,7 +428,7 @@
               Refining the digital art landscape through sophisticated curation and architectural visualization.
             </div>
           </div>
-          <div class="footer-copy">© 2026 The WallArtRoom. All rights reserved. Crafted for the modern collector.</div>
+          <div class="footer-copy">© 2026 The WallArtRoom. All rights reserved.<br/>Crafted for the modern collector.</div>
         </div>
       </div>
     </footer>
@@ -715,20 +715,41 @@ button, input { font: inherit; }
 }
 .actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
+/* Reset global room-page styles that bleed into the landing page */
 #visualizer-page {
-main {
+  display: block;
   width: 100%;
-  max-width: 100%;
-}
+
+  main {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
 
   #showcase {
     padding: 25px 0 50px;
   }
 
+  /* Room pages define .hero { max-width: 760px } — neutralise it here */
   .hero {
-  position: relative;
+    position: relative;
+    max-width: none;
+    margin-bottom: 0;
+  }
+
+  /* Room pages define .nav { max-width: 980px; padding: 22px; border-bottom: … } */
+  .nav {
+    max-width: none;
+    padding: 0;
+    border-bottom: none;
+  }
+
+  /* Room pages define .kicker with a different colour */
+  .kicker {
+    color: #9a8c77;
+  }
 }
-} 
 /* ════════════════════════════════════════════════════════════════════
    1 · HERO · BEFORE/AFTER COMPARE
 ═══════════════════════════════════════════════════════════════════ */
@@ -936,7 +957,6 @@ main {
   overflow: hidden;
   padding: 15px 0;
   border-top: 1px solid rgba(255,255,255,.04);
-  margin: 0 -30px;
 }
 .marquee-track {
   display: flex;
