@@ -4,10 +4,18 @@
 
 <header>
   <nav class="nav">
-    <a class="logo" href="index.html">Wall<span>Art</span>Room</a>
+    <a class="logo" href="/">Wall<span>Art</span>Room</a>
     <a class="cta" href="/">Open Visualizer</a>
   </nav>
 </header>
+
+<div class="rooms-nav">
+  <span class="rooms-label">Room guides:</span>
+  <a href="/livingroom" class="room-link room-link--active">Living Room</a>
+  <a href="/bedroom" class="room-link">Bedroom</a>
+  <a href="/kitchen" class="room-link">Kitchen</a>
+  <a href="/office" class="room-link">Office</a>
+</div>
 
 <main>
   <section class="hero">
@@ -534,6 +542,49 @@
       background: var(--dark);
       padding: 10px 16px;
       border-radius: 2px;
+    }
+
+    .rooms-nav {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 12px 22px;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      border-bottom: 1px solid var(--line);
+      overflow-x: auto;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar { display: none; }
+    }
+
+    .rooms-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--subtext);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .room-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--subtext);
+      white-space: nowrap;
+      transition: color 0.15s ease;
+      padding-bottom: 1px;
+      border-bottom: 1px solid transparent;
+
+      &:hover {
+        color: var(--accent);
+      }
+    }
+
+    .room-link--active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
     }
 
     main {

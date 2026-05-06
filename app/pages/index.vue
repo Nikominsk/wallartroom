@@ -7,6 +7,7 @@
         <nav class="nav-links">
           <a href="#how">How it works</a>
           <a href="#visualizer">Visualizer</a>
+          <a href="#rooms">Room Guides</a>
           <a href="#journal">Journal</a>
         </nav>
            </div>
@@ -302,7 +303,52 @@
         </div>
       </section>
 
-      <!-- ════ 7 · QUOTE ════ -->
+      <!-- ════ 7 · ROOM GUIDES ════ -->
+      <section class="section rooms-section" id="rooms">
+        <div class="container">
+          <div class="rooms-header reveal">
+            <span class="eyebrow">Room Guides</span>
+            <h2>Art advice for <em>every room</em></h2>
+            <p class="rooms-sub">Practical guides on size, placement, color, and framing — written for each space in your home.</p>
+          </div>
+          <div class="rooms-grid">
+            <a href="/livingroom" class="room-card reveal">
+              <span class="room-card-num">01</span>
+              <div class="room-card-body">
+                <h3>Living Room</h3>
+                <p>Scale, gallery walls, focal points, and color connection for the most-seen wall in your home.</p>
+              </div>
+              <span class="room-card-arrow">→</span>
+            </a>
+            <a href="/bedroom" class="room-card reveal" style="--delay:60ms">
+              <span class="room-card-num">02</span>
+              <div class="room-card-body">
+                <h3>Bedroom</h3>
+                <p>Calming palettes, headboard scale, and how to make your bedroom feel like a true sanctuary.</p>
+              </div>
+              <span class="room-card-arrow">→</span>
+            </a>
+            <a href="/kitchen" class="room-card reveal" style="--delay:120ms">
+              <span class="room-card-num">03</span>
+              <div class="room-card-body">
+                <h3>Kitchen</h3>
+                <p>Practical tips for art in a functional space — materials, scale, themes, and placement.</p>
+              </div>
+              <span class="room-card-arrow">→</span>
+            </a>
+            <a href="/office" class="room-card reveal" style="--delay:180ms">
+              <span class="room-card-num">04</span>
+              <div class="room-card-body">
+                <h3>Office</h3>
+                <p>Art that supports focus, color psychology for productivity, and framing for video calls.</p>
+              </div>
+              <span class="room-card-arrow">→</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════ 8 · QUOTE ════ -->
       <section class="quote-section" id="journal">
         <div class="container quote-wrap">
           <div class="quote-star reveal">✦</div>
@@ -1633,6 +1679,108 @@ blockquote {
 @keyframes glyph-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   7 · ROOM GUIDES
+═══════════════════════════════════════════════════════════════════ */
+.rooms-section {
+  border-top: 1px solid var(--border);
+
+  .rooms-header {
+    margin-bottom: 44px;
+
+    h2 {
+      font-family: "Noto Serif", Georgia, serif;
+      font-size: clamp(2rem, 3.4vw, 3.2rem);
+      font-weight: 500;
+      line-height: 1.04;
+      letter-spacing: -.03em;
+      margin: 0 0 14px;
+      em { font-style: italic; font-weight: 400; color: var(--primary); }
+    }
+  }
+
+  .rooms-sub {
+    font-size: .95rem;
+    color: var(--muted);
+    margin: 0;
+    max-width: 480px;
+    line-height: 1.65;
+  }
+
+  .rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .room-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 26px 24px;
+    background: rgba(255,255,255,.52);
+    border: 1px solid rgba(216,208,197,.7);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow .32s var(--ease-out), transform .32s var(--ease-out), border-color .32s ease;
+
+    &:hover {
+      box-shadow: 0 22px 52px rgba(45,41,38,.09);
+      transform: translateY(-3px);
+      border-color: rgba(197,160,89,.3);
+
+      .room-card-arrow { transform: translateX(4px); color: var(--primary); }
+    }
+
+    h3 {
+      font-family: "Noto Serif", Georgia, serif;
+      font-size: 1.15rem;
+      font-weight: 500;
+      margin: 0 0 8px;
+      letter-spacing: -.02em;
+      color: var(--secondary);
+    }
+
+    p {
+      font-size: .86rem;
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.6;
+    }
+  }
+
+  .room-card-num {
+    font-family: "Noto Serif", Georgia, serif;
+    font-size: .74rem;
+    color: var(--primary);
+    letter-spacing: .1em;
+    font-weight: 400;
+  }
+
+  .room-card-body { flex: 1; }
+
+  .room-card-arrow {
+    font-size: .9rem;
+    color: var(--muted);
+    transition: transform .22s var(--ease-out), color .22s ease;
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 900px) {
+  .rooms-section .rooms-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  .rooms-section .rooms-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 
