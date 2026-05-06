@@ -455,7 +455,7 @@
 </script>
 
 
-<style lang="scss">
+<style lang="scss" scoped>
 :root {
       --bg: #faf7f2;
       --text: #2d2925;

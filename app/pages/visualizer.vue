@@ -532,7 +532,9 @@ body {
   color: var(--text);
   background: var(--neutral);
   line-height: 1.55;
+  overflow-x: hidden;
 }
+html { overflow-x: hidden; }
 img { max-width: 100%; display: block; }
 a { text-decoration: none; color: inherit; }
 button, input { font: inherit; }
@@ -663,8 +665,8 @@ button, input { font: inherit; }
 ═══════════════════════════════════════════════════════════════════ */
 .hero {
   position: relative;
-  padding: 72px 0 96px;
-  overflow: hidden;
+  padding: 96px 0 96px;
+  overflow: clip;
 }
 .hero-orb {
   position: absolute;
@@ -685,12 +687,12 @@ button, input { font: inherit; }
 
 .hero-grid {
   display: grid;
-  grid-template-columns: 1fr 1.18fr;
+  grid-template-columns: 1fr 0.9fr;
   gap: 64px;
   align-items: center;
   position: relative;
   z-index: 1;
-  min-height: calc(100vh - 200px);
+  min-height: 560px;
 }
 
 .hero-copy {
@@ -756,22 +758,33 @@ button, input { font: inherit; }
 }
 .hc-stage {
   position: relative;
-  aspect-ratio: 4 / 5;
   width: 100%;
 }
 .hc-layer {
-  position: absolute;
-  inset: 0;
   overflow: hidden;
 }
-.hc-layer .hc-room {
+.hc-before {
+  position: relative;
+  display: block;
+}
+.hc-before .hc-room {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+.hc-after {
+  position: absolute;
+  inset: 0;
+  will-change: clip-path;
+}
+.hc-after .hc-room {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
   pointer-events: none;
 }
-.hc-after { will-change: clip-path; }
 
 .hc-tag {
   position: absolute;
