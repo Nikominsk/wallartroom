@@ -1,462 +1,528 @@
 <template>
-  <section>
+  <section class="page-root" id="visualizer-page">
 
-<header>
-  <nav class="nav">
-    <a class="logo" href="index.html">Wall<span>Vision</span></a>
-    <a class="cta" href="/visualizer">Open Visualizer</a>
-  </nav>
-</header>
+    <header class="site-header">
+      <div class="container nav">
+        <a class="brand" href="#">Wall<span>Art</span>Room</a>
+        <nav class="nav-links">
+          <a href="#how">How it works</a>
+          <a href="#visualizer">Visualizer</a>
+          <a href="#journal">Journal</a>
+        </nav>
+        <a class="btn btn-nav" href="#visualizer" @click.prevent="openSoonModal">Try free</a>
+      </div>
+    </header>
 
-<main>
-  <section class="hero">
-    <div class="kicker">Living Room Wall Art</div>
-    <h1>Wall art that makes your living room feel calmer, warmer, and more complete.</h1>
-    <p class="lead">
-      A practical inspiration guide for anyone who saves beautiful living room ideas on Pinterest,
-      but still wonders: Will this artwork actually look good on my wall, with my sofa, my colors, and my space?
-    </p>
-    <p class="lead">
-      Instead of choosing wall art only because it looks nice online, this guide helps you think about mood,
-      size, color, placement, frames, and styling. That way, your wall art feels intentional — not random.
-    </p>
-    <a class="hero-link" href="/visualizer">Test it directly in your space →</a>
-  </section>
+    <main>
 
-  <div class="image-placeholder wide-image">
-    <img src="@@/assets/images/blog/livingroom1.png" alt="Showcase"/>
-  </div>
+      <!-- ════ 1 · HERO · BEFORE/AFTER ════ -->
+      <section class="hero" id="showcase">
+        <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 01</div>
-    <h2>Start with the mood, not the image.</h2>
-    <p>
-      The most beautiful wall art doesn’t help much if it doesn’t match the mood of your room.
-      Pinterest users usually aren’t just looking for an image, but a feeling:
-      calmer, warmer, brighter, more modern, more elegant, or more personal.
-    </p>
-    <p>
-      Before choosing a print, ask yourself what your living room should feel like when you walk in.
-      Should it feel like a quiet place to relax after work? A bright space for mornings and coffee?
-      A warm room for guests and slow evenings? Or a more polished space that feels finished and styled?
-    </p>
-    <p>
-      Once you know the mood, choosing the artwork becomes much easier. Soft landscapes, beige abstracts,
-      linen tones, botanical prints, and watercolor shapes usually create a calm atmosphere. Dark photography,
-      strong contrast, oversized abstract art, or graphic black-and-white prints create more drama and focus.
-    </p>
-    <p>
-      That’s exactly why wall art works best when it reflects the existing colors in the room.
-      A beige print fits beautifully with linen, wood, boucle, rattan, and natural tones. A dark piece stands out above
-      a light sofa and can make the room feel more grounded. A colorful accent can instantly make a simple room feel
-      more alive, especially if the color also appears in pillows, flowers, books, or a rug.
-    </p>
-    <p>
-      Also consider texture and visual softness. A watercolor print feels gentle and airy. A sharp architectural photo
-      feels modern and structured. A vintage-inspired painting feels warmer and more collected. A simple line drawing
-      feels light and minimal. The subject matters, but the feeling matters even more.
-    </p>
-    <p class="note">
-      Good rule of thumb: repeat at least one color from your room in the artwork. This simple trick makes the whole room feel more connected.
-    </p>
-  </article>
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <span class="eyebrow">Wall Art Visualizer</span>
+            <h1>See your art on your wall<br><em>before you hang it</em></h1>
+            <p class="hero-lead">
+              Upload your room, drop in any piece, and preview a true-to-scale render in seconds —
+              with palette analysis baked in.
+            </p>
+            <div class="actions">
+              <a class="btn btn-primary" href="#visualizer" @click.prevent="openSoonModal">
+                Try the Visualizer
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <a class="btn btn-ghost" href="#how">How it works</a>
+            </div>
+            <ul class="hero-feats">
+              <li><span class="hf-dot"></span>True-to-scale rendering</li>
+              <li><span class="hf-dot"></span>Smart palette harmony</li>
+              <li><span class="hf-dot"></span>Any room, any wall</li>
+            </ul>
+          </div>
 
-  <div class="split">
-    <div class="image-placeholder">
-    <img src="@@/assets/images/blog/samecolor2.png" alt="Showcase"/>
-    </div>
-    <div class="image-placeholder">
-    <img src="@@/assets/images/blog/samecolor.png" alt="Showcase"/>
-    </div>
-  </div>
+          <div
+            class="hero-compare"
+            ref="compareEl"
+            @pointerdown="startDrag"
+            @pointermove="onDrag"
+            @pointerup="endDrag"
+            @pointercancel="endDrag"
+            @pointerleave="endDrag"
+          >
+            <div class="hc-stage">
+              <!-- BEFORE: empty wall -->
+              <div class="hc-layer hc-before" aria-hidden="true">
+                <img class="hc-room" src="@@/assets/images/showcase-empty-wall.png" alt="" />
+                <div class="hc-tag hc-tag-before">Before</div>
+              </div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 02</div>
-    <h2>Choose the right size — this changes everything.</h2>
-    <p>
-      One of the biggest mistakes with living room wall art is choosing artwork that is too small.
-      Even a beautiful print can look “lost” on a large wall if the scale is wrong. Pinterest rooms often look so good
-      because the artwork is usually large enough to relate to the furniture below it.
-    </p>
-    <p>
-      As a simple guideline, your artwork should take up about 60–75% of the width of the furniture below it.
-      For example, above a 2-meter sofa, your artwork or art arrangement should be roughly 120–150 cm wide.
-      It does not have to be exact, but it should feel visually connected to the sofa, sideboard, or console table.
-    </p>
-    <p>
-      If you’re unsure, it’s usually better to go slightly larger than too small.
-      Bigger art feels more intentional, more premium, and more styled. Small art can work too, but it usually needs
-      support from other pieces, a frame, a shelf, or a gallery wall arrangement.
-    </p>
-    <p>
-      You can also simulate the size before buying. Tape paper, cardboard, or painter’s tape to your wall in the size
-      you are considering. Step back and look from the doorway, from the sofa, and from the side of the room.
-      If it feels too small from a distance, it will probably feel too small once the real artwork is there.
-    </p>
-    <p>
-      For a clean living room look, consider one large horizontal artwork above a sofa, two vertical prints above a console,
-      or a set of three prints if you want rhythm and balance. The right size gives your wall structure before you even think
-      about color or style.
-    </p>
-    <p class="note">
-      Pinterest-friendly tip: large artwork with enough breathing room around it usually photographs better than tiny artwork surrounded by empty wall.
-    </p>
-  </article>
+              <!-- AFTER: artwork placed -->
+              <div class="hc-layer hc-after" :style="{ clipPath: `inset(0 0 0 ${pos}%)` }" aria-hidden="true">
+                <img class="hc-room" src="@@/assets/images/showcase.png" alt="" />
+                <div class="hc-tag hc-tag-after">After</div>
+              </div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 03</div>
-    <h2>Large artworks often look more premium than many small ones.</h2>
-    <p>
-      Above a sofa, sideboard, or bed, a single large piece often feels calmer and more modern.
-      The room gets a clear focal point without the wall looking cluttered. This is especially helpful if your living room
-      already has many details such as shelves, plants, cushions, books, candles, curtains, or patterned textiles.
-    </p>
-    <p>
-      Large-scale art also photographs beautifully, which is one reason it appears so often in Pinterest interiors.
-      It gives the eye one clear place to land. Instead of making the wall feel busy, it creates a confident design moment.
-    </p>
-    <p>
-      Small artworks can still look amazing, but they usually work better as a thoughtful set or gallery wall.
-      In that case, the collection should have a shared direction: similar colors, matching frames, related subjects,
-      repeated spacing, or a consistent visual mood.
-    </p>
-    <h3>When a large artwork is better</h3>
-    <p>
-      Choose one large artwork if you want the room to feel calm, clean, and finished. It works especially well above a sofa,
-      above a long sideboard, above a fireplace, or on a large blank wall that currently feels empty.
-    </p>
-    <p>
-      A large artwork is also a good choice if your interior style is minimal, Scandinavian, modern organic, Japandi,
-      neutral, or contemporary. These styles often benefit from fewer, stronger visual decisions.
-    </p>
-    <h3>When several smaller artworks are better</h3>
-    <p>
-      Choose several smaller artworks if you want the room to feel personal, collected, artistic, or cozy.
-      A gallery wall can tell a story with travel photos, abstract prints, family moments, typography, or vintage-inspired pieces.
-      The key is to make the grouping feel intentional rather than accidental.
-    </p>
-    <a class="text-link" href="/visualizer">Test a large artwork in the visualizer →</a>
-  </article>
+              <!-- Divider + handle -->
+              <div class="hc-divider" :style="{ left: `${pos}%` }">
+                <button class="hc-handle" type="button" aria-label="Drag to compare">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 6l-5 6 5 6M15 6l5 6-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
 
-  <div class="image-placeholder wide-image">
-    <img src="@@/assets/images/blog/livingroom2.png" alt="Showcase"/>
-  </div>
+              <div class="hc-hint" v-if="!hasInteracted">Drag to compare</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-  <article class="article-section">
-    <div class="section-number">Idea 04</div>
-    <h2>Minimalist art gives your room space to breathe.</h2>
-    <p>
-      Line drawings, abstract shapes, soft landscapes, and reduced designs are popular because they are easy to combine.
-      They look modern without becoming too dominant, which makes them a safe choice for many different living room styles.
-    </p>
-    <p>
-      Minimalist art works especially well if your furniture already has strong shapes or textures. For example, if you have
-      a chunky boucle chair, a wooden coffee table, patterned pillows, or a textured rug, a calm artwork can balance the room
-      instead of adding more visual noise.
-    </p>
-    <p>
-      This is why Scandinavian, Japandi, and modern organic interiors often rely on simple, neutral artwork.
-      The art does not compete with the space. It supports the calm feeling and makes the room look more edited.
-    </p>
-    <p>
-      Minimalist does not have to mean boring. You can create interest through scale, frame choice, paper texture,
-      soft contrast, or an unusual composition. A large simple print can be more powerful than a small detailed one.
-    </p>
-    <p>
-      Especially in small apartments or bright spaces, this is a safe style. The artwork complements the interior
-      instead of overpowering it. It also gives you flexibility if you like to change pillows, blankets, flowers, or seasonal decor.
-    </p>
-    <p class="note">
-      If you're unsure, start with a calm motif and test bolder options afterward. It is easier to add more personality than to calm down a room that already feels too busy.
-    </p>
-  </article>
+      <!-- ════ 2 · MARQUEE ════ -->
+      <div class="marquee-strip" aria-hidden="true">
+        <div class="marquee-track">
+          <span class="mq-item">Photorealistic Preview</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Instant Placement</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Color Harmony</span><span class="mq-sep">✦</span>
+          <span class="mq-item">True to Scale</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Any Room</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Zero Guesswork</span><span class="mq-sep">✦</span>
+          <span class="mq-item">18-Second Previews</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Decide with Confidence</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Photorealistic Preview</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Instant Placement</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Color Harmony</span><span class="mq-sep">✦</span>
+          <span class="mq-item">True to Scale</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Any Room</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Zero Guesswork</span><span class="mq-sep">✦</span>
+          <span class="mq-item">18-Second Previews</span><span class="mq-sep">✦</span>
+          <span class="mq-item">Decide with Confidence</span><span class="mq-sep">✦</span>
+        </div>
+      </div>
 
-  <div class="split">
-    <div class="image-placeholder">
-    <img src="@@/assets/images/blog/minimal1.png" alt="Showcase"/>
-    </div>
-    <div class="image-placeholder">
-    <img src="@@/assets/images/blog/minimal2.png" alt="Showcase"/>
-    </div>
-  </div>
+      <!-- ════ 3 · STATS ════ -->
+      <div class="stats-strip">
+        <div class="container stats-row">
+          <div class="stat reveal">
+            <span class="stat-num" data-target="2400" data-suffix="+" data-comma>0</span>
+            <span class="stat-label">Rooms visualized</span>
+          </div>
+          <div class="stat-sep" aria-hidden="true"></div>
+          <div class="stat reveal" style="--delay:80ms">
+            <span class="stat-num" data-target="18" data-suffix=" sec">0</span>
+            <span class="stat-label">Avg. to first preview</span>
+          </div>
+          <div class="stat-sep" aria-hidden="true"></div>
+          <div class="stat reveal" style="--delay:160ms">
+            <span class="stat-num" data-target="4.8" data-suffix=" / 5" data-decimal>0</span>
+            <span class="stat-label">Collector satisfaction</span>
+          </div>
+        </div>
+      </div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 05</div>
-    <h2>Pick the right height — it is often overlooked.</h2>
-    <p>
-      Even perfect artwork can look wrong if it is hung too high. This is one of the most common decorating mistakes,
-      especially above sofas and sideboards. When artwork floats too far above the furniture, the wall can feel disconnected.
-    </p>
-    <p>
-      A good rule is that the center of the artwork should be roughly at eye level. In many rooms, that means the center
-      sits around 145–155 cm from the floor. Above a sofa, leave about 15–25 cm between the top of the furniture and the bottom
-      of the frame. This keeps the artwork visually connected to the seating area.
-    </p>
-    <p>
-      If your ceilings are very high, you can hang the artwork slightly higher, but avoid placing it close to the ceiling.
-      Wall art should relate to the furniture and people in the room, not just to the empty wall above it.
-    </p>
-    <p>
-      For gallery walls, treat the whole arrangement as one large artwork. The center of the complete grouping should sit
-      around eye level. This makes the layout feel balanced, even if individual frames are different sizes.
-    </p>
-    <p class="note">
-      Before drilling holes, place the artwork on the floor against the wall or use painter’s tape to test the height visually.
-    </p>
-  </article>
+      <!-- ════ 4 · HOW IT WORKS ════ -->
+      <section class="section how-section" id="how">
+        <div class="container">
+          <div class="how-layout">
 
-  <article class="article-section">
-    <div class="section-number">Idea 06</div>
-    <h2>Frames matter more than you think.</h2>
-    <p>
-      The frame can completely change how your artwork feels. The same print can look modern, soft, bold, elegant,
-      casual, or warm depending on the frame around it.
-    </p>
-    <p>
-      Black frames feel modern, graphic, and defined. They work well with black details in the room, such as lamps,
-      coffee table legs, curtain rods, or metal shelving. Wooden frames feel warm and natural, especially with oak,
-      walnut, rattan, linen, and beige interiors. White frames feel light, minimal, and airy, making them ideal for bright rooms.
-    </p>
-    <p>
-      Thin frames feel subtle and contemporary. Thicker frames feel more classic and substantial. A wide mat board can make
-      even a small print feel more gallery-like, because it gives the artwork breathing room.
-    </p>
-    <p>
-      If you want a clean Pinterest look, stick to one frame color across your room. This creates visual consistency instantly.
-      If you prefer an eclectic look, you can mix frames, but repeat at least one detail: similar tones, similar thickness,
-      or a consistent spacing style.
-    </p>
-    <p class="note">
-      A simple frame upgrade can make inexpensive prints look much more polished.
-    </p>
-  </article>
+            <div class="how-left reveal">
+              <span class="eyebrow">The Process</span>
+              <h2>From blank wall<br>to <em>perfect placement</em></h2>
+              <p class="how-sub">Three steps. Zero guesswork.</p>
+            </div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 07</div>
-    <h2>Create a color connection in your room.</h2>
-    <p>
-      Great interiors feel “put together” because colors repeat subtly. The room does not need to match perfectly,
-      but it should feel connected. Wall art is one of the easiest ways to create that connection.
-    </p>
-    <p>
-      Look at your existing room and identify the main colors: sofa fabric, wood tone, rug, curtains, pillows,
-      throws, lamps, plants, and decorative objects. Then choose artwork that includes one or two of those colors.
-    </p>
-    <p>
-      For example, if your living room has beige linen curtains, oak furniture, and cream pillows, a warm neutral print
-      will feel natural. If your room has a green plant corner, olive pillows, or sage curtains, artwork with soft green tones
-      can connect the whole space. If your room is mostly neutral, one terracotta, rust, navy, or burgundy accent can make it
-      feel more designed.
-    </p>
-    <p>
-      Avoid choosing art in complete isolation. A print may look beautiful in a product photo, but your room decides whether
-      it works. The best artwork usually feels like it belongs to the room, even if it still adds something new.
-    </p>
-    <p class="note">
-      Easy styling trick: after choosing wall art, add one small object in a similar color nearby — a cushion, vase, book, candle, or throw.
-    </p>
-  </article>
+            <div class="how-steps">
+              <div class="how-step reveal">
+                <div class="step-ico">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2 1.586-1.586a2 2 0 0 1 2.828 0L20 14m-6-6h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="step-content">
+                  <span class="step-num">01</span>
+                  <div class="step-body">
+                    <h3>Upload your room</h3>
+                    <p>Photograph your wall or choose from sample interiors. The visualizer adapts to any space.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="how-step reveal" style="--delay:80ms">
+                <div class="step-ico">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0-5 5M4 16v4m0 0h4m-4 0 5-5m11 5-5-5m5 5v-4m0 4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="step-content">
+                  <span class="step-num">02</span>
+                  <div class="step-body">
+                    <h3>Place the artwork</h3>
+                    <p>Browse the collection or upload your own piece. Drag, scale, and reposition in real time.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="how-step reveal" style="--delay:160ms">
+                <div class="step-ico">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="step-content">
+                  <span class="step-num">03</span>
+                  <div class="step-body">
+                    <h3>Commit with confidence</h3>
+                    <p>See the piece at real scale with accurate proportions. Order once. Get it right.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 08</div>
-    <h2>Gallery wall or single statement?</h2>
-    <p>
-      Both can work, but they create very different moods. A single large artwork feels calm, clean, modern,
-      and easy to understand. A gallery wall feels creative, personal, layered, and dynamic.
-    </p>
-    <p>
-      If you prefer a tidy Pinterest-style look, go for one strong piece or a very simple set of two or three artworks.
-      This is usually best for minimal, neutral, Scandinavian, Japandi, or modern living rooms.
-    </p>
-    <p>
-      If you want personality and storytelling, create a gallery wall. Mix photography, sketches, typography,
-      abstract prints, personal photos, vintage posters, or small paintings. The secret is to create order through spacing,
-      color, or frames.
-    </p>
-    <h3>How to make a gallery wall feel intentional</h3>
-    <p>
-      Choose one anchor piece first. This should be the largest or strongest artwork in the arrangement. Then build around it
-      with smaller pieces. Keep the spacing between frames consistent, usually around 5–8 cm, and lay the arrangement on the floor
-      before hanging anything.
-    </p>
-    <p>
-      Gallery walls look best when they have a visual theme. This could be black-and-white photography, warm beige tones,
-      botanical prints, travel memories, coastal colors, or abstract shapes. The theme does not need to be strict, but it should
-      be visible enough to make the wall feel curated.
-    </p>
-  </article>
+          </div>
+        </div>
+      </section>
 
-  <div class="split">
-    <div class="image-placeholder">
-    <img src="@@/assets/images/blog/statement1.png" alt="Showcase"/>
-    </div>
-    <div class="image-placeholder">
-    <img src="@@/assets/images/blog/statement2.png" alt="Showcase"/>
-    </div>
-  </div>
+      <!-- ════ 5 · PLACEMENT DEMO ════ -->
+      <section class="section placement-section" id="visualizer">
+        <div class="container">
+          <div class="placement-layout">
 
-  <article class="article-section">
-    <div class="section-number">Idea 09</div>
-    <h2>Think in layers, not just walls.</h2>
-    <p>
-      Wall art works best when combined with other elements. A print alone can look good, but a print with the right styling
-      around it can make the whole corner feel complete.
-    </p>
-    <p>
-      Add a floor lamp, a plant, textured cushions, a throw blanket, a side table, coffee table books, or a ceramic vase nearby.
-      These layers create depth and make your space feel styled, not staged.
-    </p>
-    <p>
-      Layering also helps connect the artwork to the rest of the room. For example, if your artwork has warm brown tones,
-      place a wooden bowl, tan cushion, or amber glass vase in the same visual area. If your artwork has green tones,
-      a plant nearby can make the connection feel natural.
-    </p>
-    <p>
-      The goal is not to fill every surface. The goal is to create a small visual story. Artwork, furniture, lighting,
-      and accessories should support one another instead of competing for attention.
-    </p>
-  </article>
+            <div class="placement-content reveal">
+              <span class="eyebrow">Live Demo</span>
+              <h2>Watch artwork<br><em>find its place</em></h2>
+              <p>Place any piece on your wall in real proportions — accounting for scale, lighting, and color harmony with your existing interior.</p>
+              <ul class="placement-feats">
+                <li><span class="pf-dot"></span>True-to-life scale rendering</li>
+                <li><span class="pf-dot"></span>Drag, resize, and reposition freely</li>
+                <li><span class="pf-dot"></span>Instant color harmony analysis</li>
+              </ul>
+              <div class="actions" style="margin-top:32px">
+                <a class="btn btn-primary" href="#visualizer" @click.prevent="openSoonModal">
+                  Open Visualizer
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+              </div>
+            </div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 10</div>
-    <h2>Match the artwork style to your interior style.</h2>
-    <p>
-      Pinterest inspiration can be overwhelming because every room looks beautiful in a different way. The easiest way to narrow
-      your choices is to match your artwork to the style your home already has — or the style you want it to move toward.
-    </p>
-    <p>
-      For a Scandinavian living room, choose light neutrals, simple line drawings, soft abstract shapes, or calm nature prints.
-      For a Japandi room, look for organic shapes, muted colors, handmade textures, and quiet compositions. For a modern organic
-      home, warm earth tones, stone-inspired abstracts, and large simple pieces work very well.
-    </p>
-    <p>
-      For a classic or elegant living room, consider vintage landscapes, framed sketches, muted still-life prints, or art with
-      a soft painterly look. For a bold modern space, try oversized abstract art, black-and-white photography, strong contrast,
-      or graphic shapes.
-    </p>
-    <p>
-      If your room does not have a clear style yet, choose art that connects to the largest pieces you already own:
-      your sofa, rug, curtains, and coffee table. These pieces define the room more than small accessories do.
-    </p>
-  </article>
+            <div class="placement-demo reveal" style="--delay:120ms">
+              <div class="demo-shell">
+                <div class="demo-bar">
+                  <div class="demo-dots"><span></span><span></span><span></span></div>
+                  <div class="demo-bar-title">WallArtRoom · Visualizer</div>
+                  <div class="demo-chips">
+                    <span class="demo-chip">Upload Room</span>
+                    <span class="demo-chip demo-chip--active">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 4v16m-8-8h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+                      Place Art
+                    </span>
+                  </div>
+                </div>
+                <div class="demo-canvas">
+                  <img class="demo-room" src="@@/assets/images/image.png" alt="" />
+                  <!-- <div class="demo-gl demo-gl-h"></div>
+                  <div class="demo-gl demo-gl-v"></div>
+                  <div class="demo-art">
+                    <img src="@@/assets/images/showcase.png" alt="" />
+                    <span class="da-handle da-tl"></span>
+                    <span class="da-handle da-tr"></span>
+                    <span class="da-handle da-bl"></span>
+                    <span class="da-handle da-br"></span>
+                    <div class="da-badge">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      Perfect fit
+                    </div>
+                  </div> -->
+                  <div class="demo-palette">
+                    <div class="dp-head">Palette match</div>
+                    <div class="dp-swatches">
+                      <span class="dp-sw" style="--c:#8b7355;--i:0"></span>
+                      <span class="dp-sw" style="--c:#c5a059;--i:1"></span>
+                      <span class="dp-sw" style="--c:#4a3f35;--i:2"></span>
+                      <span class="dp-sw" style="--c:#d4b896;--i:3"></span>
+                    </div>
+                    <div class="dp-match">
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#7dc97d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      Harmonious
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 11</div>
-    <h2>Use wall art to solve common living room problems.</h2>
-    <p>
-      Wall art is not only decoration. It can also solve visual problems in a room. A blank wall can make a living room feel
-      unfinished. A very neutral room can feel flat. A dark corner can feel heavy. A long wall can feel empty and awkward.
-    </p>
-    <p>
-      If your room feels too cold, choose warmer artwork with beige, cream, rust, brown, terracotta, ochre, or soft pink tones.
-      If your room feels too busy, choose one large calm print instead of many small decorative elements. If your room feels too plain,
-      choose artwork with more contrast, movement, or color.
-    </p>
-    <p>
-      If your ceiling feels low, vertical artwork can visually lift the wall. If the wall above your sofa feels too wide,
-      horizontal artwork or a set of two or three prints can help fill the space. If your room feels disconnected,
-      choose artwork that repeats colors from different parts of the room.
-    </p>
-    <p class="note">
-      Before buying art, name the problem you want to solve: empty wall, cold room, too much clutter, no focal point, or missing color.
-    </p>
-  </article>
+          </div>
+        </div>
+      </section>
 
-  <article class="article-section">
-    <div class="section-number">Idea 12</div>
-    <h2>Consider lighting before choosing your final artwork.</h2>
-    <p>
-      Light changes how artwork looks. A print that looks soft and warm in a product photo can look darker in a room with little
-      natural light. A glossy frame can reflect windows or lamps. A very dark artwork can disappear in a shadowy corner.
-    </p>
-    <p>
-      If your room gets a lot of natural light, you have more flexibility. Soft neutrals, dark photography, colorful art,
-      and large abstract pieces can all work. If your room is darker, consider lighter backgrounds, warm tones,
-      and matte finishes that do not reflect too much light.
-    </p>
-    <p>
-      In the evening, lamps matter too. A floor lamp near the artwork can make the whole wall feel cozy. Picture lights can create
-      a gallery-style look, especially above a large framed piece. Warm light usually makes living rooms feel more inviting than cold light.
-    </p>
-  </article>
+      <!-- ════ 6 · BENTO ════ -->
+      <section class="section bento-section">
+        <div class="container">
+          <div class="bento-header reveal">
+            <span class="eyebrow">Features</span>
+            <h2>Built for the moment<br>of <em>decision</em></h2>
+          </div>
+          <div class="bento-grid">
 
-  <div class="image-placeholder wide-image">
-    <img src="@@/assets/images/blog/lighting.png" alt="Showcase"/>
-  </div>
+            <div class="bento-card bento-tall reveal">
+              <span class="bento-tag">Visualization</span>
+              <h3>Photorealistic wall preview in your actual space</h3>
+              <p>Accurate lighting, scale, and shadow rendered from your room photo.</p>
+              <div class="bento-visual">
+                <img src="@@/assets/images/showcase.png" alt="Wall visualization preview"/>
+                <div class="bv-live"><span class="bv-dot"></span>Rendered live</div>
+              </div>
+            </div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 13</div>
-    <h2>Do a final check before you buy.</h2>
-    <p>
-      Before ordering wall art, take a few minutes to check the most important details. This helps avoid the common situation where
-      the print looks beautiful online but feels wrong once it arrives.
-    </p>
-    <p>
-      First, check the size against your wall and furniture. Second, check whether the colors repeat anywhere else in the room.
-      Third, decide whether the frame color matches your existing materials. Fourth, think about the mood: does the artwork make
-      the room calmer, warmer, brighter, bolder, or more personal?
-    </p>
-    <p>
-      Also look at the room from different angles. The artwork should look good from the sofa, from the doorway, and from the main
-      walking path through the room. If it only looks good from one angle, the placement or size may need adjustment.
-    </p>
-    <p class="note">
-      Save your favorite options, compare them side by side, and test them visually before making the final decision.
-    </p>
-  </article>
+            <div class="bento-card bento-speed reveal" style="--delay:80ms">
+              <span class="bento-tag">Speed</span>
+              <h3>First preview under 30 seconds</h3>
+              <p>Upload a photo, choose a piece. The result appears before doubt sets in.</p>
+              <div class="speed-demo">
+                <div class="sd-track"><div class="sd-fill"></div></div>
+                <div class="sd-labels">
+                  <span>Upload</span>
+                  <span class="sd-ready">✦ Preview ready</span>
+                </div>
+                <div class="sd-time">18 sec avg.</div>
+              </div>
+            </div>
 
-  <article class="article-section">
-    <div class="section-number">Idea 14</div>
-    <h2>The best test is your own space.</h2>
-    <p>
-      Online, many images look perfect. Pinterest rooms are usually photographed with good light, carefully chosen furniture,
-      and professionally styled details. But only on your own wall will you see whether size, color, and style truly work.
-    </p>
-    <p>
-      That’s exactly where the visualizer comes in. Instead of guessing, you can see how a piece of wall art might look in your
-      real living room. This is especially useful if you are choosing between different sizes, frame colors, or styles.
-    </p>
-    <p>
-      Upload a photo of your wall, choose an image from the gallery, or later add your own artwork.
-      This turns inspiration into a real decision. You can compare calm art with bold art, one large print with a gallery wall,
-      or neutral colors with stronger accents.
-    </p>
-    <p>
-      The goal is not to create a perfect preview. The goal is to reduce uncertainty. When you see the artwork in your own room,
-      it becomes much easier to understand what feels right.
-    </p>
-  </article>
+            <div class="bento-card bento-color reveal" style="--delay:160ms">
+              <span class="bento-tag">Color</span>
+              <h3>Palette harmony</h3>
+              <p>See how each artwork's tones interact with your existing interior.</p>
+              <div class="color-row">
+                <span class="cr-sw" style="--c:#8b7355;--i:0"></span>
+                <span class="cr-sw" style="--c:#c5a059;--i:1"></span>
+                <span class="cr-sw" style="--c:#4a3f35;--i:2"></span>
+                <span class="cr-sw" style="--c:#d4b896;--i:3"></span>
+                <span class="cr-sw" style="--c:#f0e8da;--i:4"></span>
+                <span class="cr-sw" style="--c:#2d2926;--i:5"></span>
+              </div>
+            </div>
 
-  <section class="visualizer">
-    <div>
-      <div class="kicker">Visualizer</div>
-      <h2>Test your favorite artwork directly on your wall.</h2>
-      <p>
-        Upload your room photo and see how a piece of wall art might look in your home.
-        Perfect before deciding on style, size, color, frame, or placement.
-      </p>
-      <a href="/visualizer">Go to Visualizer →</a>
-    </div>
+            <div class="bento-card bento-sm reveal" style="--delay:240ms">
+              <span class="bento-tag">Scale</span>
+              <h3>Any room, any wall</h3>
+              <p>Textured plaster, painted brick, white linen — the tool adapts.</p>
+            </div>
 
-    <div class="visualizer-preview">
-      <img src="@@/assets/images/blog/advertisment.png" alt="Showcase"/>
-    </div>
-  </section>
-</main>
+          </div>
+        </div>
+      </section>
 
-<footer>
-  © 2026 WallArtRoom· Discover wall art and visualize it directly
-</footer>
+      <!-- ════ 7 · QUOTE ════ -->
+      <section class="quote-section" id="journal">
+        <div class="container quote-wrap">
+          <div class="quote-star reveal">✦</div>
+          <blockquote class="reveal" style="--delay:60ms">"Art is not just a visual filler; it is the atmospheric anchor of a home. We believe the future of curation lies in the fusion of human intent and digital precision."</blockquote>
+          <div class="quote-source reveal" style="--delay:120ms">— The WallArtRoom</div>
+        </div>
+      </section>
+
+      <!-- ════ 8 · CTA ════ -->
+      <section class="cta-section">
+        <div class="cta-orb cta-orb-1" aria-hidden="true"></div>
+        <div class="cta-orb cta-orb-2" aria-hidden="true"></div>
+        <div class="container">
+          <div class="cta-inner reveal">
+            <div class="cta-content">
+              <span class="eyebrow cta-eyebrow">Get started</span>
+              <h2>Your wall deserves a decision,<br><em>not a guess</em></h2>
+              <p>Free to use. No account needed to preview your first artwork.</p>
+              <div class="actions">
+                <a class="btn btn-primary-inv" href="#visualizer" @click.prevent="openSoonModal">
+                  Open the Visualizer
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+                <a class="btn btn-outline-inv" href="#how">See how it works</a>
+              </div>
+            </div>
+            <div class="cta-deco" aria-hidden="true">
+              <div class="cta-ring r1"></div>
+              <div class="cta-ring r2"></div>
+              <div class="cta-ring r3"></div>
+              <span class="cta-glyph">✦</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ════ COMING-SOON MODAL ════ -->
+    <Transition name="soon">
+      <div v-if="showSoonModal" class="soon-overlay" @click.self="closeSoonModal" role="dialog" aria-modal="true" aria-labelledby="soon-title">
+        <div class="soon-card">
+          <button class="soon-close" type="button" aria-label="Close" @click="closeSoonModal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M6 18 18 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+
+          <div class="soon-badge">
+            <span class="soon-badge-dot"></span>
+            In Development
+          </div>
+
+          <h3 id="soon-title" class="soon-title">
+            The Visualizer is<br><em>almost ready</em>
+          </h3>
+          <p class="soon-text">
+            We're putting the finishing touches on the live editor. Soon you'll be able to upload
+            your room, drop in any artwork, and preview the perfect fit — right here.
+          </p>
+
+          <div class="soon-actions">
+            <button class="btn btn-primary" type="button" @click="closeSoonModal">
+              Got it
+            </button>
+          </div>
+
+          <div class="soon-foot">Thanks for your patience — it's worth the wait.</div>
+        </div>
+      </div>
+    </Transition>
+
+    <footer>
+      <div class="container footer-grid">
+        <div class="tmp-grid">
+          <div class="w50">
+            <div class="footer-brand">WallArtRoom</div>
+            <div class="footer-copy footer-left">
+              Refining the digital art landscape through sophisticated curation and architectural visualization.
+            </div>
+          </div>
+          <div class="footer-copy">© 2026 The WallArtRoom. All rights reserved. Crafted for the modern collector.</div>
+        </div>
+      </div>
+    </footer>
 
   </section>
 </template>
 
-<script>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const compareEl     = ref(null)
+const pos           = ref(100)         // 100 = fully "before", 0 = fully "after"
+const hasInteracted = ref(false)
+const showSoonModal = ref(false)
+
+const openSoonModal = () => {
+  showSoonModal.value = true
+  if (typeof document !== 'undefined') document.body.style.overflow = 'hidden'
+}
+const closeSoonModal = () => {
+  showSoonModal.value = false
+  if (typeof document !== 'undefined') document.body.style.overflow = ''
+}
+const onKeydown = (e) => { if (e.key === 'Escape' && showSoonModal.value) closeSoonModal() }
+
+let observer = null
+let dragging = false
+let introRaf = null
+
+const setFromX = (clientX) => {
+  const el = compareEl.value
+  if (!el) return
+  const r = el.getBoundingClientRect()
+  const p = ((clientX - r.left) / r.width) * 100
+  pos.value = Math.max(0, Math.min(100, p))
+}
+
+const startDrag = (e) => {
+  if (introRaf) { cancelAnimationFrame(introRaf); introRaf = null }
+  hasInteracted.value = true
+  dragging = true
+  compareEl.value?.setPointerCapture?.(e.pointerId)
+  setFromX(e.clientX)
+}
+const onDrag = (e) => { if (dragging) setFromX(e.clientX) }
+const endDrag = (e) => {
+  dragging = false
+  try { compareEl.value?.releasePointerCapture?.(e.pointerId) } catch {}
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+
+  // ── Scroll-reveal ─────────────────────────────────────────────────
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('is-revealed')
+        observer.unobserve(e.target)
+      }
+    })
+  }, { threshold: 0.1, rootMargin: '0px 0px -32px 0px' })
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+
+  // ── Animated counters ─────────────────────────────────────────────
+  const counterObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return
+      const el      = e.target
+      const target  = parseFloat(el.dataset.target)
+      const suffix  = el.dataset.suffix || ''
+      const decimal = 'decimal' in el.dataset
+      const comma   = 'comma' in el.dataset
+      let startTs   = null
+      const duration = 1600
+      const tick = ts => {
+        if (!startTs) startTs = ts
+        const p     = Math.min((ts - startTs) / duration, 1)
+        const eased = 1 - Math.pow(1 - p, 3)
+        const cur   = target * eased
+        if (decimal)     el.textContent = cur.toFixed(1) + suffix
+        else if (comma)  el.textContent = Math.floor(cur).toLocaleString() + suffix
+        else             el.textContent = Math.floor(cur) + suffix
+        if (p < 1) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+      counterObs.unobserve(el)
+    })
+  }, { threshold: 0.6 })
+  document.querySelectorAll('.stat-num[data-target]').forEach(el => counterObs.observe(el))
+
+  // ── Compare-slider intro: sweep 100 → 50 (easeOutCubic) ──────────
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (prefersReducedMotion) { pos.value = 50; return }
+
+  const from = 100, to = 50, duration = 1500
+  let startTs = null
+  const tick = (ts) => {
+    if (hasInteracted.value) { introRaf = null; return }
+    if (!startTs) startTs = ts + 600   // brief delay before sweep
+    const elapsed = ts - startTs
+    if (elapsed < 0) { introRaf = requestAnimationFrame(tick); return }
+    const p = Math.min(elapsed / duration, 1)
+    const eased = 1 - Math.pow(1 - p, 3)
+    pos.value = from + (to - from) * eased
+    if (p < 1) introRaf = requestAnimationFrame(tick)
+    else introRaf = null
+  }
+  introRaf = requestAnimationFrame(tick)
+})
+
+onUnmounted(() => {
+  if (introRaf) cancelAnimationFrame(introRaf)
+  observer?.disconnect()
+  window.removeEventListener('keydown', onKeydown)
+  if (typeof document !== 'undefined') document.body.style.overflow = ''
+})
 </script>
 
 
-<style lang="scss" scoped>
+<style lang="scss">
+
+/* ─── Design tokens ──────────────────────────────────────────────── */
 :root {
+  --primary:    #c5a059;
+  --secondary:  #2d2926;
+  --neutral:    #f5f2ed;
+  --neutral-2:  #ece7df;
+  --text:       #2d2926;
+  --muted:      #7d7367;
+  --white:      #ffffff;
+  --border:     #d8d0c5;
+  --shadow:     0 18px 40px rgba(45,41,38,.09);
+  --radius:     24px;
+  --container:  min(1180px, calc(100vw - 40px));
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+
+
       --bg: #faf7f2;
       --text: #2d2925;
       --subtext: #6f655b;
@@ -466,276 +532,1346 @@
       --title: #3f342c;
       --line: #ded2c5;
       --dark: #24211e;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.75;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .nav {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 22px 22px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .logo {
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      font-size: 22px;
-      color: var(--title);
-    }
-
-    .logo span {
-      color: var(--accent);
-    }
-
-    .nav a.cta {
-      font-size: 14px;
-      font-weight: 700;
-      color: white;
-      background: var(--dark);
-      padding: 10px 16px;
-      border-radius: 2px;
-    }
-
-    main {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 54px 22px 80px;
-    }
-
-    .hero {
-      max-width: 760px;
-      margin-bottom: 64px;
-    }
-
-    .kicker {
-      color: var(--accent);
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 18px;
-    }
-
-    h1 {
-      font-size: clamp(42px, 7vw, 76px);
-      line-height: 0.98;
-      letter-spacing: -0.07em;
-      color: var(--title);
-      margin: 0 0 26px;
-      max-width: 850px;
-    }
-
-    .lead {
-      font-size: 21px;
-      line-height: 1.55;
-      color: var(--subtext);
-      margin: 0 0 32px;
-      max-width: 690px;
-    }
-
-    .hero-link {
-      display: inline-block;
-      color: var(--accent);
-      font-weight: 800;
-      border-bottom: 2px solid var(--accent);
-      padding-bottom: 3px;
-    }
-
-.image-placeholder {
-  width: 100%;
-  border: 1px solid var(--line);
-  margin: 34px 0 18px;
-
-  /* remove these */
-  padding: 0;
-  display: block;
-
-  /* optional: keep background as fallback */
-  background: none;
 }
 
-.image-placeholder img {
+/* ─── Reset ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: "Manrope", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--neutral);
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+html { overflow-x: hidden; }
+img { max-width: 100%; display: block; }
+a { text-decoration: none; color: inherit; }
+button, input { font: inherit; }
+
+/* ─── Utilities ──────────────────────────────────────────────────── */
+.container { width: var(--container); margin: 0 auto; }
+
+.eyebrow {
+  display: inline-block;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  font-size: .66rem;
+  color: #9a8c77;
+  margin-bottom: 14px;
+}
+
+.section { padding: 96px 0; }
+
+/* ─── Reveal ─────────────────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity  0.72s var(--ease-out) var(--delay, 0ms),
+    transform 0.72s var(--ease-out) var(--delay, 0ms);
+}
+.reveal.is-revealed { opacity: 1; transform: translateY(0); }
+
+/* ─── Navigation ─────────────────────────────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: rgba(245,242,237,.84);
+  border-bottom: 1px solid rgba(216,208,197,.65);
+}
+.nav {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.brand {
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: 1.38rem;
+  white-space: nowrap;
+  letter-spacing: -.01em;
+  span { color: #c5a059; }
+}
+.nav-links {
+  display: flex;
+  gap: 26px;
+  color: var(--muted);
+  font-size: .9rem;
+  a { transition: color .2s ease; &:hover { color: var(--secondary); } }
+}
+.btn-nav {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--secondary);
+  background: rgba(255,255,255,.5);
+  transition: background .22s ease, color .22s ease, border-color .22s ease;
+  &:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 24px;
+  border-radius: 13px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: .93rem;
+  cursor: pointer;
+  transition: transform .22s var(--ease-out), box-shadow .22s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.12) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 0s;
+  }
+  &:hover::after {
+    transform: translateX(200%);
+    transition: transform 0.55s ease;
+  }
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(140,108,37,.2);
+  &:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(140,108,37,.28); }
+}
+.btn-primary-inv {
+  background: #f5f2ed;
+  color: var(--secondary);
+  box-shadow: 0 8px 24px rgba(45,41,38,.14);
+  &:hover { transform: translateY(-2px); }
+}
+.btn-outline-inv {
+  background: transparent;
+  color: rgba(245,242,237,.65);
+  border-color: rgba(245,242,237,.18);
+  &:hover { background: rgba(245,242,237,.08); color: #f5f2ed; transform: translateY(-2px); }
+}
+.actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+#visualizer-page {
+main {
+  width: 100%;
+  max-width: 100%;
+}
+
+  .hero {
+  position: relative;
+  padding: 0 0 96px;
+}
+} 
+/* ════════════════════════════════════════════════════════════════════
+   1 · HERO · BEFORE/AFTER COMPARE
+═══════════════════════════════════════════════════════════════════ */
+
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(2px);
+}
+.hero-orb-1 {
+  width: 520px; height: 520px;
+  top: -180px; right: -120px;
+  background: radial-gradient(circle, rgba(197,160,89,.18), transparent 70%);
+}
+.hero-orb-2 {
+  width: 360px; height: 360px;
+  bottom: -140px; left: -80px;
+  background: radial-gradient(circle, rgba(197,160,89,.08), transparent 70%);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 0.9fr;
+  gap: 64px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  min-height: 560px;
+}
+
+.hero-copy {
+  h1 {
+    font-family: "Noto Serif", Georgia, serif;
+    font-size: clamp(2.4rem, 4.4vw, 4.2rem);
+    line-height: .98;
+    font-weight: 500;
+    letter-spacing: -.03em;
+    margin: 14px 0 22px;
+    color: var(--secondary);
+    em { font-style: italic; font-weight: 400; color: var(--primary); }
+  }
+  .hero-lead {
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: var(--muted);
+    margin: 0 0 28px;
+    max-width: 460px;
+  }
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--secondary);
+  border-color: var(--border);
+  &:hover { background: rgba(255,255,255,.6); transform: translateY(-2px); }
+}
+
+.hero-feats {
+  list-style: none;
+  padding: 0;
+  margin: 32px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .82rem;
+    color: var(--secondary);
+  }
+}
+.hf-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  flex-shrink: 0;
+}
+
+/* ── Compare slider ── */
+.hero-compare {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 36px 80px rgba(45,41,38,.18), 0 0 0 1px rgba(45,41,38,.06);
+  background: #1c1814;
+  touch-action: none;
+  user-select: none;
+  cursor: ew-resize;
+}
+.hc-stage {
+  position: relative;
+  width: 100%;
+}
+.hc-layer {
+  overflow: hidden;
+}
+.hc-before {
+  position: relative;
+  display: block;
+}
+.hc-before .hc-room {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+.hc-after {
+  position: absolute;
+  inset: 0;
+  will-change: clip-path;
+}
+.hc-after .hc-room {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* fills the area, crops if needed */
+  object-fit: cover;
   display: block;
+  pointer-events: none;
 }
 
-        .wide-image {
-      max-width: 900px;
-    }
+.hc-tag {
+  position: absolute;
+  top: 14px;
+  font-size: .56rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.92);
+  background: rgba(18,15,12,.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: 100px;
+  border: 1px solid rgba(255,255,255,.14);
+}
+.hc-tag-before { left: 14px; }
+.hc-tag-after  { right: 14px; }
 
-    .caption {
-      color: var(--subtext);
-      font-size: 14px;
-      margin-bottom: 54px;
-    }
+.hc-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255,255,255,.92);
+  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: 0 0 14px rgba(0,0,0,.35);
+}
+.hc-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3px solid #fff;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+  pointer-events: auto;
+  box-shadow: 0 8px 22px rgba(0,0,0,.35);
+  transition: transform .2s var(--ease-out);
 
-    .article-section {
-      max-width: 760px;
-      margin: 0 0 78px;
-    }
+  &:hover { transform: translate(-50%, -50%) scale(1.06); }
+  &:active { transform: translate(-50%, -50%) scale(.96); }
+}
 
-    .section-number {
-      color: var(--accent-2);
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
+.hc-hint {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .58rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.7);
+  background: rgba(18,15,12,.55);
+  backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: 100px;
+  border: 1px solid rgba(255,255,255,.12);
+  pointer-events: none;
+  animation: hc-hint-pulse 2.4s ease-in-out infinite;
+}
+@keyframes hc-hint-pulse {
+  0%, 100% { opacity: .6; }
+  50%      { opacity: 1; }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   2 · MARQUEE
+═══════════════════════════════════════════════════════════════════ */
+.marquee-strip {
+  background: var(--secondary);
+  overflow: hidden;
+  padding: 15px 0;
+  border-top: 1px solid rgba(255,255,255,.04);
+}
+.marquee-track {
+  display: flex;
+  white-space: nowrap;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.mq-item {
+  padding: 0 30px;
+  font-size: .67rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: rgba(245,242,237,.3);
+}
+.mq-sep {
+  color: rgba(197,160,89,.45);
+  font-size: .7rem;
+  align-self: center;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   3 · STATS
+═══════════════════════════════════════════════════════════════════ */
+.stats-strip {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 44px 0;
+  background: rgba(255,255,255,.3);
+}
+.stats-row {
+  display: flex;
+  align-items: center;
+}
+.stat {
+  flex: 1;
+  text-align: center;
+  padding: 4px 16px;
+}
+.stat-num {
+  display: block;
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: clamp(2rem, 3vw, 3rem);
+  font-weight: 500;
+  letter-spacing: -.04em;
+  color: var(--secondary);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.stat-label {
+  display: block;
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.stat-sep {
+  width: 1px; height: 46px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   4 · HOW IT WORKS
+═══════════════════════════════════════════════════════════════════ */
+.how-section {
+  .how-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.65fr;
+    gap: 72px;
+    align-items: start;
+  }
+
+  .how-left {
+    position: sticky;
+    top: calc(72px + 48px);
 
     h2 {
-      font-size: clamp(30px, 4vw, 48px);
-      line-height: 1.05;
-      letter-spacing: -0.055em;
-      color: var(--title);
-      margin: 0 0 20px;
+      font-family: "Noto Serif", Georgia, serif;
+      font-size: clamp(2rem, 3.2vw, 3.2rem);
+      line-height: 1.06;
+      font-weight: 500;
+      letter-spacing: -.03em;
+      margin: 0 0 14px;
+      em { font-style: italic; font-weight: 400; color: var(--primary); }
     }
+    .how-sub { font-size: .9rem; color: var(--muted); margin: 0; }
+  }
 
+  .how-steps { border-top: 1px solid var(--border); }
+
+  .how-step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 20px;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+    cursor: default;
+    transition: padding-left .3s var(--ease-out);
+
+    &:hover {
+      padding-left: 6px;
+      .step-ico {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(197,160,89,.08);
+        box-shadow: 0 0 0 4px rgba(197,160,89,.1);
+      }
+      .step-num { color: var(--primary); }
+    }
+  }
+
+  .step-ico {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    background: rgba(255,255,255,.5);
+    transition: border-color .28s ease, color .28s ease, background .28s ease, box-shadow .28s ease;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-content { display: flex; flex-direction: column; gap: 4px; }
+
+  .step-num {
+    font-family: "Noto Serif", Georgia, serif;
+    font-size: .74rem;
+    font-weight: 400;
+    color: var(--muted);
+    letter-spacing: .14em;
+    transition: color .28s ease;
+  }
+
+  .step-body {
     h3 {
-      font-size: 22px;
-      line-height: 1.3;
-      color: var(--accent);
-      margin: 30px 0 10px;
+      font-family: "Noto Serif", Georgia, serif;
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin: 0 0 7px;
+      letter-spacing: -.01em;
     }
-
     p {
-      font-size: 18px;
-      color: var(--subtext);
-      margin: 0 0 18px;
-    }
-
-    .text-link {
-      color: var(--accent);
-      font-weight: 800;
-      border-bottom: 1px solid currentColor;
-    }
-
-    .note {
-      margin-top: 26px;
-      padding-left: 18px;
-      border-left: 3px solid var(--accent);
-      color: var(--title);
-      font-size: 17px;
-    }
-
-    .split {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 28px;
-      max-width: 900px;
-      margin: 34px 0 22px;
-    }
-
-    .split .image-placeholder {
-      min-height: 330px;
+      font-size: .9rem;
+      color: var(--muted);
       margin: 0;
+      max-width: 380px;
+      line-height: 1.65;
+    }
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   5 · PLACEMENT DEMO
+═══════════════════════════════════════════════════════════════════ */
+.placement-section {
+  background: var(--neutral-2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.placement-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 72px;
+  align-items: center;
+}
+
+.placement-content {
+  h2 {
+    font-family: "Noto Serif", Georgia, serif;
+    font-size: clamp(1.9rem, 3vw, 3rem);
+    font-weight: 500;
+    line-height: 1.04;
+    letter-spacing: -.03em;
+    margin: 0 0 18px;
+    em { font-style: italic; font-weight: 400; color: var(--primary); }
+  }
+  p {
+    font-size: .95rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin: 0 0 24px;
+  }
+}
+
+.placement-feats {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .88rem;
+    color: var(--secondary);
+  }
+}
+.pf-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  flex-shrink: 0;
+}
+
+/* Demo shell (app mockup) */
+.demo-shell {
+  background: #1c1814;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.07);
+  box-shadow: 0 40px 80px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.2);
+}
+
+.demo-bar {
+  background: #241f1b;
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.demo-dots {
+  display: flex; gap: 5px;
+  span {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.13);
+    &:first-child { background: rgba(255,96,89,.5); }
+    &:nth-child(2) { background: rgba(255,190,46,.5); }
+    &:nth-child(3) { background: rgba(36,201,60,.5); }
+  }
+}
+.demo-bar-title {
+  flex: 1;
+  font-size: .64rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.25);
+  text-align: center;
+}
+.demo-chips { display: flex; gap: 6px; }
+.demo-chip {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: .6rem;
+  letter-spacing: .07em;
+  color: rgba(255,255,255,.35);
+  border: 1px solid rgba(255,255,255,.08);
+  display: flex; align-items: center; gap: 4px;
+
+  &--active {
+    background: var(--primary);
+    color: #fff;
+    border-color: transparent;
+  }
+}
+
+.demo-canvas {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16/10;
+  background: #0e0c0a;
+}
+.demo-room {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: .85;
+}
+
+/* Artwork frame */
+.demo-art {
+  position: absolute;
+  width: 32%;
+  aspect-ratio: 3/4;
+  top: 10%;
+  left: 50%;
+  border: 2px solid rgba(255,255,255,.75);
+  border-radius: 2px;
+  overflow: visible;
+  cursor: move;
+  img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 1px;
+  }
+}
+.da-handle {
+  position: absolute;
+  width: 8px; height: 8px;
+  border: 2px solid var(--primary);
+  background: #fff;
+  border-radius: 2px;
+}
+.da-tl { top: -4px; left: -4px; }
+.da-tr { top: -4px; right: -4px; }
+.da-bl { bottom: -4px; left: -4px; }
+.da-br { bottom: -4px; right: -4px; }
+
+.da-badge {
+  position: absolute;
+  bottom: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: .58rem;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 4px;
+  letter-spacing: .06em;
+  font-weight: 600;
+}
+
+/* Guide lines */
+.demo-gl {
+  position: absolute;
+  background: rgba(197,160,89,.4);
+  pointer-events: none;
+}
+.demo-gl-h { width: 100%; height: 1px; top: 38%; }
+.demo-gl-v { width: 1px; height: 100%; left: 50%; top: 0; }
+
+/* Palette panel */
+.demo-palette {
+  position: absolute;
+  bottom: 12px; right: 12px;
+  background: rgba(18,15,12,.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-width: 118px;
+}
+.dp-head {
+  font-size: .54rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.32);
+  margin-bottom: 7px;
+}
+.dp-swatches { display: flex; gap: 4px; margin-bottom: 7px; }
+.dp-sw {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  background: var(--c);
+}
+.dp-match {
+  font-size: .58rem;
+  color: #7dc97d;
+  display: flex; align-items: center; gap: 3px;
+  letter-spacing: .06em;
+}
+
+/* ── Desktop-only demo animations (triggered on reveal) ── */
+@media (min-width: 769px) {
+  .demo-art {
+    opacity: 0;
+    transform: translateX(-80%) translateY(-30%) scale(0.55) rotate(-4deg);
+  }
+  .demo-gl { opacity: 0; }
+  .da-badge { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.85); }
+  .demo-palette { opacity: 0; transform: translateY(10px); }
+  .dp-sw { transform: scale(0) rotate(-15deg); }
+
+  .placement-demo.is-revealed {
+    .demo-art {
+      animation: da-enter 1.8s cubic-bezier(0.16,1,0.3,1) 0.7s both;
+    }
+    .demo-gl {
+      animation: gl-appear 0.4s ease 2.1s both;
+    }
+    .da-badge {
+      animation: badge-appear 0.5s cubic-bezier(0.16,1,0.3,1) 2.3s both;
+    }
+    .demo-palette {
+      animation: palette-appear 0.6s cubic-bezier(0.16,1,0.3,1) 2.5s both;
+    }
+    .dp-sw {
+      animation: swatch-pop 0.5s cubic-bezier(0.16,1,0.3,1) calc(2.7s + var(--i) * 0.1s) both;
+    }
+  }
+}
+
+/* Show static state on mobile */
+@media (max-width: 768px) {
+  .demo-art { opacity: 1; transform: translateX(-50%) !important; }
+  .demo-gl { opacity: 0.5; }
+  .da-badge { opacity: 1; transform: translateX(-50%) !important; }
+  .demo-palette { opacity: 1; transform: none !important; }
+  .dp-sw { transform: scale(1) !important; }
+}
+
+@keyframes da-enter {
+  from { opacity: 0; transform: translateX(-80%) translateY(-30%) scale(0.55) rotate(-4deg); }
+  60%  { transform: translateX(-50%) translateY(2px) scale(1.04) rotate(0deg); opacity: 1; }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1) rotate(0deg); }
+}
+@keyframes gl-appear {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes badge-appear {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.85); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+@keyframes palette-appear {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes swatch-pop {
+  from { transform: scale(0) rotate(-15deg); }
+  70%  { transform: scale(1.15) rotate(2deg); }
+  to   { transform: scale(1) rotate(0); }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   6 · BENTO
+═══════════════════════════════════════════════════════════════════ */
+.bento-section {
+  .bento-header {
+    margin-bottom: 40px;
+
+    h2 {
+      font-family: "Noto Serif", Georgia, serif;
+      font-size: clamp(2rem, 3.4vw, 3.4rem);
+      font-weight: 500;
+      line-height: 1.04;
+      letter-spacing: -.03em;
+      margin: 0;
+      em { font-style: italic; font-weight: 400; color: var(--primary); }
+    }
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 14px;
+
+    .bento-card:nth-child(1) { grid-column: 1; grid-row: 1 / 3; }
+    .bento-card:nth-child(2) { grid-column: 2 / 4; grid-row: 1; }
+    .bento-card:nth-child(3) { grid-column: 2; grid-row: 2; }
+    .bento-card:nth-child(4) { grid-column: 3; grid-row: 2; }
+  }
+
+  .bento-card {
+    background: rgba(255,255,255,.52);
+    border: 1px solid rgba(216,208,197,.7);
+    border-radius: var(--radius);
+    padding: 28px;
+    overflow: hidden;
+    position: relative;
+    transition: box-shadow .32s var(--ease-out), transform .32s var(--ease-out), border-color .32s ease;
+
+    &:hover {
+      box-shadow: 0 22px 52px rgba(45,41,38,.09);
+      transform: translateY(-3px);
+      border-color: rgba(197,160,89,.3);
     }
 
-    .visualizer {
-      margin-top: 92px;
-      background: var(--dark);
-      color: white;
-      padding: clamp(34px, 6vw, 64px);
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 42px;
-      align-items: center;
-    }
-
-    .visualizer .kicker {
-      color: #d7a57f;
-    }
-
-    .visualizer h2 {
-      color: white;
-      margin-bottom: 18px;
-    }
-
-    .visualizer p {
-      color: rgba(255,255,255,0.72);
-    }
-
-    .visualizer a {
+    .bento-tag {
       display: inline-block;
-      margin-top: 16px;
-      background: white;
-      color: var(--dark);
-      padding: 13px 18px;
-      border-radius: 2px;
-      font-weight: 800;
+      font-size: .62rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 12px;
     }
+    h3 {
+      font-family: "Noto Serif", Georgia, serif;
+      font-size: 1.15rem;
+      font-weight: 500;
+      line-height: 1.22;
+      letter-spacing: -.02em;
+      margin: 0 0 10px;
+    }
+    p { font-size: .87rem; color: var(--muted); margin: 0; line-height: 1.65; }
+  }
 
-.visualizer-preview {
-  width: 100%;
-  aspect-ratio: 1 / 1; /* ensures perfect 1:1 */
-  margin: 34px 0 18px;
+  /* Tall card */
+  .bento-tall {
+    display: flex;
+    flex-direction: column;
+    h3 { font-size: 1.38rem; max-width: 260px; margin-bottom: 12px; }
+    .bento-visual {
+      flex: 1;
+      margin-top: 22px;
+      border-radius: 14px;
+      overflow: hidden;
+      min-height: 160px;
+      position: relative;
+      img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    }
+  }
 
-  /* remove layout blockers */
-  padding: 0;
-  display: block;
+  .bv-live {
+    position: absolute;
+    bottom: 10px; left: 10px;
+    background: rgba(18,15,12,.82);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 100px;
+    padding: 5px 10px;
+    font-size: .58rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.7);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .bv-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #7dc97d;
+    animation: bv-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes bv-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .5; transform: scale(1.4); }
+  }
 
-  /* optional fallback background */
-  background: none;
+  /* Speed card */
+  .bento-speed {
+    h3 { font-size: 1.22rem; max-width: 320px; }
+  }
+  .speed-demo { margin-top: 20px; }
+  .sd-track {
+    height: 5px;
+    background: rgba(45,41,38,.08);
+    border-radius: 100px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .sd-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--primary), #e8c07a);
+    border-radius: 100px;
+    transition: width 1.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  .bento-card.is-revealed .sd-fill { width: 72%; }
+  .sd-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: .6rem;
+    letter-spacing: .09em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .sd-ready { color: var(--primary); }
+  .sd-time {
+    font-family: "Noto Serif", Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--secondary);
+    margin-top: 12px;
+    letter-spacing: -.04em;
+  }
+
+  /* Color card */
+  .color-row {
+    display: flex;
+    gap: 7px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .cr-sw {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: var(--c);
+    transform: scale(0) rotate(-18deg);
+    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1) calc(var(--i) * 70ms + 200ms);
+  }
+  .bento-card.is-revealed .cr-sw { transform: scale(1) rotate(0); }
 }
 
-.visualizer-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* fills entire square */
-  display: block;
+
+/* ════════════════════════════════════════════════════════════════════
+   7 · QUOTE
+═══════════════════════════════════════════════════════════════════ */
+.quote-section {
+  background: #ded8d0;
+  padding: 120px 0;
+  position: relative;
+  overflow: hidden;
+
+  &::before, &::after {
+    content: '✦';
+    position: absolute;
+    font-size: 12rem;
+    color: rgba(197,160,89,.07);
+    pointer-events: none;
+    line-height: 1;
+  }
+  &::before { top: -40px; left: -40px; }
+  &::after  { bottom: -40px; right: -40px; }
+}
+.quote-wrap {
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  padding: 0 8px;
+  position: relative;
+  z-index: 1;
+}
+.quote-star { color: #c8a96a; font-size: 1.4rem; margin-bottom: 24px; }
+blockquote {
+  margin: 0 auto 32px;
+  font-family: "Noto Serif", Georgia, serif;
+  font-style: italic;
+  font-size: clamp(1.55rem, 2.8vw, 2.7rem);
+  line-height: 1.16;
+  letter-spacing: -.02em;
+  max-width: 820px;
+  color: #3a342d;
+}
+.quote-source {
+  font-size: .76rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #6d655b;
 }
 
 
-    footer {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 0 22px 46px;
-      color: var(--subtext);
-      font-size: 14px;
+/* ════════════════════════════════════════════════════════════════════
+   8 · CTA
+═══════════════════════════════════════════════════════════════════ */
+.cta-section {
+  background: var(--secondary);
+  padding: 96px 0;
+  position: relative;
+  overflow: hidden;
+
+  .cta-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 0 20px;
+  }
+
+  .cta-content {
+    max-width: 560px;
+    position: relative;
+    z-index: 1;
+
+    h2 {
+      font-family: "Noto Serif", Georgia, serif;
+      font-size: clamp(2.2rem, 3.8vw, 3.8rem);
+      font-weight: 500;
+      line-height: .96;
+      letter-spacing: -.03em;
+      color: #f5f2ed;
+      margin: 0 0 18px;
+      em { font-style: italic; font-weight: 400; color: var(--primary); }
     }
+    p {
+      font-size: .96rem;
+      color: rgba(245,242,237,.5);
+      margin: 0 0 32px;
+      max-width: 380px;
+    }
+  }
 
-    @media (max-width: 760px) {
-      main {
-        padding-top: 38px;
-      }
+  .cta-eyebrow { color: rgba(197,160,89,.65); }
+}
 
-      .nav {
-        padding-top: 18px;
-        padding-bottom: 18px;
-      }
+/* Ambient orbs */
+.cta-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.cta-orb-1 {
+  width: 560px; height: 560px;
+  top: -160px; right: -100px;
+  background: radial-gradient(circle, rgba(197,160,89,.12), transparent 70%);
+}
+.cta-orb-2 {
+  width: 320px; height: 320px;
+  bottom: -80px; left: 5%;
+  background: radial-gradient(circle, rgba(197,160,89,.09), transparent 70%);
+  animation: orb-drift 14s ease-in-out infinite;
+}
+@keyframes orb-drift {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%       { transform: translateY(-22px) scale(1.06); }
+}
 
-      .split,
-      .visualizer {
-        grid-template-columns: 1fr;
-      }
+/* Animated rings decoration */
+.cta-deco {
+  flex-shrink: 0;
+  position: relative;
+  width: 160px; height: 160px;
+  display: flex; align-items: center; justify-content: center;
+}
+.cta-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(197,160,89,.2);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  animation: ring-pulse 4s ease-out infinite;
+}
+.r1 { width: 80px;  height: 80px; }
+.r2 { width: 120px; height: 120px; animation-delay: .9s; }
+.r3 { width: 160px; height: 160px; animation-delay: 1.8s; }
+@keyframes ring-pulse {
+  0%   { transform: translate(-50%,-50%) scale(1); opacity: .6; }
+  100% { transform: translate(-50%,-50%) scale(1.6); opacity: 0; }
+}
+.cta-glyph {
+  font-size: 2.2rem;
+  color: rgba(197,160,89,.45);
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+  animation: glyph-spin 20s linear infinite;
+}
+@keyframes glyph-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
 
-      .split .image-placeholder {
-        min-height: 280px;
-      }
 
-      .visualizer {
-        margin-top: 68px;
+/* ════════════════════════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════════════════════ */
+footer { padding: 36px 0 52px; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr .9fr .9fr;
+  gap: 30px;
+  align-items: start;
+
+  .tmp-grid {
+    display: flex;
+    grid-column: 1 / 4;
+
+    .w50 {
+      width: 50%;
+      .footer-left {
+        margin-top: 0;
+        max-width: 360px;
+        text-transform: none;
+        letter-spacing: .05em;
+        line-height: 1.7;
       }
     }
+  }
+}
+.footer-brand { font-family: "Noto Serif", serif; font-style: italic; margin-bottom: 18px; }
+.footer-copy { margin-top: 28px; font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: #6f665b; }
+
+
+/* ════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .bento-section {
+    .bento-grid {
+      grid-template-columns: 1.4fr 1fr;
+      .bento-card:nth-child(1) { grid-column: 1; grid-row: 1 / 3; }
+      .bento-card:nth-child(2) { grid-column: 2; grid-row: 1; }
+      .bento-card:nth-child(3) { grid-column: 2; grid-row: 2; }
+      .bento-card:nth-child(4) { grid-column: 1 / 3; grid-row: 3; }
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .how-section {
+    .how-layout { grid-template-columns: 1fr; gap: 40px; }
+    .how-left { position: static; }
+  }
+
+  .placement-layout { grid-template-columns: 1fr; gap: 40px; }
+
+  .cta-section .cta-deco { display: none; }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    padding: 48px 0 72px;
+    .hero-grid {
+      grid-template-columns: 1fr;
+      gap: 40px;
+      min-height: auto;
+    }
+  }
+  .hero-compare { max-width: 560px; margin: 0 auto; }
+}
+
+@media (max-width: 768px) {
+  .section { padding: 68px 0; }
+
+  .bento-section {
+    .bento-grid {
+      grid-template-columns: 1fr;
+      .bento-card:nth-child(n) { grid-column: 1 !important; grid-row: auto !important; }
+    }
+  }
+
+  .stats-row { flex-direction: column; gap: 24px; }
+  .stat-sep { width: 48px; height: 1px; }
+
+  .marquee-track { animation-duration: 26s; }
+
+  .hc-handle { width: 38px; height: 38px; }
+  .hc-tag { font-size: .52rem; padding: 5px 10px; }
+}
+
+@media (max-width: 640px) {
+  :root { --container: min(100vw - 28px, 100vw - 28px); }
+  .site-header { position: static; }
+  .nav { min-height: auto; padding: 14px 0; flex-wrap: wrap; gap: 12px; }
+  .nav-links { order: 3; width: 100%; justify-content: flex-start; flex-wrap: wrap; gap: 12px 16px; font-size: .88rem; }
+  .btn-nav { display: none; }
+  .actions { flex-direction: column; align-items: stretch; }
+  .btn { width: 100%; }
+  .footer-grid .tmp-grid { flex-direction: column; .w50 { width: 100%; } }
+  .cta-section .cta-inner { flex-direction: column; }
+
+  .demo-shell { border-radius: 14px; }
+  .demo-bar-title { display: none; }
+}
+
+/* ── Reduced motion overrides ── */
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .hc-hint, .marquee-track, .cta-orb-2, .cta-ring, .cta-glyph,
+  .bv-dot { animation: none !important; }
+  .demo-art { animation: none !important; opacity: 1 !important; transform: translateX(-50%) !important; }
+  .demo-gl { opacity: .5 !important; animation: none !important; }
+  .da-badge { animation: none !important; opacity: 1 !important; transform: translateX(-50%) !important; }
+  .demo-palette { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .dp-sw, .cr-sw { animation: none !important; transform: scale(1) !important; }
+  .sd-fill { transition: none !important; }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   COMING-SOON MODAL
+═══════════════════════════════════════════════════════════════════ */
+.soon-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(20,17,14,.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.soon-card {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  background: var(--neutral);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 44px 36px 32px;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(20,17,14,.35);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -120px; left: 50%;
+    transform: translateX(-50%);
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(197,160,89,.16), transparent 70%);
+    pointer-events: none;
+  }
+}
+.soon-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.6);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+  &:hover { background: #fff; color: var(--secondary); border-color: var(--secondary); }
+}
+.soon-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  background: rgba(197,160,89,.12);
+  border: 1px solid rgba(197,160,89,.3);
+  color: var(--primary);
+  font-size: .64rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.soon-badge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: soon-pulse 1.6s ease-in-out infinite;
+}
+@keyframes soon-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.6); opacity: .5; }
+}
+.soon-title {
+  position: relative;
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -.02em;
+  margin: 0 0 14px;
+  color: var(--secondary);
+  em { font-style: italic; font-weight: 400; color: var(--primary); }
+}
+.soon-text {
+  position: relative;
+  font-size: .92rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 26px;
+}
+.soon-actions {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+  .btn { min-width: 160px; }
+}
+.soon-foot {
+  position: relative;
+  font-size: .66rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #9a8c77;
+}
+
+/* Transition */
+.soon-enter-active, .soon-leave-active {
+  transition: opacity .28s ease;
+  .soon-card {
+    transition: transform .32s var(--ease-out), opacity .28s ease;
+  }
+}
+.soon-enter-from, .soon-leave-to {
+  opacity: 0;
+  .soon-card { transform: translateY(14px) scale(.96); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soon-badge-dot { animation: none !important; }
+  .soon-enter-active, .soon-leave-active,
+  .soon-enter-active .soon-card, .soon-leave-active .soon-card {
+    transition: none !important;
+  }
+}
+
 </style>
