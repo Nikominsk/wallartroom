@@ -11,7 +11,9 @@
 <script setup>
 definePageMeta({ layout: false, ssr: false })
 
+const PINTEREST_ADMIN_EMAIL = 'nniko.geuenich@gmail.com'
 const client = useSupabaseClient()
+const route  = useRoute()
 
 onMounted(async () => {
   const { data: { session } } = await client.auth.getSession()
@@ -20,12 +22,15 @@ onMounted(async () => {
     return navigateTo('/login?error=auth')
   }
 
-  if (session.user.email !== 'nniko.geuenich@gmail.com') {
-    await client.auth.signOut()
-    return navigateTo('/login?error=unauthorized')
+  // Pinterest admin → legacy internal tool
+  if (session.user.email === PINTEREST_ADMIN_EMAIL) {
+    window.location.href = '/metadata'
+    return
   }
 
-  window.location.href = '/metadata'
+  // Honour ?next= passed through OAuth state if present
+  const next = typeof route.query.next === 'string' ? route.query.next : null
+  window.location.href = next && next.startsWith('/') ? next : '/app/dashboard'
 })
 </script>
 

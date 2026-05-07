@@ -1,10 +1,10 @@
 <template>
   <div class="login-page">
     <div class="login-page__card">
-      <div class="login-page__logo">Wall<span>Vision</span></div>
+      <NuxtLink to="/" class="login-page__logo">Wall<span>Art</span>Room</NuxtLink>
 
-      <h1 class="login-page__title">Admin Access</h1>
-      <p class="login-page__sub">Sign in with your Google account to continue.</p>
+      <h1 class="login-page__title">{{ titleText }}</h1>
+      <p class="login-page__sub">Sign in or sign up with your Google account to continue.</p>
 
       <div v-if="error" class="login-page__error">
         <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style="flex-shrink:0">
@@ -30,11 +30,16 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: false })
+// /login and /signup both render this page; the only difference is the
+// title copy ("Welcome back" vs "Create your account") which branches on path.
+definePageMeta({ layout: false, alias: ['/signup'] })
 
 const client = useSupabaseClient()
 const route  = useRoute()
 const loading = ref(false)
+
+const isSignup = computed(() => route.path === '/signup')
+const titleText = computed(() => isSignup.value ? 'Create your account' : 'Welcome back')
 
 const error = computed(() => {
   if (route.query.error === 'unauthorized') return 'This Google account does not have access.'
@@ -44,9 +49,13 @@ const error = computed(() => {
 
 async function signIn() {
   loading.value = true
+  const next = typeof route.query.next === 'string' ? route.query.next : ''
+  const redirectTo = next
+    ? `${window.location.origin}/auth/confirm?next=${encodeURIComponent(next)}`
+    : `${window.location.origin}/auth/confirm`
   const { error } = await client.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}/auth/confirm` },
+    options: { redirectTo },
   })
   if (error) loading.value = false
 }

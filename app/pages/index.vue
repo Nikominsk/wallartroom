@@ -8,7 +8,10 @@
           <a href="#how">How it works</a>
           <a href="#visualizer">Visualizer</a>
           <a href="#rooms">Room Guides</a>
-          <a href="#journal">Journal</a>
+          <NuxtLink to="/pricing">Pricing</NuxtLink>
+          <NuxtLink to="/gallery">Gallery</NuxtLink>
+          <NuxtLink v-if="isAuthed" to="/app/dashboard" class="nav-cta">Dashboard</NuxtLink>
+          <NuxtLink v-else to="/login" class="nav-cta">Sign in</NuxtLink>
         </nav>
            </div>
     </header>
@@ -29,7 +32,7 @@
               with palette analysis baked in.
             </p>
             <div class="actions">
-              <a class="btn btn-primary" href="#visualizer" @click.prevent="openSoonModal">
+              <a class="btn btn-primary" href="#visualizer" @click.prevent="goToVisualizer">
                 Try the Visualizer
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </a>
@@ -190,7 +193,7 @@
                 <li><span class="pf-dot"></span>Instant color harmony analysis</li>
               </ul>
               <div class="actions" style="margin-top:32px">
-                <a class="btn btn-primary" href="#visualizer" @click.prevent="openSoonModal">
+                <a class="btn btn-primary" href="#visualizer" @click.prevent="goToVisualizer">
                   Open Visualizer
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </a>
@@ -368,7 +371,7 @@
               <h2>Your wall deserves a decision,<br><em>not a guess</em></h2>
               <p>Free to use. No account needed to preview your first artwork.</p>
               <div class="actions">
-                <a class="btn btn-primary-inv" href="#visualizer" @click.prevent="openSoonModal">
+                <a class="btn btn-primary-inv" href="#visualizer" @click.prevent="goToVisualizer">
                   Open the Visualizer
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </a>
@@ -438,17 +441,22 @@
 
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+
+const supabaseUser = useSupabaseUser()
+const isAuthed     = computed(() => !!supabaseUser.value)
+
+// CTA dispatch: logged-in users go to the editor; anon users land on signup
+// (which is the same OAuth screen as login but with "Create your account" copy).
+const goToVisualizer = () => {
+  navigateTo(isAuthed.value ? '/app/new' : '/signup?next=/app/new')
+}
 
 const compareEl     = ref(null)
 const pos           = ref(100)         // 100 = fully "before", 0 = fully "after"
 const hasInteracted = ref(false)
 const showSoonModal = ref(false)
 
-const openSoonModal = () => {
-  showSoonModal.value = true
-  if (typeof document !== 'undefined') document.body.style.overflow = 'hidden'
-}
 const closeSoonModal = () => {
   showSoonModal.value = false
   if (typeof document !== 'undefined') document.body.style.overflow = ''
@@ -645,10 +653,20 @@ button, input { font: inherit; }
 }
 .nav-links {
   display: flex;
+  align-items: center;
   gap: 26px;
   color: var(--muted);
   font-size: .9rem;
   a { transition: color .2s ease; &:hover { color: var(--secondary); } }
+}
+.nav-cta {
+  padding: 8px 16px;
+  background: var(--secondary, #1a1714);
+  color: #fff !important;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: .82rem;
+  &:hover { background: var(--primary, #2d2926); color: #fff !important; }
 }
 .btn-nav {
   display: inline-flex;
