@@ -16,7 +16,9 @@ function defaultOptions() {
     excludeKeywords: '',
     language: 'English',
     maxPinterestTitleLength: 100,
-    maxPinterestDescriptionLength: 500,
+    // The configured max is sent to the AI as the target ceiling. It is NOT
+    // used to truncate the response — see server/api/generate-metadata.post.js.
+    maxPinterestDescriptionLength: 300,
     maxAdobeStockTitleLength: 200,
     maxAdobeStockDescriptionLength: 500,
     adobeStockKeywordCount: 49,

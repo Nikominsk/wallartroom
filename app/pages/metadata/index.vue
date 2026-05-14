@@ -716,6 +716,10 @@ const csvOptionalSummary = computed(() => {
 function openExport() { showExport.value = true }
 
 function handleDownloadCsv() {
+  // Downloading the CSV only creates the history record. The "exported" status
+  // on each pinterest_image is intentionally NOT changed here — flipping that
+  // is a deliberate user action via "Set Exported" on the history page or via
+  // editing the image directly.
   const filename = downloadCsv(csvValidation.value.valid)
   showExport.value = false
   $fetch('/api/pinterest/csv-exports', {

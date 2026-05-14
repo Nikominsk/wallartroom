@@ -65,8 +65,17 @@ export function usePinterestCsvExport() {
   }
 
   function buildCsv(images) {
+    // CSV rows are sorted by Pinterest publish date ascending so the file
+    // matches the chronological posting order rather than whatever sort the
+    // gallery happens to be on at the time of export.
+    const sorted = [...images].sort((a, b) => {
+      const da = a.pinterest.publishDate ?? ''
+      const db = b.pinterest.publishDate ?? ''
+      return da.localeCompare(db)
+    })
+
     const header = 'Title,Media URL,Pinterest board,Description,Link,Publish date'
-    const rows = images.map(img =>
+    const rows = sorted.map(img =>
       [
         escape(img.pinterest.title ?? ''),
         escape(img.mediaUrl),

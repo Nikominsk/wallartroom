@@ -20,14 +20,21 @@ export default defineEventHandler(async (event) => {
   const includeKw = options?.includeKeywords?.trim()
   const excludeKw = options?.excludeKeywords?.trim()
 
-  // The previous prompt hard-coded "Recommended: 40–70 characters" which is why
-  // generated titles came back ~56 chars even when the configured max was 100.
-  // The recommended range now follows the configured max so the AI uses the
-  // length the user actually asked for.
-  const titleMax = clampInt(options?.maxPinterestTitleLength, 30, 100, 100)
+  // Database CHECK constraints from migration 001 — title <= 100, description
+  // <= 500. We never truncate based on the *user setting* (that would chop
+  // text mid-sentence at e.g. 300 chars and read unprofessionally). The user
+  // setting is the AI's instruction; this DB cap is a silent last-resort so
+  // a runaway response can't break the save.
+  const TITLE_DB_MAX = 100
+  const DESC_DB_MAX = 500
+
+  // The user's configured max is the AI target ceiling — only fed into the
+  // prompt, NOT used to slice the response. If the user setting is missing or
+  // invalid we fall back to a sensible default.
+  const titleMax = clampInt(options?.maxPinterestTitleLength, 30, TITLE_DB_MAX, TITLE_DB_MAX)
   const titleTargetMin = Math.max(20, Math.floor(titleMax * 0.8))
 
-  const descMax = clampInt(options?.maxPinterestDescriptionLength, 50, 500, 500)
+  const descMax = clampInt(options?.maxPinterestDescriptionLength, 50, DESC_DB_MAX, 300)
   const descTargetMin = Math.max(80, Math.floor(descMax * 0.6))
 
   // Trim and cap to avoid runaway prompt size when the run already has hundreds
@@ -41,20 +48,23 @@ export default defineEventHandler(async (event) => {
 Your task: generate highly optimized Pinterest metadata (title + description) that maximizes search discoverability, click-through rate, and conversion.
 
 Pinterest title rules:
-- Hard maximum: ${titleMax} characters
+- Hard maximum: ${titleMax} characters. NEVER exceed this — the title will be saved exactly as you return it, no truncation.
 - Target length: ${titleTargetMin}–${titleMax} characters. Use as much of this range as possible — do NOT default to short titles.
+- The title must end with a complete word and proper punctuation. No mid-word cut-offs.
 - Put the main keyword near the beginning
 - Every title in this batch MUST be unique. Do not reuse, paraphrase lightly, or simply re-order words from any of the titles below.
 
 Pinterest description rules:
-- Hard maximum: ${descMax} characters
+- Hard maximum: ${descMax} characters. NEVER exceed this — the description will be saved exactly as you return it, no truncation.
 - Target length: ${descTargetMin}–${descMax} characters
+- The description must end with a complete sentence and proper punctuation. No mid-sentence cut-offs.
 - Put the most important keywords in the first sentence
 - Write naturally, not keyword-stuffed
 
 CRITICAL formatting rules (no exceptions):
-- Never use hyphens (-), pipe characters (|), or semicolons (;) anywhere in the title or description
-- Use spaces or commas instead
+- Forbidden characters anywhere in the title or description: hyphen "-", pipe "|", semicolon ";". Treat these as banned — they break the downstream Pinterest CSV import.
+- Use spaces or commas instead of those characters.
+- Stay within the character limits above — going over WILL get cut.
 
 Additional guidelines:
 - Language: ${options?.language ?? 'English'}
@@ -104,15 +114,50 @@ Respond with a JSON object containing exactly two keys: "title" (string) and "de
     ? parsed.board
     : null
 
+  // The AI is told the limit but doesn't always respect it. We enforce the
+  // user-configured max in code — but instead of a dumb mid-word slice, we cut
+  // at the last full sentence (or failing that, the last word) so the text
+  // still reads cleanly.
   return {
     pinterest: {
-      title: clean(parsed.title).slice(0, titleMax),
-      description: clean(parsed.description).slice(0, descMax),
+      title: trimToLimit(clean(parsed.title), titleMax, { sentenceAware: false }),
+      description: trimToLimit(clean(parsed.description), descMax, { sentenceAware: true }),
       ...(pickedBoard ? { board: pickedBoard } : {}),
     },
     adobeStock: {},
   }
 })
+
+// Truncates `text` so its length never exceeds `max`. Prefers a sentence
+// boundary (when sentenceAware), then a word boundary, then a hard cut as a
+// last resort. The 70% floor keeps us from cutting aggressively short when an
+// early sentence/word boundary would chop off most of the content.
+function trimToLimit(text, max, { sentenceAware = false } = {}) {
+  const t = String(text ?? '')
+  if (t.length <= max) return t
+
+  const slice = t.slice(0, max)
+  const minAcceptable = Math.floor(max * 0.7)
+
+  if (sentenceAware) {
+    const match = slice.match(/^[\s\S]*[.!?](?=\s|$)/)
+    if (match && match[0].length >= minAcceptable) {
+      return match[0].trim()
+    }
+  }
+
+  const lastSpace = slice.lastIndexOf(' ')
+  if (lastSpace >= minAcceptable) {
+    const out = slice.slice(0, lastSpace).trim()
+    if (!sentenceAware) return out
+    // Add a period so the description ends on a complete sentence even when we
+    // couldn't reach an existing one. Keep the total within `max`.
+    if (/[.!?]$/.test(out)) return out
+    return out.length + 1 <= max ? `${out}.` : out
+  }
+
+  return slice.trim()
+}
 
 function clampInt(value, min, max, fallback) {
   const n = Number(value)
