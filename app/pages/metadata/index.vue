@@ -1,7 +1,56 @@
 <template>
   <div class="meta-page">
 
-    <!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
+    <!-- ── Top bar: search + refresh + signout ─────────────────────────────── -->
+    <header class="meta-page__top-bar">
+      <div class="meta-page__search">
+        <svg class="meta-page__search-icon" width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="9" r="6" />
+          <path d="M15 15l3 3" stroke-linecap="round" />
+        </svg>
+        <input
+          v-model="filters.search"
+          type="text"
+          placeholder="Search filename, title, keywords..."
+          class="meta-page__search-input"
+        />
+        <button
+          v-if="filters.search"
+          class="meta-page__search-clear"
+          title="Clear search"
+          @click="filters.search = ''"
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M1 1l12 12M13 1L1 13" />
+          </svg>
+        </button>
+      </div>
+
+      <button
+        class="meta-page__icon-btn meta-page__icon-btn--toolbar"
+        :disabled="pending"
+        title="Refresh"
+        @click="handleRefresh"
+      >
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4a8 8 0 0 1 12 0M4 16a8 8 0 0 0 12 0" />
+          <polyline points="1 4 4 4 4 7" />
+          <polyline points="19 16 16 16 16 13" />
+        </svg>
+      </button>
+
+      <button
+        class="meta-page__icon-btn meta-page__icon-btn--toolbar meta-page__icon-btn--danger"
+        title="Sign out"
+        @click="handleSignOut"
+      >
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 3h4a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4M9 14l5-4-5-4M14 10H3" />
+        </svg>
+      </button>
+    </header>
+
+    <!-- ── Tool bar: mode + sort + filters + upload + export + more ───────── -->
     <header class="meta-page__toolbar">
       <MetadataImageGalleryToolbar
         :filters="filters"
@@ -11,7 +60,8 @@
         :selected-count="selectedCount"
         :boards="boards"
         :invalid-count="invalidImages.length"
-        @update:search="filters.search = $event"
+        :unexported-history-count="unexportedHistoryCount"
+        :mode="mode"
         @update:sort-field="setSort"
         @toggle-sort-dir="setSort(sortField)"
         @update:filter="onUpdateFilter"
@@ -21,12 +71,9 @@
         @pinterest-schedule="openPinterestScheduler"
         @export-csv="openExport"
         @show-invalid="showInvalidImages = true"
+        @upload="showUpload = true"
+        @update:mode="setMode"
       />
-      <button class="meta-page__signout" title="Sign out" @click="handleSignOut">
-        <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M13 3h4a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4M9 14l5-4-5-4M14 10H3" />
-        </svg>
-      </button>
     </header>
 
     <!-- ── Actions bar ───────────────────────────────────────────────────── -->
@@ -59,13 +106,16 @@
       </div>
 
       <div class="meta-page__actions-right">
-        <button class="meta-page__btn" :disabled="pending" @click="handleRefresh">
-          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
-            <path d="M4 4a8 8 0 0 1 12 0M4 16a8 8 0 0 0 12 0" />
-            <polyline points="1 4 4 4 4 7" />
-            <polyline points="19 16 16 16 16 13" />
+        <button
+          v-if="selectedCount > 0"
+          class="meta-page__btn meta-page__btn--danger"
+          :disabled="saving"
+          @click="handleDeleteSelected"
+        >
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 4h10M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1M5 4l1 9a1 1 0 001 1h2a1 1 0 001-1l1-9" />
           </svg>
-          Refresh
+          Delete {{ selectedCount }}
         </button>
         <button
           class="meta-page__btn meta-page__btn--primary"
@@ -90,7 +140,6 @@
           <div v-for="i in 24" :key="i" class="meta-page__skel-card">
             <div class="meta-page__skel-image" />
             <div class="meta-page__skel-info">
-              <div class="meta-page__skel-line" />
               <div class="meta-page__skel-dots">
                 <div class="meta-page__skel-dot" />
                 <div class="meta-page__skel-dot" />
@@ -111,6 +160,7 @@
           :panel-open="panelOpen"
           :is-pinterest-complete="isPinterestComplete"
           :is-adobe-stock-complete="isAdobeStockComplete"
+          :mode="mode"
           @card-click="handleCardClick"
           @toggle-select="toggle"
         />
@@ -124,6 +174,16 @@
             <span v-if="saving" class="meta-page__save-status">Saving…</span>
             <span v-else-if="saveError" class="meta-page__save-status meta-page__save-status--err">{{ saveError }}</span>
             <span v-else-if="savedAt" class="meta-page__save-status meta-page__save-status--ok">Saved</span>
+            <button
+              v-if="selectedCount <= 1 && activeDraft?.mediaUrl"
+              class="meta-page__icon-btn"
+              title="Open image"
+              @click="showImagePopup = true"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 2H2v10h10V9M8 2h4v4M14 0L7 7" />
+              </svg>
+            </button>
             <button class="meta-page__icon-btn" title="Close panel" @click="closePanel">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <path d="M1 1l12 12M13 1L1 13" />
@@ -139,16 +199,14 @@
               :is-pinterest-complete="isPinterestComplete(activeDraft)"
               :is-adobe-stock-complete="isAdobeStockComplete(activeDraft)"
               :boards="boards"
+              :mode="mode"
+              :is-dirty="isDirty"
+              :saving="saving"
               @update="onDraftUpdate"
+              @save="handleSaveSingle"
+              @discard="discardDraft"
+              @delete="handleDeleteActive"
             />
-            <div class="meta-page__save-row">
-              <button
-                class="meta-page__btn meta-page__btn--primary"
-                :disabled="!isDirty || saving"
-                @click="handleSaveSingle"
-              >Save changes</button>
-              <button class="meta-page__btn" :disabled="!isDirty" @click="discardDraft">Discard</button>
-            </div>
           </template>
 
           <template v-else-if="selectedCount > 1">
@@ -156,6 +214,7 @@
               :spec="bulkSpec"
               :count="selectedCount"
               :boards="boards"
+              :mode="mode"
               @manage-boards="showBoardsManager = true"
             />
             <div class="meta-page__save-row">
@@ -174,6 +233,7 @@
             :progress="aiProgress"
             :image-count="aiTargetImages.length"
             :board-count="boards.length"
+            :mode="mode"
             @generate="handleGenerate"
             @cancel="cancelAi"
             @reset-progress="resetAiProgress"
@@ -259,6 +319,14 @@
       />
     </div>
 
+    <!-- ── Upload modal ───────────────────────────────────────────────────── -->
+    <div v-if="showUpload" class="meta-page__overlay" @click.self="showUpload = false">
+      <MetadataUploadModal
+        @close="showUpload = false"
+        @uploaded="handleUploaded"
+      />
+    </div>
+
     <!-- ── CSV Export modal ───────────────────────────────────────────────── -->
     <div v-if="showExport" class="meta-page__overlay" @click.self="showExport = false">
       <div class="meta-page__modal">
@@ -307,6 +375,27 @@
       </div>
     </div>
 
+    <!-- ── Image lightbox popup ───────────────────────────────────────────── -->
+    <Teleport to="body">
+      <div
+        v-if="showImagePopup && activeDraft?.mediaUrl"
+        class="img-popup"
+        @click.self="showImagePopup = false"
+      >
+        <button class="img-popup__close" title="Close" @click="showImagePopup = false">
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M1 1l12 12M13 1L1 13" />
+          </svg>
+        </button>
+        <img
+          class="img-popup__img"
+          :src="activeDraft.mediaUrl"
+          :alt="activeDraft.pinterest?.title || activeDraft.filename"
+          @click.stop
+        />
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -316,10 +405,20 @@ const {
   images, pending, error,
   saving, saveError,
   loadImages, saveImage, saveImages, invalidateCache,
-  deleteImage, updateImageUrl,
+  deleteImage, deleteImages, updateImageUrl,
 } = useMetadataImages()
 
-onMounted(() => { loadImages(); loadBoards() })
+onMounted(() => { loadImages(); loadBoards(); loadUnexportedCount() })
+
+// ── Unexported CSV history count ──────────────────────────────────────────────
+const unexportedHistoryCount = ref(0)
+
+async function loadUnexportedCount() {
+  try {
+    const { count } = await $fetch('/api/pinterest/csv-exports/unexported-count')
+    unexportedHistoryCount.value = count ?? 0
+  } catch { /* non-critical; badge simply won't show */ }
+}
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const supabase = useSupabaseClient()
@@ -341,6 +440,9 @@ async function handleDeleteBoard(id) {
   await deleteBoard(id)
 }
 
+// ── Mode (Pinterest / Adobe Stock) ────────────────────────────────────────────
+const { mode, setMode } = useMetadataMode()
+
 // ── Selection ─────────────────────────────────────────────────────────────────
 const { selectedIds, selectedCount, toggle, selectImages, clearSelection } = useImageSelection()
 
@@ -350,7 +452,7 @@ const {
   filteredImages, validImages, invalidImages,
   isPinterestComplete, isAdobeStockComplete,
   resetFilters, setSort,
-} = useGalleryFilters(images, selectedIds)
+} = useGalleryFilters(images, selectedIds, mode)
 
 // ── Invalid images modal ─────────────────────────────────────────────────────
 const showInvalidImages = ref(false)
@@ -369,6 +471,55 @@ async function handleDeleteInvalidImage(id) {
     m.delete(id)
     pendingChanges.value = m
   }
+}
+
+// ── Upload modal ─────────────────────────────────────────────────────────────
+const showUpload = ref(false)
+
+// ── Image lightbox ────────────────────────────────────────────────────────────
+const showImagePopup = ref(false)
+
+async function handleUploaded() {
+  // Refresh the gallery so new images appear with their joined Pinterest /
+  // Adobe rows. The cache is invalidated so loadImages does a fresh fetch.
+  invalidateCache()
+  await loadImages()
+}
+
+// ── Delete (individual / bulk) ───────────────────────────────────────────────
+async function handleDeleteActive() {
+  if (!activeId.value) return
+  const img = images.value.find(i => i.id === activeId.value)
+  const label = img?.filename ?? activeId.value
+  if (!confirm(`Delete "${label}"? This cannot be undone.`)) return
+
+  const id = activeId.value
+  try {
+    await deleteImage(id)
+    if (selectedIds.value.has(id)) toggle(id)
+    if (pendingChanges.value.has(id)) {
+      const m = new Map(pendingChanges.value)
+      m.delete(id)
+      pendingChanges.value = m
+    }
+    activeId.value = null
+  } catch { /* error already surfaced via saveError */ }
+}
+
+async function handleDeleteSelected() {
+  const ids = [...selectedIds.value]
+  if (ids.length === 0) return
+  if (!confirm(`Delete ${ids.length} image${ids.length !== 1 ? 's' : ''}? This cannot be undone.`)) return
+
+  try {
+    await deleteImages(ids)
+    // Local cleanup: drop selection, any drafts, and clear active if it was deleted.
+    clearSelection()
+    const m = new Map(pendingChanges.value)
+    for (const id of ids) m.delete(id)
+    pendingChanges.value = m
+    if (activeId.value && ids.includes(activeId.value)) activeId.value = null
+  } catch { /* error already surfaced via saveError */ }
 }
 
 function onUpdateFilter(key, val) {
@@ -513,6 +664,11 @@ function handleCardClick(id, index, event) {
 
 // ── Keyboard navigation ───────────────────────────────────────────────────────
 function handleKeydown(event) {
+  if (event.key === 'Escape' && showImagePopup.value) {
+    showImagePopup.value = false
+    return
+  }
+
   const tag = document.activeElement?.tagName?.toLowerCase()
   if (['input', 'textarea', 'select'].includes(tag)) return
 
@@ -729,7 +885,7 @@ function handleDownloadCsv() {
       row_count: csvValidation.value.valid.length,
       image_ids: csvValidation.value.valid.map(img => img.id),
     },
-  }).catch(() => {})
+  }).then(() => { unexportedHistoryCount.value++ }).catch(() => {})
 }
 
 // ── Pagination (client-side, driven by filteredImages so totals reflect filters) ──
@@ -804,21 +960,77 @@ function goToPage(page) {
   flex-direction: column;
   overflow: hidden;
 
-  // ── Toolbar ─────────────────────────────────────────────────────────────────
+  // ── Top bar (search + global actions) ───────────────────────────────────────
+
+  &__top-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  &__search {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  &__search-icon {
+    position: absolute;
+    left: 10px;
+    color: #9ca3af;
+    pointer-events: none;
+  }
+
+  &__search-input {
+    width: 100%;
+    height: 32px;
+    padding: 0 32px 0 32px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    background: #f9fafb;
+    color: $color-primary;
+    transition: border-color 0.15s, background 0.15s;
+    box-sizing: border-box;
+
+    &:focus { outline: none; border-color: $color-accent; background: #fff; }
+  }
+
+  &__search-clear {
+    position: absolute;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #9ca3af;
+    border-radius: 4px;
+
+    &:hover { color: $color-primary; background: #f3f4f6; }
+  }
+
+  // ── Toolbar (mode + sort + filters + actions) ──────────────────────────────
 
   &__toolbar {
     flex-shrink: 0;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 10px 20px;
+    padding: 8px 16px;
     background: $color-bg;
     border-bottom: 1px solid #e5e7eb;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   }
 
   :deep(.gallery-toolbar) {
-    flex: 1;
+    width: 100%;
     min-width: 0;
     background: transparent;
     border: none;
@@ -826,28 +1038,6 @@ function goToPage(page) {
     box-shadow: none;
     padding: 0;
     margin: 0;
-  }
-
-  &__signout {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    margin-top: 2px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: #f9fafb;
-    color: #9ca3af;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
-
-    &:hover {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #ef4444;
-    }
   }
 
   // ── Actions bar ──────────────────────────────────────────────────────────────
@@ -1070,9 +1260,23 @@ function goToPage(page) {
     color: #6b7280;
     padding: 0;
     flex-shrink: 0;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 
     &:hover { background: #f3f4f6; color: $color-primary; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    // Slightly larger square for use in the top bar.
+    &--toolbar {
+      width: 32px;
+      height: 32px;
+      background: #f9fafb;
+    }
+
+    &--danger:hover {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #ef4444;
+    }
   }
 
   &__panel-body {
@@ -1120,6 +1324,15 @@ function goToPage(page) {
       font-weight: 600;
 
       &:hover { background: color-mix(in srgb, #{$color-accent} 94%, #000); border-color: color-mix(in srgb, #{$color-accent} 94%, #000); }
+    }
+
+    &--danger {
+      background: #fff;
+      border-color: #fecaca;
+      color: #dc2626;
+      font-weight: 600;
+
+      &:hover:not(:disabled) { background: #fef2f2; border-color: #fca5a5; }
     }
 
   }
@@ -1367,6 +1580,50 @@ function goToPage(page) {
     &__pagination { padding: 6px 12px; }
 
     &__page-meta { width: 100%; justify-content: space-between; }
+  }
+}
+
+// ── Image lightbox ──────────────────────────────────────────────────────────────
+
+.img-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  cursor: zoom-out;
+
+  &__img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+    cursor: default;
+  }
+
+  &__close {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover { background: rgba(0, 0, 0, 0.8); border-color: rgba(255, 255, 255, 0.5); }
   }
 }
 </style>

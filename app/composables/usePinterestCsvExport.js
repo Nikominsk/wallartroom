@@ -19,6 +19,8 @@ function escape(value) {
   return value
 }
 
+// Emits a local-time ISO-like string without timezone or millis, e.g.
+// 2023-12-17T08:00:00 — Pinterest's CSV importer expects this exact shape.
 function fmtDate(iso) {
   try {
     const d = new Date(iso)
@@ -27,7 +29,8 @@ function fmtDate(iso) {
     const dd = String(d.getDate()).padStart(2, '0')
     const hh = String(d.getHours()).padStart(2, '0')
     const min = String(d.getMinutes()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd} ${hh}:${min}`
+    const sec = String(d.getSeconds()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}:${sec}`
   } catch {
     return iso
   }

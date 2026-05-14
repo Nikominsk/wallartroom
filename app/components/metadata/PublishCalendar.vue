@@ -19,6 +19,11 @@
           <label class="pub-cal__range-label">To</label>
           <input type="date" class="pub-cal__date-input" v-model="toDate" @change="load" />
         </div>
+        <label class="pub-cal__check-label">
+          <input type="checkbox" v-model="showOnlyExported" />
+          <span class="pub-cal__check-box" />
+          Only exported
+        </label>
         <span class="pub-cal__total-badge" v-if="!loading && totalCount > 0">
           {{ totalCount }} pin{{ totalCount !== 1 ? 's' : '' }}
         </span>
@@ -79,10 +84,10 @@
               :key="item.image_id"
               class="pub-cal__item"
               :style="{ '--item-color': getBoardColor(item.board) }"
-              :title="`${item.image?.filename ?? item.title ?? item.image_id}\n${formatTime(item.publish_date)}${item.board ? ' · ' + item.board : ''}`"
+              :title="`${item.title ?? item.image_id}\n${formatTime(item.publish_date)}${item.board ? ' · ' + item.board : ''}`"
             >
               <span class="pub-cal__item-time">{{ formatTime(item.publish_date) }}</span>
-              <span class="pub-cal__item-name">{{ item.image?.filename ?? item.title ?? '—' }}</span>
+              <span class="pub-cal__item-name">{{ item.title ?? '—' }}</span>
             </div>
             <div v-if="day.items.length === 0" class="pub-cal__day-none">—</div>
           </div>
@@ -144,7 +149,7 @@ function getBoardColor(board) {
 const legend = computed(() => {
   const seen = new Set()
   const entries = []
-  for (const item of rawData.value) {
+  for (const item of displayData.value) {
     const k = item.board ?? ''
     if (!seen.has(k)) {
       seen.add(k)
@@ -158,6 +163,14 @@ const legend = computed(() => {
 const rawData = ref([])
 const loading = ref(false)
 const error   = ref(null)
+
+const showOnlyExported = ref(true)
+
+const displayData = computed(() =>
+  showOnlyExported.value
+    ? rawData.value.filter(item => item.status === 'exported' || item.status === 'published')
+    : rawData.value
+)
 
 async function load() {
   if (!fromDate.value || !toDate.value) return
@@ -202,7 +215,7 @@ const days = computed(() => {
   const end   = new Date(ty, tm - 1, td)
 
   const grouped = {}
-  for (const item of rawData.value) {
+  for (const item of displayData.value) {
     const k = itemLocalDateStr(item.publish_date)
     ;(grouped[k] ??= []).push(item)
   }
@@ -225,7 +238,7 @@ const days = computed(() => {
   return result
 })
 
-const totalCount = computed(() => rawData.value.length)
+const totalCount = computed(() => displayData.value.length)
 
 // ── Formatting ─────────────────────────────────────────────────────────────
 function formatTime(iso) {
@@ -297,6 +310,56 @@ function formatTime(iso) {
   }
 
   &__range-sep { color: #9ca3af; font-size: 14px; }
+
+  &__check-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+
+    input[type='checkbox'] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+
+      &:checked + .pub-cal__check-box {
+        background: $color-accent;
+        border-color: $color-accent;
+
+        &::after { opacity: 1; }
+      }
+    }
+  }
+
+  &__check-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+
+    &::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 6px;
+      border-right: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: rotate(45deg) translateY(-1px);
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+  }
 
   &__date-input {
     height: 32px;

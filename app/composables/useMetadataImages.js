@@ -126,6 +126,23 @@ export function useMetadataImages() {
     }
   }
 
+  async function deleteImages(ids) {
+    if (!ids?.length) return
+    saving.value = true
+    saveError.value = null
+    try {
+      await $fetch('/api/images/delete-many', { method: 'POST', body: { ids } })
+      const idSet = new Set(ids)
+      images.value = images.value.filter(i => !idSet.has(i.id))
+      applyToCache(arr => arr.filter(i => !idSet.has(i.id)))
+    } catch (e) {
+      saveError.value = e.data?.statusMessage ?? e.message ?? 'Delete failed'
+      throw e
+    } finally {
+      saving.value = false
+    }
+  }
+
   async function updateImageUrl(id, { mediaUrl, thumbnailUrl } = {}) {
     saving.value = true
     saveError.value = null
@@ -155,6 +172,6 @@ export function useMetadataImages() {
     images, pending, error,
     saving, saveError,
     loadImages, saveImage, saveImages, invalidateCache,
-    deleteImage, updateImageUrl,
+    deleteImage, deleteImages, updateImageUrl,
   }
 }

@@ -13,6 +13,7 @@
       :unsaved="unsavedIds.has(image.id)"
       :pinterest-complete="isPinterestComplete(image)"
       :adobe-stock-complete="isAdobeStockComplete(image)"
+      :mode="mode"
       @card-click="$emit('card-click', image.id, index, $event)"
       @toggle-select="$emit('toggle-select', image.id)"
     />
@@ -29,6 +30,7 @@ defineProps({
   panelOpen: Boolean,
   isPinterestComplete: Function,
   isAdobeStockComplete: Function,
+  mode: { type: String, default: 'pinterest' },
 })
 defineEmits(['card-click', 'toggle-select'])
 </script>

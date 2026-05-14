@@ -2,7 +2,7 @@
   <div class="single-form">
     <div class="single-form__tabs">
       <button
-        v-for="tab in tabs"
+        v-for="tab in visibleTabs"
         :key="tab.id"
         class="single-form__tab"
         :class="{ 'single-form__tab--active': activeTab === tab.id }"
@@ -14,6 +14,43 @@
         <span v-if="tab.id === 'adobe'" class="single-form__tab-dot"
           :class="isAdobeStockComplete ? 'single-form__tab-dot--ok' : 'single-form__tab-dot--warn'" />
       </button>
+
+      <div class="single-form__tab-actions">
+        <button
+          class="single-form__action-btn single-form__action-btn--save"
+          :class="{ 'single-form__action-btn--active': isDirty && !saving }"
+          :disabled="!isDirty || saving"
+          title="Save changes"
+          @click="emit('save')"
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 1h8l3 3v9H1V1h1z" />
+            <path d="M4 1v4h5V1" />
+            <rect x="3" y="8" width="8" height="5" rx="0.5" />
+          </svg>
+        </button>
+        <button
+          class="single-form__action-btn single-form__action-btn--discard"
+          :disabled="!isDirty || saving"
+          title="Discard changes"
+          @click="emit('discard')"
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11.5 3A6 6 0 1 0 13 7" />
+            <path d="M10 1l1.5 2-2 1.5" />
+          </svg>
+        </button>
+        <button
+          class="single-form__action-btn single-form__action-btn--delete"
+          :disabled="saving"
+          title="Delete image"
+          @click="emit('delete')"
+        >
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3.5h10M5.5 3.5v-1a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M4.5 3.5l.75 8h4.5l.75-8" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div class="single-form__body">
@@ -219,17 +256,33 @@ const props = defineProps({
   isPinterestComplete: Boolean,
   isAdobeStockComplete: Boolean,
   boards: { type: Array, default: () => [] },
+  mode: { type: String, default: 'pinterest' },
+  isDirty: { type: Boolean, default: false },
+  saving: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['update'])
+const emit = defineEmits(['update', 'save', 'discard', 'delete'])
 
-const activeTab = ref('pinterest')
+const activeTab = ref(props.mode === 'adobe' ? 'adobe' : 'pinterest')
 
 const tabs = [
   { id: 'general', label: 'General' },
   { id: 'pinterest', label: 'Pinterest' },
   { id: 'adobe', label: 'Adobe Stock' },
 ]
+
+// Hide the tab that belongs to the other platform so the user only sees their
+// current mode's fields. Switching mode while the panel is open auto-swaps the
+// active tab to the one that matches.
+const visibleTabs = computed(() => {
+  if (props.mode === 'adobe') return tabs.filter(t => t.id !== 'pinterest')
+  return tabs.filter(t => t.id !== 'adobe')
+})
+
+watch(() => props.mode, (newMode) => {
+  if (newMode === 'pinterest' && activeTab.value === 'adobe') activeTab.value = 'pinterest'
+  if (newMode === 'adobe' && activeTab.value === 'pinterest') activeTab.value = 'adobe'
+})
 
 function update(key, value) {
   emit('update', { ...props.draft, [key]: value })
@@ -299,9 +352,50 @@ function fmtDate(iso) {
 .single-form {
   &__tabs {
     display: flex;
+    align-items: center;
     border-bottom: 2px solid #f3f4f6;
     margin-bottom: 16px;
     gap: 2px;
+  }
+
+  &__tab-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding-right: 2px;
+    flex-shrink: 0;
+  }
+
+  &__action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: none;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 0;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+
+    &:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    &--save {
+      color: #f97316;
+      &:not(:disabled):hover { background: #fff7ed; border-color: #fdba74; color: #ea580c; }
+      &--active { color: #f97316; }
+    }
+
+    &--discard {
+      &:not(:disabled):hover { background: #fefce8; border-color: #fde047; color: #92400e; }
+    }
+
+    &--delete {
+      &:not(:disabled):hover { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+    }
   }
 
   &__tab {

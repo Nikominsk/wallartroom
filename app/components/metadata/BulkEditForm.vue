@@ -7,7 +7,7 @@
       <span>You are editing <strong>{{ count }} images</strong>. Applied fields may overwrite existing values for all selected images.</span>
     </div>
 
-    <div class="bulk-form__section">
+    <div v-if="mode === 'pinterest'" class="bulk-form__section">
       <h4 class="bulk-form__section-title">Pinterest</h4>
 
       <BulkField label="Pinterest title" v-model:enabled="spec.pinterestTitle.enabled" v-model:clear="spec.pinterestTitle.clear">
@@ -57,9 +57,21 @@
           :disabled="!spec.pinterestPublishDate.enabled"
           @input="spec.pinterestPublishDate.value = fromDatetimeLocal($event.target.value)" />
       </BulkField>
+
+      <BulkField label="Pinterest status" v-model:enabled="spec.pinterestStatus.enabled" v-model:clear="spec.pinterestStatus.clear">
+        <select
+          class="bulk-form__input bulk-form__select"
+          v-model="spec.pinterestStatus.value"
+          :disabled="!spec.pinterestStatus.enabled || spec.pinterestStatus.clear"
+        >
+          <option value="">— select status —</option>
+          <option value="draft">Draft</option>
+          <option value="exported">Exported</option>
+        </select>
+      </BulkField>
     </div>
 
-    <div class="bulk-form__section">
+    <div v-if="mode === 'adobe'" class="bulk-form__section">
       <h4 class="bulk-form__section-title">Adobe Stock</h4>
 
       <BulkField label="Adobe Stock title" v-model:enabled="spec.adobeStockTitle.enabled" v-model:clear="spec.adobeStockTitle.clear">
@@ -93,6 +105,7 @@ defineProps({
   spec: Object,
   count: Number,
   boards: { type: Array, default: () => [] },
+  mode: { type: String, default: 'pinterest' },
 })
 
 defineEmits(['manage-boards'])
@@ -205,6 +218,15 @@ export const BulkField = defineComponent({
   }
 
   &__textarea { resize: vertical; }
+
+  &__select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M2 4l3 3 3-3'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    cursor: pointer;
+  }
 
   &__board-row {
     display: flex;

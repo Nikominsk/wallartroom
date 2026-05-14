@@ -31,38 +31,41 @@
     </div>
 
     <div class="img-card__info">
-      <span class="img-card__name" :title="image.filename">{{ image.filename }}</span>
       <div class="img-card__indicators">
-        <span
-          class="img-card__dot"
-          :class="pinterestComplete ? 'img-card__dot--ok' : 'img-card__dot--warn'"
-          title="Pinterest metadata"
-        >P</span>
-        <span
-          class="img-card__dot"
-          :class="adobeStockComplete ? 'img-card__dot--ok' : 'img-card__dot--warn'"
-          title="Adobe Stock metadata"
-        >A</span>
-        <span
-          class="img-card__dot img-card__dot--icon"
-          :class="image.pinterest.publishDate ? 'img-card__dot--date' : 'img-card__dot--none'"
-          title="Pinterest publish date"
-        >
-          <svg width="7" height="7" viewBox="0 0 12 12" fill="currentColor">
-            <path d="M9 1V0H8v1H4V0H3v1H1a1 1 0 00-1 1v9a1 1 0 001 1h10a1 1 0 001-1V2a1 1 0 00-1-1H9zM1 4h10v7H1V4zm2 2h1v1H3V6zm2 0h1v1H5V6zm2 0h1v1H7V6z"/>
-          </svg>
-        </span>
-        <span
-          class="img-card__dot img-card__dot--icon"
-          :class="image.adobeStock.publishDate ? 'img-card__dot--date' : 'img-card__dot--none'"
-          title="Adobe Stock publish date"
-        >
-          <svg width="7" height="7" viewBox="0 0 12 12" fill="currentColor">
-            <path d="M9 1V0H8v1H4V0H3v1H1a1 1 0 00-1 1v9a1 1 0 001 1h10a1 1 0 001-1V2a1 1 0 00-1-1H9zM1 4h10v7H1V4zm2 2h1v1H3V6zm2 0h1v1H5V6zm2 0h1v1H7V6z"/>
-          </svg>
-        </span>
-        <span v-if="image.pinterest.exportedAt" class="img-card__badge img-card__badge--exported">EXP</span>
-        <span v-if="image.pinterest.publishedAt" class="img-card__badge img-card__badge--published">PUB</span>
+        <template v-if="mode === 'pinterest'">
+          <span
+            class="img-card__dot"
+            :class="pinterestComplete ? 'img-card__dot--ok' : 'img-card__dot--warn'"
+            title="Pinterest metadata"
+          >P</span>
+          <span
+            class="img-card__dot img-card__dot--icon"
+            :class="image.pinterest.publishDate ? 'img-card__dot--date' : 'img-card__dot--none'"
+            title="Pinterest publish date"
+          >
+            <svg width="7" height="7" viewBox="0 0 12 12" fill="currentColor">
+              <path d="M9 1V0H8v1H4V0H3v1H1a1 1 0 00-1 1v9a1 1 0 001 1h10a1 1 0 001-1V2a1 1 0 00-1-1H9zM1 4h10v7H1V4zm2 2h1v1H3V6zm2 0h1v1H5V6zm2 0h1v1H7V6z"/>
+            </svg>
+          </span>
+          <span v-if="image.pinterest.exportedAt" class="img-card__badge img-card__badge--exported">EXP</span>
+          <span v-if="image.pinterest.publishedAt" class="img-card__badge img-card__badge--published">PUB</span>
+        </template>
+        <template v-else>
+          <span
+            class="img-card__dot"
+            :class="adobeStockComplete ? 'img-card__dot--ok' : 'img-card__dot--warn'"
+            title="Adobe Stock metadata"
+          >A</span>
+          <span
+            class="img-card__dot img-card__dot--icon"
+            :class="image.adobeStock.publishDate ? 'img-card__dot--date' : 'img-card__dot--none'"
+            title="Adobe Stock publish date"
+          >
+            <svg width="7" height="7" viewBox="0 0 12 12" fill="currentColor">
+              <path d="M9 1V0H8v1H4V0H3v1H1a1 1 0 00-1 1v9a1 1 0 001 1h10a1 1 0 001-1V2a1 1 0 00-1-1H9zM1 4h10v7H1V4zm2 2h1v1H3V6zm2 0h1v1H5V6zm2 0h1v1H7V6z"/>
+            </svg>
+          </span>
+        </template>
       </div>
     </div>
   </article>
@@ -79,6 +82,7 @@ const props = defineProps({
   unsaved: Boolean,
   pinterestComplete: Boolean,
   adobeStockComplete: Boolean,
+  mode: { type: String, default: 'pinterest' }, // 'pinterest' | 'adobe'
 })
 defineEmits(['card-click', 'toggle-select'])
 
@@ -203,19 +207,8 @@ const safeImgSrc = computed(() => {
   }
 
   &__info {
-    padding: 5px 7px 6px;
+    padding: 4px 6px;
     border-top: 1px solid #f3f4f6;
-  }
-
-  &__name {
-    display: block;
-    font-size: 10px;
-    color: $color-primary;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 4px;
-    line-height: 1.3;
   }
 
   &__indicators {

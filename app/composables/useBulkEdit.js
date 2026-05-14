@@ -9,6 +9,7 @@ function freshSpec() {
     pinterestBoard: bf(''),
     pinterestLink: bf(''),
     pinterestPublishDate: bf(''),
+    pinterestStatus: bf(''),
     adobeStockTitle: bf(''),
     adobeStockDescription: bf(''),
     adobeStockKeywords: bf([]),
@@ -38,6 +39,8 @@ export function useBulkEdit() {
         p.link = spec.pinterestLink.clear ? undefined : spec.pinterestLink.value || undefined
       if (spec.pinterestPublishDate.enabled)
         p.publishDate = spec.pinterestPublishDate.clear ? undefined : spec.pinterestPublishDate.value || undefined
+      if (spec.pinterestStatus.enabled)
+        p.status = spec.pinterestStatus.clear ? undefined : spec.pinterestStatus.value || undefined
       if (spec.adobeStockTitle.enabled)
         a.title = spec.adobeStockTitle.clear ? undefined : spec.adobeStockTitle.value || undefined
       if (spec.adobeStockDescription.enabled)

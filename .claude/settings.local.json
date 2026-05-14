@@ -13,7 +13,10 @@
       "PowerShell(New-Item *)",
       "PowerShell(Move-Item *)",
       "Bash(npm install *)",
-      "Bash(npx nuxi *)"
+      "Bash(npx nuxi *)",
+      "Bash(powershell -Command \"\\(Get-Content 'app\\\\pages\\\\metadata\\\\index.vue' | Measure-Object -Line\\).Lines\")",
+      "Bash(powershell -Command \"Select-String -Path 'app\\\\pages\\\\metadata\\\\index.vue' -Pattern '^</style>' | Select-Object -Last 1\")",
+      "Bash(powershell -Command \"Select-String -Path 'app\\\\components\\\\metadata\\\\SingleImageForm.vue' -Pattern '__tabs|__tab[^-]' | Select-Object LineNumber, Line\")"
     ]
   }
 }

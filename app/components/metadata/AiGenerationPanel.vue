@@ -56,35 +56,39 @@
         <div class="ai-panel__section">
           <p class="ai-panel__section-label">Generate for</p>
           <div class="ai-panel__checkboxes">
-            <label class="ai-panel__check">
-              <input type="checkbox" v-model="options.generateFor.pinterestTitle" />
-              Pinterest title
-            </label>
-            <label class="ai-panel__check">
-              <input type="checkbox" v-model="options.generateFor.pinterestDescription" />
-              Pinterest description
-            </label>
-            <div class="ai-panel__check-row">
+            <template v-if="mode === 'pinterest'">
               <label class="ai-panel__check">
-                <input type="checkbox" v-model="options.generateFor.pinterestBoard" :disabled="!hasBoardsConfigured" />
-                Pinterest board
+                <input type="checkbox" v-model="options.generateFor.pinterestTitle" />
+                Pinterest title
               </label>
-              <button class="ai-panel__boards-btn" type="button" @click="$emit('manage-boards')">
-                Manage boards
-              </button>
-            </div>
-            <label class="ai-panel__check">
-              <input type="checkbox" v-model="options.generateFor.adobeStockTitle" />
-              Adobe Stock title
-            </label>
-            <label class="ai-panel__check">
-              <input type="checkbox" v-model="options.generateFor.adobeStockDescription" />
-              Adobe Stock description
-            </label>
-            <label class="ai-panel__check">
-              <input type="checkbox" v-model="options.generateFor.adobeStockKeywords" />
-              Adobe Stock keywords
-            </label>
+              <label class="ai-panel__check">
+                <input type="checkbox" v-model="options.generateFor.pinterestDescription" />
+                Pinterest description
+              </label>
+              <div class="ai-panel__check-row">
+                <label class="ai-panel__check">
+                  <input type="checkbox" v-model="options.generateFor.pinterestBoard" :disabled="!hasBoardsConfigured" />
+                  Pinterest board
+                </label>
+                <button class="ai-panel__boards-btn" type="button" @click="$emit('manage-boards')">
+                  Manage boards
+                </button>
+              </div>
+            </template>
+            <template v-else>
+              <label class="ai-panel__check">
+                <input type="checkbox" v-model="options.generateFor.adobeStockTitle" />
+                Adobe Stock title
+              </label>
+              <label class="ai-panel__check">
+                <input type="checkbox" v-model="options.generateFor.adobeStockDescription" />
+                Adobe Stock description
+              </label>
+              <label class="ai-panel__check">
+                <input type="checkbox" v-model="options.generateFor.adobeStockKeywords" />
+                Adobe Stock keywords
+              </label>
+            </template>
           </div>
         </div>
 
@@ -133,22 +137,26 @@
         </div>
 
         <div class="ai-panel__grid ai-panel__grid--sm">
-          <div class="ai-panel__field">
-            <label class="ai-panel__label">Pin title max chars</label>
-            <input class="ai-panel__input" type="number" v-model.number="options.maxPinterestTitleLength" min="10" max="255" />
-          </div>
-          <div class="ai-panel__field">
-            <label class="ai-panel__label">Pin desc max chars</label>
-            <input class="ai-panel__input" type="number" v-model.number="options.maxPinterestDescriptionLength" min="10" max="800" />
-          </div>
-          <div class="ai-panel__field">
-            <label class="ai-panel__label">Adobe title max chars</label>
-            <input class="ai-panel__input" type="number" v-model.number="options.maxAdobeStockTitleLength" min="10" max="200" />
-          </div>
-          <div class="ai-panel__field">
-            <label class="ai-panel__label">Adobe keyword count</label>
-            <input class="ai-panel__input" type="number" v-model.number="options.adobeStockKeywordCount" min="1" max="49" />
-          </div>
+          <template v-if="mode === 'pinterest'">
+            <div class="ai-panel__field">
+              <label class="ai-panel__label">Pin title max chars</label>
+              <input class="ai-panel__input" type="number" v-model.number="options.maxPinterestTitleLength" min="10" max="255" />
+            </div>
+            <div class="ai-panel__field">
+              <label class="ai-panel__label">Pin desc max chars</label>
+              <input class="ai-panel__input" type="number" v-model.number="options.maxPinterestDescriptionLength" min="10" max="800" />
+            </div>
+          </template>
+          <template v-else>
+            <div class="ai-panel__field">
+              <label class="ai-panel__label">Adobe title max chars</label>
+              <input class="ai-panel__input" type="number" v-model.number="options.maxAdobeStockTitleLength" min="10" max="200" />
+            </div>
+            <div class="ai-panel__field">
+              <label class="ai-panel__label">Adobe keyword count</label>
+              <input class="ai-panel__input" type="number" v-model.number="options.adobeStockKeywordCount" min="1" max="49" />
+            </div>
+          </template>
         </div>
 
         <div class="ai-panel__section">
@@ -196,6 +204,7 @@ const props = defineProps({
   progress: Object,
   imageCount: Number,
   boardCount: { type: Number, default: 0 },
+  mode: { type: String, default: 'pinterest' },
 })
 defineEmits(['generate', 'cancel', 'reset-progress', 'manage-boards'])
 
@@ -204,8 +213,14 @@ const expanded = ref(false)
 const hasBoardsConfigured = computed(() => props.boardCount > 0)
 
 const canGenerate = computed(() => {
+  if (props.imageCount === 0) return false
   const g = props.options.generateFor
-  return Object.values(g).some(Boolean) && props.imageCount > 0
+  // Only the active mode's checkboxes count toward "can generate" — otherwise
+  // a leftover Adobe checkbox would unlock generation in Pinterest mode.
+  if (props.mode === 'pinterest') {
+    return !!(g.pinterestTitle || g.pinterestDescription || g.pinterestBoard)
+  }
+  return !!(g.adobeStockTitle || g.adobeStockDescription || g.adobeStockKeywords)
 })
 </script>
 
