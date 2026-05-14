@@ -31,6 +31,12 @@
               </div>
               <NuxtLink to="/app/dashboard" class="appshell__menu-item" @click="menuOpen = false">Dashboard</NuxtLink>
               <NuxtLink to="/pricing" class="appshell__menu-item" @click="menuOpen = false">Plans &amp; credits</NuxtLink>
+              <button v-if="hasBilling"
+                      class="appshell__menu-item" type="button"
+                      :disabled="portalBusy"
+                      @click="openPortal">
+                {{ portalBusy ? 'Opening…' : 'Manage billing' }}
+              </button>
               <button class="appshell__menu-item appshell__menu-signout" type="button" @click="signOut">Sign out</button>
             </div>
           </div>
@@ -48,7 +54,23 @@
 const supabase = useSupabaseClient()
 const { data: me } = useMe()
 
-const menuOpen = ref(false)
+const menuOpen   = ref(false)
+const portalBusy = ref(false)
+
+// Show "Manage billing" once the user has a Stripe customer (after first
+// Checkout). Pre-checkout we only show the upgrade CTA on the pricing page.
+const hasBilling = computed(() => !!me.value?.stripeCustomerId || (me.value?.plan && me.value.plan !== 'free'))
+
+async function openPortal() {
+  portalBusy.value = true
+  try {
+    const { url } = await $fetch<{ url: string }>('/api/stripe/create-customer-portal-session', { method: 'POST' })
+    window.location.href = url
+  } catch (e: any) {
+    alert(e?.statusMessage || e?.data?.statusMessage || 'Could not open billing portal')
+    portalBusy.value = false
+  }
+}
 
 const initials = computed(() => {
   const name = me.value?.name || me.value?.email || ''
@@ -60,7 +82,7 @@ const initials = computed(() => {
 const planLabel = computed(() => {
   const p = me.value?.plan
   if (!p) return ''
-  return { free: 'Free plan', starter: 'Starter', plus: 'Plus', studio: 'Studio' }[p]
+  return ({ free: 'Free plan', pro: 'Pro' } as Record<string, string>)[p] ?? p
 })
 
 async function signOut() {

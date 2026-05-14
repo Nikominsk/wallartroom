@@ -32,6 +32,11 @@
           <span class="ai-panel__stat ai-panel__stat--ok">✓ {{ progress.successCount }} updated</span>
           <span class="ai-panel__stat ai-panel__stat--skip">— {{ progress.skippedCount }} skipped</span>
           <span v-if="progress.failedCount" class="ai-panel__stat ai-panel__stat--fail">✗ {{ progress.failedCount }} failed</span>
+          <span
+            v-if="progress.duplicateRetryCount"
+            class="ai-panel__stat ai-panel__stat--retry"
+            title="Titles that came back as duplicates and were re-generated or disambiguated"
+          >↻ {{ progress.duplicateRetryCount }} unique retry</span>
         </div>
 
         <div v-if="progress.status === 'done' || progress.status === 'cancelled'" class="ai-panel__progress-actions">
@@ -410,6 +415,7 @@ const canGenerate = computed(() => {
     &--ok { color: #16a34a; }
     &--skip { color: #9ca3af; }
     &--fail { color: #ef4444; }
+    &--retry { color: #d97706; }
   }
 
   &__progress-actions { display: flex; gap: 8px; }

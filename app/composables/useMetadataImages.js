@@ -40,72 +40,32 @@ function mapRow(row) {
   }
 }
 
-function mapPinterestRow(img) {
-  return {
-    image_id: img.id,
-    title: img.pinterest.title || null,
-    description: img.pinterest.description || null,
-    board: img.pinterest.board || null,
-    link: img.pinterest.link || null,
-    publish_date: img.pinterest.publishDate || null,
-    exported_at: img.pinterest.exportedAt || null,
-    published_at: img.pinterest.publishedAt || null,
-    status: img.pinterest.status ?? 'draft',
-  }
-}
-
-function mapAdobeRow(img) {
-  return {
-    image_id: img.id,
-    title: img.adobeStock.title || null,
-    description: img.adobeStock.description || null,
-    keywords: img.adobeStock.keywords?.length ? img.adobeStock.keywords : null,
-    publish_date: img.adobeStock.publishDate || null,
-    status: img.adobeStock.status ?? 'draft',
-  }
-}
-
-// ── Module-level state (persists across component remounts) ───────────────────
-// Cache key includes page size so switching sizes doesn't serve stale data.
-export const pageSize = ref(10)
-const pageCache = new Map()
-const cacheKey = (size, page) => `${size}:${page}`
+// ── Module-level cache (singleton; survives component remounts) ───────────────
+// We now load *all* images in one fetch so the gallery can filter/paginate
+// client-side — total count then naturally reflects the active filter.
+let _cachedImages = null // Array | null
 
 // ── Composable ────────────────────────────────────────────────────────────────
 
 export function useMetadataImages() {
-  const images = ref([])
+  const images = ref(_cachedImages ?? [])
   const pending = ref(false)
   const error = ref(null)
   const saving = ref(false)
   const saveError = ref(null)
-  const currentPage = ref(1)
-  const totalCount = ref(0)
-  const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize.value)))
 
-  async function loadImages(page = 1) {
-    page = Math.max(1, page)
-    currentPage.value = page
-
-    const key = cacheKey(pageSize.value, page)
-    if (pageCache.has(key)) {
-      const hit = pageCache.get(key)
-      images.value = hit.images
-      totalCount.value = hit.total
+  async function loadImages() {
+    if (_cachedImages) {
+      images.value = _cachedImages
       return
     }
-
     pending.value = true
     error.value = null
     try {
-      const { data, count } = await $fetch('/api/images', {
-        query: { page, size: pageSize.value },
-      })
-
+      const { data } = await $fetch('/api/images')
       const mapped = (data ?? []).map(mapRow)
-      pageCache.set(key, { images: mapped, total: count ?? 0 })
+      _cachedImages = mapped
       images.value = mapped
-      totalCount.value = count ?? 0
     } catch (e) {
       error.value = e.data?.statusMessage ?? e.message ?? 'Failed to load images'
     } finally {
@@ -113,13 +73,12 @@ export function useMetadataImages() {
     }
   }
 
-  async function setPageSize(size) {
-    pageSize.value = size
-    return loadImages(1)
+  function invalidateCache() {
+    _cachedImages = null
   }
 
-  function invalidateCache() {
-    pageCache.clear()
+  function applyToCache(updater) {
+    if (_cachedImages) _cachedImages = updater(_cachedImages)
   }
 
   async function saveImage(img) {
@@ -127,15 +86,9 @@ export function useMetadataImages() {
     saveError.value = null
     try {
       await $fetch('/api/images/save', { method: 'POST', body: img })
-
       const idx = images.value.findIndex(i => i.id === img.id)
       if (idx !== -1) images.value[idx] = img
-
-      const cached = pageCache.get(cacheKey(pageSize.value, currentPage.value))
-      if (cached) {
-        const ci = cached.images.findIndex(i => i.id === img.id)
-        if (ci !== -1) cached.images[ci] = img
-      }
+      applyToCache(arr => arr.map(i => i.id === img.id ? img : i))
     } catch (e) {
       saveError.value = e.data?.statusMessage ?? e.message ?? 'Save failed'
     } finally {
@@ -148,18 +101,51 @@ export function useMetadataImages() {
     saveError.value = null
     try {
       await $fetch('/api/images/save', { method: 'POST', body: imgs })
-
-      const cached = pageCache.get(cacheKey(pageSize.value, currentPage.value))
-      for (const img of imgs) {
-        const idx = images.value.findIndex(i => i.id === img.id)
-        if (idx !== -1) images.value[idx] = img
-        if (cached) {
-          const ci = cached.images.findIndex(i => i.id === img.id)
-          if (ci !== -1) cached.images[ci] = img
-        }
-      }
+      const byId = new Map(imgs.map(i => [i.id, i]))
+      images.value = images.value.map(i => byId.get(i.id) ?? i)
+      applyToCache(arr => arr.map(i => byId.get(i.id) ?? i))
     } catch (e) {
       saveError.value = e.data?.statusMessage ?? e.message ?? 'Save failed'
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function deleteImage(id) {
+    saving.value = true
+    saveError.value = null
+    try {
+      await $fetch(`/api/images/${id}`, { method: 'DELETE' })
+      images.value = images.value.filter(i => i.id !== id)
+      applyToCache(arr => arr.filter(i => i.id !== id))
+    } catch (e) {
+      saveError.value = e.data?.statusMessage ?? e.message ?? 'Delete failed'
+      throw e
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function updateImageUrl(id, { mediaUrl, thumbnailUrl } = {}) {
+    saving.value = true
+    saveError.value = null
+    try {
+      const body = {}
+      if (mediaUrl !== undefined) body.public_url = mediaUrl
+      if (thumbnailUrl !== undefined) body.thumbnail_url = thumbnailUrl
+      const updated = await $fetch(`/api/images/${id}`, { method: 'PATCH', body })
+
+      const apply = (img) => ({
+        ...img,
+        mediaUrl: updated.public_url ?? img.mediaUrl,
+        thumbnailUrl: updated.thumbnail_url ?? null,
+      })
+      const idx = images.value.findIndex(i => i.id === id)
+      if (idx !== -1) images.value[idx] = apply(images.value[idx])
+      applyToCache(arr => arr.map(i => i.id === id ? apply(i) : i))
+    } catch (e) {
+      saveError.value = e.data?.statusMessage ?? e.message ?? 'Update failed'
+      throw e
     } finally {
       saving.value = false
     }
@@ -168,7 +154,7 @@ export function useMetadataImages() {
   return {
     images, pending, error,
     saving, saveError,
-    currentPage, totalCount, totalPages, pageSize,
-    loadImages, setPageSize, saveImage, saveImages, invalidateCache,
+    loadImages, saveImage, saveImages, invalidateCache,
+    deleteImage, updateImageUrl,
   }
 }

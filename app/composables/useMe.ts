@@ -24,7 +24,7 @@ export interface Me {
   email: string
   name:  string | null
   role:  'user' | 'admin'
-  plan:  'free' | 'starter' | 'plus' | 'studio'
+  plan:  'free' | 'pro'
   subscription: {
     status:           string | null
     currentPeriodEnd: string | null

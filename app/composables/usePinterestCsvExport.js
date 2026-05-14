@@ -1,11 +1,18 @@
-const FIELD_LABELS = {
-  title: 'Pinterest title',
-  mediaUrl: 'Media URL',
-  board: 'Pinterest board',
-  description: 'Pinterest description',
-  link: 'Redirect URL',
-  publishDate: 'Pinterest publish date',
-}
+// Fields the Pinterest CSV strictly requires. Missing one of these excludes an
+// image from the export.
+const REQUIRED_FIELDS = [
+  { key: 'title', label: 'Pinterest title', get: img => img.pinterest.title },
+  { key: 'mediaUrl', label: 'Media URL', get: img => img.mediaUrl },
+  { key: 'description', label: 'Pinterest description', get: img => img.pinterest.description },
+  { key: 'publishDate', label: 'Pinterest publish date', get: img => img.pinterest.publishDate },
+]
+
+// Fields treated as optional for Pinterest CSV export. The image still ships,
+// but the modal surfaces a count so the user knows what's missing.
+const OPTIONAL_FIELDS = [
+  { key: 'board', label: 'Pinterest board', get: img => img.pinterest.board },
+  { key: 'link', label: 'Redirect URL', get: img => img.pinterest.link },
+]
 
 function escape(value) {
   if (/[,\n\r"]/.test(value)) return `"${value.replace(/"/g, '""')}"`
@@ -30,19 +37,31 @@ export function usePinterestCsvExport() {
   function validate(images) {
     const valid = []
     const invalid = []
+    const optionalMissing = Object.fromEntries(
+      OPTIONAL_FIELDS.map(f => [f.key, { label: f.label, count: 0, samples: [] }])
+    )
 
     for (const img of images) {
-      const missing = []
-      if (!img.pinterest.title) missing.push(FIELD_LABELS.title)
-      if (!img.mediaUrl) missing.push(FIELD_LABELS.mediaUrl)
-      if (!img.pinterest.board) missing.push(FIELD_LABELS.board)
-      if (!img.pinterest.description) missing.push(FIELD_LABELS.description)
-      if (!img.pinterest.link) missing.push(FIELD_LABELS.link)
-      if (!img.pinterest.publishDate) missing.push(FIELD_LABELS.publishDate)
-      missing.length === 0 ? valid.push(img) : invalid.push({ image: img, missing })
+      const missing = REQUIRED_FIELDS.filter(f => !f.get(img)).map(f => f.label)
+
+      if (missing.length > 0) {
+        invalid.push({ image: img, missing })
+        continue
+      }
+
+      valid.push(img)
+
+      // Optional gaps are only tallied for images that will actually export.
+      for (const f of OPTIONAL_FIELDS) {
+        if (!f.get(img)) {
+          const entry = optionalMissing[f.key]
+          entry.count++
+          if (entry.samples.length < 5) entry.samples.push(img.filename)
+        }
+      }
     }
 
-    return { valid, invalid }
+    return { valid, invalid, optionalMissing }
   }
 
   function buildCsv(images) {

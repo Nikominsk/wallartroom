@@ -16,18 +16,14 @@
     <main class="pp-main">
       <section class="pp-hero">
         <span class="pp-eyebrow">Pricing</span>
-        <h1>Plans that scale with your wall</h1>
-        <p>Pay monthly for steady output. Top up with credit packs when a project demands it. No hidden fees.</p>
-
-        <div class="pp-toggle">
-          <button :class="{ active: billing === 'monthly' }" @click="billing = 'monthly'">Monthly</button>
-          <button :class="{ active: billing === 'yearly' }" @click="billing = 'yearly'" disabled title="Coming soon">
-            Yearly <span class="pp-save">−20%</span>
-          </button>
-        </div>
+        <h1>Simple pricing. Cancel anytime.</h1>
+        <p>One subscription with monthly credits. Top up whenever a project needs more — no plan changes, no surprises.</p>
       </section>
 
-      <!-- ─── Subscription plans ──────────────────────────────────────────── -->
+      <!-- Checkout error toast -->
+      <div v-if="checkoutErr" class="pp-error">{{ checkoutErr }}</div>
+
+      <!-- ─── Plans ─────────────────────────────────────────────────────── -->
       <section class="pp-grid">
         <article
           v-for="plan in plans"
@@ -49,7 +45,7 @@
 
           <div class="pp-credits">
             <strong>{{ plan.credits }}</strong>
-            <span>{{ plan.credits === 0 ? 'one-time signup credits' : 'credits / month' }}</span>
+            <span>{{ plan.credits === 0 ? 'one-time signup credits' : 'credits / month — reset every cycle' }}</span>
           </div>
 
           <ul class="pp-features">
@@ -64,19 +60,23 @@
           <button
             class="pp-cta"
             :class="{ primary: plan.featured }"
-            :disabled="ctaDisabled(plan)"
+            :disabled="ctaDisabled(plan) || checkoutBusy === `plan-${plan.id}`"
             @click="onPlanCta(plan)"
           >
-            {{ ctaLabel(plan) }}
+            {{ checkoutBusy === `plan-${plan.id}` ? 'Redirecting…' : ctaLabel(plan) }}
           </button>
         </article>
       </section>
 
-      <!-- ─── Credit packs ────────────────────────────────────────────────── -->
+      <!-- ─── Top-up packs ──────────────────────────────────────────────── -->
       <section class="pp-packs">
         <header class="pp-packs-head">
-          <h2>Need a top-up?</h2>
-          <p>Buy credit packs anytime. Purchased credits never expire while your account is active.</p>
+          <span class="pp-eyebrow">Add-ons</span>
+          <h2>Top up your credits</h2>
+          <p>
+            Need more in a single month? Add a credit pack on top of your subscription.
+            Top-up credits don't expire and stack on top of your monthly grant.
+          </p>
         </header>
         <div class="pp-packs-grid">
           <article v-for="pack in creditPacks" :key="pack.id" class="pp-pack">
@@ -84,7 +84,11 @@
             <div class="pp-pack-label">credits</div>
             <div class="pp-pack-price">€{{ pack.price }}</div>
             <div class="pp-pack-meta">€{{ (pack.price / pack.credits).toFixed(2) }} / credit</div>
-            <button class="pp-pack-cta" @click="onPackCta(pack)">Buy pack</button>
+            <button class="pp-pack-cta"
+                    :disabled="checkoutBusy === `pack-${pack.id}`"
+                    @click="onPackCta(pack)">
+              {{ checkoutBusy === `pack-${pack.id}` ? 'Redirecting…' : 'Buy pack' }}
+            </button>
           </article>
         </div>
       </section>
@@ -96,12 +100,12 @@
           <p>1 credit = 1 standard preview. Realistic renders cost 2, HD exports cost 3. Failed generations are never charged.</p>
         </div>
         <div>
-          <h3>What happens to unused credits?</h3>
-          <p>Monthly credits reset each billing cycle. Purchased credits don't expire while your account is active.</p>
+          <h3>Do unused monthly credits roll over?</h3>
+          <p>No — your monthly grant resets each billing cycle. Top-up credits you bought separately stay in your wallet until you use them.</p>
         </div>
         <div>
           <h3>Can I cancel anytime?</h3>
-          <p>Yes. You keep access until the end of your billing period, then drop to the Free tier automatically.</p>
+          <p>Yes. You keep Pro access until the end of your billing period, then drop to the Free tier automatically.</p>
         </div>
       </section>
     </main>
@@ -119,7 +123,7 @@
 definePageMeta({ layout: false })
 
 interface Plan {
-  id:       'free' | 'starter' | 'plus' | 'studio'
+  id:       'free' | 'pro'
   name:     string
   tagline:  string
   price:    number
@@ -129,7 +133,7 @@ interface Plan {
 }
 
 interface CreditPack {
-  id:      string
+  id:      'pack_25' | 'pack_100' | 'pack_300'
   credits: number
   price:   number
 }
@@ -150,52 +154,20 @@ const plans: Plan[] = [
     ],
   },
   {
-    id: 'starter',
-    name: 'Starter',
-    tagline: 'For one home, casual use.',
-    price: 9,
-    credits: 50,
-    features: [
-      '50 credits / month',
-      'Up to 20 projects',
-      'No watermark',
-      'Standard visualizations',
-      'Gallery color filters',
-      'Basic Style Match Scores',
-    ],
-  },
-  {
-    id: 'plus',
-    name: 'Plus',
-    tagline: 'For frequent re-styling.',
-    price: 19,
-    credits: 150,
+    id: 'pro',
+    name: 'Pro',
+    tagline: 'Everything you need, no plan tiers.',
+    price: 15,
+    credits: 100,
     featured: true,
     features: [
-      '150 credits / month',
+      '100 credits / month — reset every cycle',
       'Unlimited projects',
       'HD exports, no watermark',
       'AI Style Reports (PDF)',
-      'Smarter recommendations',
       'Before / after exports',
-      'Saved variants',
-    ],
-  },
-  {
-    id: 'studio',
-    name: 'Studio',
-    tagline: 'For designers and shops.',
-    price: 49,
-    credits: 500,
-    features: [
-      '500 credits / month',
-      'Everything in Plus',
-      'Commercial usage rights',
-      'Client share links',
-      'PDF style reports',
-      'Own gallery uploads',
-      'Remove WallArtRoom branding',
-      'Priority generations',
+      'Top up with credit packs anytime',
+      'Cancel anytime',
     ],
   },
 ]
@@ -206,7 +178,6 @@ const creditPacks: CreditPack[] = [
   { id: 'pack_300', credits: 300, price: 39 },
 ]
 
-const billing = ref<'monthly' | 'yearly'>('monthly')
 const supabaseUser = useSupabaseUser()
 const isAuthed = computed(() => !!supabaseUser.value)
 
@@ -216,7 +187,7 @@ const isCurrentPlan = (planId: Plan['id']) => me.value?.plan === planId
 function ctaLabel(plan: Plan) {
   if (plan.id === 'free') return isAuthed.value ? 'Current plan' : 'Get started — free'
   if (isCurrentPlan(plan.id)) return 'Current plan'
-  return `Choose ${plan.name}`
+  return `Subscribe — €${plan.price}/mo`
 }
 
 function ctaDisabled(plan: Plan) {
@@ -224,20 +195,37 @@ function ctaDisabled(plan: Plan) {
   return isCurrentPlan(plan.id)
 }
 
+const checkoutBusy = ref<string | null>(null)
+const checkoutErr  = ref<string | null>(null)
+
 async function onPlanCta(plan: Plan) {
   if (!isAuthed.value) {
     return navigateTo(`/signup?next=${encodeURIComponent('/pricing')}`)
   }
   if (plan.id === 'free' || isCurrentPlan(plan.id)) return
-  // Stripe Checkout wiring lands in Phase 3.
-  alert(`Stripe Checkout for "${plan.name}" lands in Phase 3 (billing).`)
+  await goToCheckout(`plan-${plan.id}`, { kind: 'subscription', plan: plan.id })
 }
 
 async function onPackCta(pack: CreditPack) {
   if (!isAuthed.value) {
     return navigateTo(`/signup?next=${encodeURIComponent('/pricing')}`)
   }
-  alert(`Stripe Checkout for ${pack.credits}-credit pack lands in Phase 3 (billing).`)
+  await goToCheckout(`pack-${pack.id}`, { kind: 'credit_pack', packId: pack.id })
+}
+
+async function goToCheckout(key: string, body: Record<string, unknown>) {
+  checkoutBusy.value = key
+  checkoutErr.value  = null
+  try {
+    const { url } = await $fetch<{ url: string }>('/api/stripe/create-checkout-session', {
+      method: 'POST',
+      body,
+    })
+    window.location.href = url
+  } catch (e: any) {
+    checkoutErr.value = e?.statusMessage || e?.data?.statusMessage || e?.message || 'Could not start checkout'
+    checkoutBusy.value = null
+  }
 }
 </script>
 
@@ -296,7 +284,7 @@ async function onPackCta(pack: CreditPack) {
 
 .pp-main {
   flex: 1;
-  max-width: 1200px;
+  max-width: 1080px;
   width: 100%;
   margin: 0 auto;
   padding: 60px 28px 80px;
@@ -315,8 +303,8 @@ async function onPackCta(pack: CreditPack) {
     line-height: 1.05;
   }
   p {
-    max-width: 580px;
-    margin: 0 auto 30px;
+    max-width: 600px;
+    margin: 0 auto;
     color: #6b5e52;
     font-size: 17px;
   }
@@ -331,44 +319,24 @@ async function onPackCta(pack: CreditPack) {
   color: #c5a059;
 }
 
-.pp-toggle {
-  display: inline-flex;
-  background: #fff;
-  border: 1px solid #ede0d0;
-  border-radius: 999px;
-  padding: 4px;
-
-  button {
-    padding: 8px 22px;
-    border: 0;
-    background: none;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    color: #6b5e52;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-
-    &.active { background: #1a1714; color: #fff; }
-    &:disabled { opacity: 0.55; cursor: not-allowed; }
-  }
-}
-
-.pp-save {
-  background: #faf3e3;
-  color: #92400e;
-  font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  margin-left: 6px;
+.pp-error {
+  max-width: 720px;
+  margin: 0 auto 24px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: center;
 }
 
 .pp-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  margin-bottom: 80px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+  max-width: 760px;
+  margin: 0 auto 80px;
 }
 
 .pp-card {
@@ -376,7 +344,7 @@ async function onPackCta(pack: CreditPack) {
   background: #fff;
   border: 1px solid #ede0d0;
   border-radius: 18px;
-  padding: 28px 24px 26px;
+  padding: 32px 30px 30px;
   display: flex;
   flex-direction: column;
   transition: border-color 0.15s, transform 0.15s;
@@ -409,7 +377,7 @@ async function onPackCta(pack: CreditPack) {
 
   h2 {
     margin: 0;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     color: #1a1714;
     letter-spacing: -0.02em;
@@ -417,7 +385,7 @@ async function onPackCta(pack: CreditPack) {
 }
 .pp-card-sub {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: 14px;
   color: #8a7a6e;
 }
 
@@ -428,7 +396,7 @@ async function onPackCta(pack: CreditPack) {
   margin-bottom: 8px;
 
   &-cur { font-size: 22px; font-weight: 600; color: #6b5e52; }
-  &-num { font-size: 44px; font-weight: 700; color: #1a1714; letter-spacing: -0.04em; line-height: 1; }
+  &-num { font-size: 48px; font-weight: 700; color: #1a1714; letter-spacing: -0.04em; line-height: 1; }
   &-per { font-size: 14px; color: #6b5e52; margin-left: 4px; }
 }
 
@@ -458,18 +426,18 @@ async function onPackCta(pack: CreditPack) {
   li {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
-    font-size: 13px;
+    gap: 10px;
+    font-size: 13.5px;
     color: #2d2926;
-    line-height: 1.45;
+    line-height: 1.5;
 
-    svg { flex-shrink: 0; margin-top: 3px; color: #c5a059; }
+    svg { flex-shrink: 0; margin-top: 4px; color: #c5a059; }
   }
 }
 
 .pp-cta {
   width: 100%;
-  padding: 12px 18px;
+  padding: 14px 18px;
   border: 1px solid #1a1714;
   background: #fff;
   color: #1a1714;
@@ -494,16 +462,18 @@ async function onPackCta(pack: CreditPack) {
   margin-bottom: 28px;
 
   h2 {
-    margin: 0 0 8px;
-    font-size: 26px;
+    margin: 8px 0;
+    font-size: 28px;
     font-weight: 700;
     color: #1a1714;
     letter-spacing: -0.02em;
   }
   p {
-    margin: 0;
+    max-width: 560px;
+    margin: 0 auto;
     color: #6b5e52;
     font-size: 15px;
+    line-height: 1.55;
   }
 }
 .pp-packs-grid {
@@ -559,9 +529,10 @@ async function onPackCta(pack: CreditPack) {
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
 
-    &:hover { background: #1a1714; color: #fff; border-color: #1a1714; }
+    &:hover:not(:disabled) { background: #1a1714; color: #fff; border-color: #1a1714; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 }
 
@@ -601,9 +572,6 @@ async function onPackCta(pack: CreditPack) {
   color: #8a7a6e;
 }
 
-@media (max-width: 1080px) {
-  .pp-grid { grid-template-columns: repeat(2, 1fr); }
-}
 @media (max-width: 720px) {
   .pp-grid, .pp-packs-grid, .pp-faq { grid-template-columns: 1fr; }
   .pp-footer-inner { flex-direction: column; gap: 6px; }

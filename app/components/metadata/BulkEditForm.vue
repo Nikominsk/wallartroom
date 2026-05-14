@@ -19,7 +19,32 @@
       </BulkField>
 
       <BulkField label="Pinterest board" v-model:enabled="spec.pinterestBoard.enabled" v-model:clear="spec.pinterestBoard.clear">
-        <input class="bulk-form__input" v-model="spec.pinterestBoard.value" :disabled="!spec.pinterestBoard.enabled" />
+        <div class="bulk-form__board-row">
+          <select
+            v-if="boards.length"
+            class="bulk-form__input bulk-form__board-select"
+            v-model="spec.pinterestBoard.value"
+            :disabled="!spec.pinterestBoard.enabled || spec.pinterestBoard.clear"
+          >
+            <option value="">— select board —</option>
+            <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
+          </select>
+          <input
+            v-else
+            class="bulk-form__input bulk-form__board-select"
+            v-model="spec.pinterestBoard.value"
+            :disabled="!spec.pinterestBoard.enabled || spec.pinterestBoard.clear"
+            placeholder="No boards configured — add one →"
+          />
+          <button
+            type="button"
+            class="bulk-form__boards-btn"
+            :disabled="!spec.pinterestBoard.enabled"
+            @click="$emit('manage-boards')"
+          >
+            Manage boards
+          </button>
+        </div>
       </BulkField>
 
       <BulkField label="Pinterest redirect URL" v-model:enabled="spec.pinterestLink.enabled" v-model:clear="spec.pinterestLink.clear">
@@ -67,7 +92,10 @@
 defineProps({
   spec: Object,
   count: Number,
+  boards: { type: Array, default: () => [] },
 })
+
+defineEmits(['manage-boards'])
 
 function toDatetimeLocal(iso) {
   if (!iso) return ''
@@ -177,6 +205,38 @@ export const BulkField = defineComponent({
   }
 
   &__textarea { resize: vertical; }
+
+  &__board-row {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  &__board-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__boards-btn {
+    flex-shrink: 0;
+    padding: 0 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    background: #f9fafb;
+    font: inherit;
+    font-size: 12px;
+    color: #6b7280;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+    &:hover:not(:disabled) {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+      color: $color-primary;
+    }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
 }
 
 :deep(.bulk-field) { display: flex; flex-direction: column; gap: 6px; }

@@ -10,6 +10,7 @@
         :has-filters="hasFilters"
         :selected-count="selectedCount"
         :boards="boards"
+        :invalid-count="invalidImages.length"
         @update:search="filters.search = $event"
         @update:sort-field="setSort"
         @toggle-sort-dir="setSort(sortField)"
@@ -19,6 +20,7 @@
         @time-manager="showTimeManager = true"
         @pinterest-schedule="openPinterestScheduler"
         @export-csv="openExport"
+        @show-invalid="showInvalidImages = true"
       />
       <button class="meta-page__signout" title="Sign out" @click="handleSignOut">
         <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -101,7 +103,7 @@
         <div v-else-if="error" class="meta-page__state meta-page__state--error">{{ error }}</div>
         <MetadataImageGrid
           v-else
-          :images="filteredImages"
+          :images="pagedImages"
           :selected-ids="selectedIds"
           :active-id="activeId"
           :focused-id="focusedId"
@@ -150,7 +152,12 @@
           </template>
 
           <template v-else-if="selectedCount > 1">
-            <MetadataBulkEditForm :spec="bulkSpec" :count="selectedCount" />
+            <MetadataBulkEditForm
+              :spec="bulkSpec"
+              :count="selectedCount"
+              :boards="boards"
+              @manage-boards="showBoardsManager = true"
+            />
             <div class="meta-page__save-row">
               <button
                 class="meta-page__btn meta-page__btn--primary"
@@ -202,6 +209,8 @@
           <option value="10">10 / page</option>
           <option value="25">25 / page</option>
           <option value="50">50 / page</option>
+          <option value="100">100 / page</option>
+          <option value="150">150 / page</option>
           <option value="200">200 / page</option>
         </select>
       </div>
@@ -223,6 +232,7 @@
         :loading="pinterestScheduleInfoLoading"
         :saving="saving"
         :save-error="saveError"
+        :invalid-count="pinterestSchedInvalidCount"
         @apply="handlePinterestScheduleApply"
         @cancel="showPinterestScheduler = false"
       />
@@ -239,6 +249,16 @@
       />
     </div>
 
+    <!-- ── Invalid images modal ───────────────────────────────────────────── -->
+    <div v-if="showInvalidImages" class="meta-page__overlay" @click.self="showInvalidImages = false">
+      <MetadataInvalidImagesModal
+        :images="invalidImages"
+        :on-save-url="handleSaveInvalidUrl"
+        :on-delete-image="handleDeleteInvalidImage"
+        @close="showInvalidImages = false"
+      />
+    </div>
+
     <!-- ── CSV Export modal ───────────────────────────────────────────────── -->
     <div v-if="showExport" class="meta-page__overlay" @click.self="showExport = false">
       <div class="meta-page__modal">
@@ -249,9 +269,12 @@
           </button>
         </div>
         <div class="meta-page__modal-body">
-          <p>Exporting <strong>{{ csvExportImages.length }}</strong> image(s).</p>
+          <p>
+            <strong>{{ csvValidation.valid.length }}</strong> of {{ csvExportImages.length }} image(s) ready to export.
+          </p>
+
           <div v-if="csvValidation.invalid.length" class="meta-page__export-warn">
-            <strong>{{ csvValidation.invalid.length }} incomplete:</strong>
+            <strong>{{ csvValidation.invalid.length }} skipped</strong> — missing required fields:
             <ul>
               <li v-for="iv in csvValidation.invalid.slice(0, 8)" :key="iv.image.id">
                 {{ iv.image.filename }} — {{ iv.missing.join(', ') }}
@@ -259,6 +282,20 @@
               <li v-if="csvValidation.invalid.length > 8">… +{{ csvValidation.invalid.length - 8 }} more</li>
             </ul>
           </div>
+
+          <div v-if="csvOptionalSummary.length" class="meta-page__export-note">
+            <strong>Optional fields missing</strong>
+            <span class="meta-page__export-note-sub">(these images will still export):</span>
+            <ul>
+              <li v-for="o in csvOptionalSummary" :key="o.key">
+                <strong>{{ o.count }}</strong> · {{ o.label }}
+                <span v-if="o.samples.length" class="meta-page__export-samples">
+                  ({{ o.samples.join(', ') }}<template v-if="o.count > o.samples.length">, …</template>)
+                </span>
+              </li>
+            </ul>
+          </div>
+
           <p v-if="!csvValidation.valid.length" class="meta-page__export-error">No complete images to export.</p>
         </div>
         <div class="meta-page__modal-footer">
@@ -278,11 +315,11 @@
 const {
   images, pending, error,
   saving, saveError,
-  currentPage, totalCount, totalPages, pageSize,
-  loadImages, setPageSize, saveImage, saveImages, invalidateCache,
+  loadImages, saveImage, saveImages, invalidateCache,
+  deleteImage, updateImageUrl,
 } = useMetadataImages()
 
-onMounted(() => { loadImages(1); loadBoards() })
+onMounted(() => { loadImages(); loadBoards() })
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const supabase = useSupabaseClient()
@@ -310,9 +347,29 @@ const { selectedIds, selectedCount, toggle, selectImages, clearSelection } = use
 // ── Filters / Sort ────────────────────────────────────────────────────────────
 const {
   filters, sortField, sortDirection, hasFilters,
-  filteredImages, isPinterestComplete, isAdobeStockComplete,
+  filteredImages, validImages, invalidImages,
+  isPinterestComplete, isAdobeStockComplete,
   resetFilters, setSort,
 } = useGalleryFilters(images, selectedIds)
+
+// ── Invalid images modal ─────────────────────────────────────────────────────
+const showInvalidImages = ref(false)
+
+async function handleSaveInvalidUrl({ id, mediaUrl }) {
+  await updateImageUrl(id, { mediaUrl })
+}
+
+async function handleDeleteInvalidImage(id) {
+  await deleteImage(id)
+  // Clean up local state if the deleted image was active/selected.
+  if (activeId.value === id) activeId.value = null
+  if (selectedIds.value.has(id)) toggle(id)
+  if (pendingChanges.value.has(id)) {
+    const m = new Map(pendingChanges.value)
+    m.delete(id)
+    pendingChanges.value = m
+  }
+}
 
 function onUpdateFilter(key, val) {
   filters[key] = val
@@ -400,12 +457,12 @@ function closePanel() {
 const selectAllCheckbox = ref(null)
 
 const allVisibleSelected = computed(() =>
-  filteredImages.value.length > 0 && filteredImages.value.every(img => selectedIds.value.has(img.id))
+  pagedImages.value.length > 0 && pagedImages.value.every(img => selectedIds.value.has(img.id))
 )
 
 watchEffect(() => {
   if (!selectAllCheckbox.value) return
-  const some = filteredImages.value.some(img => selectedIds.value.has(img.id))
+  const some = pagedImages.value.some(img => selectedIds.value.has(img.id))
   selectAllCheckbox.value.indeterminate = some && !allVisibleSelected.value
 })
 
@@ -413,7 +470,7 @@ function toggleSelectAll() {
   if (allVisibleSelected.value) {
     clearSelection()
   } else {
-    selectImages(filteredImages.value)
+    selectImages(pagedImages.value)
   }
 }
 
@@ -421,7 +478,7 @@ function toggleSelectAll() {
 const selectionMode = ref('single')
 const lastClickedIndex = ref(-1)
 const focusedIndex = ref(-1)
-const focusedId = computed(() => filteredImages.value[focusedIndex.value]?.id ?? null)
+const focusedId = computed(() => pagedImages.value[focusedIndex.value]?.id ?? null)
 
 function handleCardClick(id, index, event) {
   focusedIndex.value = index
@@ -429,7 +486,7 @@ function handleCardClick(id, index, event) {
   if (event.ctrlKey && lastClickedIndex.value >= 0) {
     const start = Math.min(lastClickedIndex.value, index)
     const end = Math.max(lastClickedIndex.value, index)
-    selectImages(filteredImages.value.slice(start, end + 1))
+    selectImages(pagedImages.value.slice(start, end + 1))
     return
   }
 
@@ -459,7 +516,7 @@ function handleKeydown(event) {
   const tag = document.activeElement?.tagName?.toLowerCase()
   if (['input', 'textarea', 'select'].includes(tag)) return
 
-  const len = filteredImages.value.length
+  const len = pagedImages.value.length
   if (len === 0) return
 
   if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
@@ -474,7 +531,7 @@ function handleKeydown(event) {
       : Math.max(0, focusedIndex.value - 1)
   } else if (event.key === ' ') {
     event.preventDefault()
-    const img = filteredImages.value[focusedIndex.value]
+    const img = pagedImages.value[focusedIndex.value]
     if (img) toggle(img.id)
   }
 }
@@ -559,8 +616,9 @@ async function handleApplyBulk() {
 const { options: aiOptions, progress: aiProgress, generate, cancel: cancelAi, resetProgress: resetAiProgress } = useAiMetadataGeneration()
 
 const aiTargetImages = computed(() => {
-  if (selectedCount.value > 0) return images.value.filter(i => selectedIds.value.has(i.id))
-  if (activeId.value) return images.value.filter(i => i.id === activeId.value)
+  // Always run AI generation against valid-URL images only.
+  if (selectedCount.value > 0) return validImages.value.filter(i => selectedIds.value.has(i.id))
+  if (activeId.value) return validImages.value.filter(i => i.id === activeId.value)
   return filteredImages.value
 })
 
@@ -578,7 +636,7 @@ async function handleGenerate() {
         saveImage(updated)
       }
     },
-    async (img, opts) => {
+    async (img, opts, ctx = {}) => {
       return await $fetch('/api/generate-metadata', {
         method: 'POST',
         body: {
@@ -588,6 +646,7 @@ async function handleGenerate() {
           additionalContext: opts.additionalContext,
           options: opts,
           boards: opts.generateFor.pinterestBoard ? boards.value.map(b => b.name) : [],
+          existingTitles: ctx.existingTitles ?? [],
         },
       })
     },
@@ -604,9 +663,18 @@ const pinterestScheduleInfoLoading = ref(false)
 
 const pinterestSchedTargetImages = computed(() =>
   selectedCount.value > 0
-    ? images.value.filter(i => selectedIds.value.has(i.id))
+    ? validImages.value.filter(i => selectedIds.value.has(i.id))
     : filteredImages.value
 )
+
+// Count of invalid images that would have been targets had they been valid —
+// shown in the scheduler so the user knows how many were skipped.
+const pinterestSchedInvalidCount = computed(() => {
+  if (selectedCount.value > 0) {
+    return invalidImages.value.filter(i => selectedIds.value.has(i.id)).length
+  }
+  return invalidImages.value.length
+})
 
 async function openPinterestScheduler() {
   showPinterestScheduler.value = true
@@ -632,11 +700,18 @@ const showExport = ref(false)
 
 const csvExportImages = computed(() =>
   selectedCount.value > 0
-    ? images.value.filter(i => selectedIds.value.has(i.id))
+    ? validImages.value.filter(i => selectedIds.value.has(i.id))
     : filteredImages.value
 )
 
 const csvValidation = computed(() => validate(csvExportImages.value))
+
+const csvOptionalSummary = computed(() => {
+  const om = csvValidation.value.optionalMissing ?? {}
+  return Object.entries(om)
+    .filter(([, v]) => v.count > 0)
+    .map(([key, v]) => ({ key, label: v.label, count: v.count, samples: v.samples }))
+})
 
 function openExport() { showExport.value = true }
 
@@ -653,7 +728,24 @@ function handleDownloadCsv() {
   }).catch(() => {})
 }
 
-// ── Pagination ────────────────────────────────────────────────────────────────
+// ── Pagination (client-side, driven by filteredImages so totals reflect filters) ──
+const pageSize = ref(25)
+const currentPage = ref(1)
+
+const totalCount = computed(() => filteredImages.value.length)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize.value)))
+
+const pagedImages = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredImages.value.slice(start, start + pageSize.value)
+})
+
+// When filters shrink the result set, clamp the current page so we never land
+// on an empty page past the end.
+watch(totalPages, (newTotal) => {
+  if (currentPage.value > newTotal) currentPage.value = newTotal
+})
+
 const rangeStart = computed(() =>
   totalCount.value === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
 )
@@ -680,18 +772,22 @@ const pageNumbers = computed(() => {
 
 async function handleRefresh() {
   invalidateCache()
-  await loadImages(currentPage.value)
+  await loadImages()
 }
 
-async function goToPage(page) {
+function setPageSize(size) {
+  pageSize.value = size
+  currentPage.value = 1
+}
+
+function goToPage(page) {
   page = Math.max(1, Math.min(totalPages.value, page))
   if (page === currentPage.value) return
   clearSelection()
   activeId.value = null
   lastClickedIndex.value = -1
   focusedIndex.value = -1
-  await loadImages(page)
-  // Grid area scrolls to top instead of window
+  currentPage.value = page
   document.querySelector('.meta-page__grid-area')?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
@@ -1222,6 +1318,24 @@ async function goToPage(page) {
     color: #92400e;
     line-height: 1.5;
   }
+
+  &__export-note {
+    padding: 10px 14px;
+    background: #f0f4ff;
+    border: 1px solid #c7d7fd;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #3730a3;
+    line-height: 1.5;
+  }
+
+  &__export-note-sub {
+    margin-left: 4px;
+    font-weight: 400;
+    color: #4f46e5;
+  }
+
+  &__export-samples { color: #6b7280; font-weight: 400; }
 
   &__export-error { color: #ef4444; font-weight: 600; }
 

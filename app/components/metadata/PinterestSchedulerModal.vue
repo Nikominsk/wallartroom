@@ -25,9 +25,60 @@
           <label class="ps-modal__label">Uploads per day</label>
           <input type="number" v-model.number="perDay" min="1" max="48" class="ps-modal__input ps-modal__input--sm" />
         </div>
-        <div class="ps-modal__field ps-modal__field--info">
-          <label class="ps-modal__label">Images to schedule</label>
-          <span class="ps-modal__count-badge">{{ images.length }}</span>
+      </div>
+
+      <!-- Counts summary -->
+      <div class="ps-modal__counts">
+        <span class="ps-modal__count-chip ps-modal__count-chip--ok">
+          <strong>{{ images.length }}</strong> valid to schedule
+        </span>
+        <span v-if="invalidCount > 0" class="ps-modal__count-chip ps-modal__count-chip--skip">
+          <strong>{{ invalidCount }}</strong> invalid skipped
+        </span>
+        <span v-if="images.length > 0" class="ps-modal__count-chip ps-modal__count-chip--info">
+          spans <strong>{{ daySpan }}</strong> day{{ daySpan !== 1 ? 's' : '' }}
+          ({{ formatDateDisplay(scheduleRange.first) }}
+          <template v-if="scheduleRange.last !== scheduleRange.first">– {{ formatDateDisplay(scheduleRange.last) }}</template>)
+        </span>
+      </div>
+
+      <!-- Editable time slots -->
+      <div class="ps-modal__slots">
+        <div class="ps-modal__slots-header">
+          <span class="ps-modal__label">Posting times ({{ slots.length }} per day)</span>
+          <div class="ps-modal__slots-actions">
+            <button type="button" class="ps-modal__mini-btn" @click="resetSlots">Auto space</button>
+          </div>
+        </div>
+        <div class="ps-modal__slots-grid">
+          <div v-for="(slot, i) in slots" :key="i" class="ps-modal__slot">
+            <span class="ps-modal__slot-num">#{{ i + 1 }}</span>
+            <input
+              type="time"
+              v-model="slots[i]"
+              step="60"
+              class="ps-modal__slot-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Order controls -->
+      <div class="ps-modal__order">
+        <div>
+          <span class="ps-modal__label">Image order</span>
+          <span class="ps-modal__order-hint">
+            {{ orderStatus }}
+          </span>
+        </div>
+        <div class="ps-modal__order-actions">
+          <button type="button" class="ps-modal__mini-btn ps-modal__mini-btn--accent" :disabled="images.length < 2" @click="randomizeOrder">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 4h4l10 12h4M3 16h4l3-4M14 4h3l1-2 1 2M14 16h3l1 2 1-2" />
+            </svg>
+            Randomize posting order
+          </button>
+          <button v-if="isRandomized" type="button" class="ps-modal__mini-btn" @click="resetOrder">Reset</button>
         </div>
       </div>
 
@@ -55,42 +106,18 @@
         </div>
       </div>
 
-      <!-- Day-spread summary -->
-      <div v-if="rows.length > 0" class="ps-modal__spread-summary">
-        <span>{{ daySpreadText }}</span>
-        <span class="ps-modal__slot-info">{{ intervalText }}</span>
-      </div>
-
       <!-- No images warning -->
       <div v-if="images.length === 0" class="ps-modal__empty">
-        No images selected. Select images or filter the gallery first.
-      </div>
-
-      <!-- Rows list -->
-      <div v-else class="ps-modal__rows-wrap">
-        <div class="ps-modal__rows-head">
-          <span class="ps-col-idx">#</span>
-          <span class="ps-col-name">Filename</span>
-          <span class="ps-col-date">Date</span>
-          <span class="ps-col-time">Time</span>
-        </div>
-        <div class="ps-modal__rows-body">
-          <div v-for="(row, i) in rows" :key="row.image.id" class="ps-modal__row">
-            <span class="ps-col-idx ps-modal__row-num">{{ i + 1 }}</span>
-            <span class="ps-col-name ps-modal__row-name" :title="row.image.filename">{{ row.image.filename }}</span>
-            <span class="ps-col-date ps-modal__row-date">{{ formatDateDisplay(row.date) }}</span>
-            <select v-model="row.time" class="ps-col-time ps-modal__time-select">
-              <option v-for="slot in TIME_SLOTS" :key="slot" :value="slot">{{ slot }}</option>
-            </select>
-          </div>
-        </div>
+        No valid images to schedule.
+        <template v-if="invalidCount > 0">All targeted images have invalid URLs — fix them via "Show invalid" first.</template>
+        <template v-else>Select images or filter the gallery first.</template>
       </div>
     </div>
 
     <div class="ps-modal__footer">
       <button
         class="ps-modal__btn ps-modal__btn--primary"
-        :disabled="rows.length === 0 || loading || saving"
+        :disabled="images.length === 0 || loading || saving"
         @click="handleApply"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="ps-modal__spin" :class="{ 'ps-modal__spin--hidden': !loading && !saving }">
@@ -98,7 +125,7 @@
         </svg>
         <template v-if="loading">Loading schedule…</template>
         <template v-else-if="saving">Saving…</template>
-        <template v-else>Apply to {{ rows.length }} image{{ rows.length !== 1 ? 's' : '' }}</template>
+        <template v-else>Schedule {{ images.length }} image{{ images.length !== 1 ? 's' : '' }}</template>
       </button>
       <button class="ps-modal__btn" @click="emit('cancel')">Cancel</button>
       <span v-if="saveError" class="ps-modal__save-error">{{ saveError }}</span>
@@ -108,7 +135,6 @@
 
 <script setup>
 import { toRaw } from 'vue'
-import { TIME_SLOTS } from '~/composables/usePublishScheduler'
 
 const props = defineProps({
   images: { type: Array, required: true },
@@ -117,6 +143,7 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
   saveError: { type: String, default: null },
+  invalidCount: { type: Number, default: 0 },
 })
 
 const emit = defineEmits(['apply', 'cancel'])
@@ -145,6 +172,83 @@ watch(() => props.scheduleInfo, (info) => {
   }
 })
 
+// ── Time slots (editable, in 24-h "HH:MM" form) ───────────────────────────────
+
+const slots = ref([])
+
+function autoSpacedSlots(n) {
+  const rawInterval = (24 * 60) / n
+  const interval = Math.max(30, Math.round(rawInterval / 30) * 30)
+  return Array.from({ length: n }, (_, i) => {
+    const min = (i * interval) % 1440
+    const h = Math.floor(min / 60)
+    const m = min % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  })
+}
+
+function resetSlots() {
+  slots.value = autoSpacedSlots(Math.max(1, perDay.value))
+}
+
+watch(perDay, (n) => {
+  n = Math.max(1, n)
+  if (slots.value.length === n) return
+  if (slots.value.length < n) {
+    // Keep existing times, fill the rest using auto-spaced defaults.
+    const filler = autoSpacedSlots(n).slice(slots.value.length)
+    slots.value = [...slots.value, ...filler]
+  } else {
+    slots.value = slots.value.slice(0, n)
+  }
+}, { immediate: false })
+
+// Seed slots on first mount.
+slots.value = autoSpacedSlots(perDay.value)
+
+// ── Image ordering (randomizable) ─────────────────────────────────────────────
+
+const originalIds = computed(() => props.images.map(i => i.id))
+const orderedImages = ref([...props.images])
+const isRandomized = ref(false)
+
+watch(() => props.images, (imgs) => {
+  // Image list changed externally — re-sync, keeping any prior randomization
+  // only if the same set of ids is still present.
+  if (isRandomized.value) {
+    const known = new Map(imgs.map(i => [i.id, i]))
+    const next = orderedImages.value.map(o => known.get(o.id)).filter(Boolean)
+    // Append any new ids that weren't in the previous order.
+    const seen = new Set(next.map(i => i.id))
+    for (const img of imgs) if (!seen.has(img.id)) next.push(img)
+    orderedImages.value = next
+  } else {
+    orderedImages.value = [...imgs]
+  }
+}, { immediate: true })
+
+function randomizeOrder() {
+  const arr = [...orderedImages.value]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  orderedImages.value = arr
+  isRandomized.value = true
+}
+
+function resetOrder() {
+  orderedImages.value = [...props.images]
+  isRandomized.value = false
+}
+
+const orderStatus = computed(() => {
+  if (props.images.length < 2) return ''
+  return isRandomized.value
+    ? 'Randomized — dates assign in this new order'
+    : 'Using the order from the gallery'
+})
+
 // ── Existing-day info ─────────────────────────────────────────────────────────
 
 const latestLocalDateValue = computed(() => {
@@ -168,7 +272,6 @@ const infoVisible = computed(() =>
 const existingCountOnStartDay = computed(() => {
   if (!isStartSameAsLatest.value) return 0
   const total = props.scheduleInfo?.existingTimestamps?.length ?? 0
-  // Don't count images we're about to reschedule as "already existing"
   const targetOnStartDay = props.images.filter(img => {
     const pd = img.pinterest?.publishDate
     if (!pd) return false
@@ -181,47 +284,39 @@ const remainingSlotsOnDay = computed(() =>
   Math.max(0, perDay.value - existingCountOnStartDay.value)
 )
 
-// ── Slot generation ───────────────────────────────────────────────────────────
+// ── Computed schedule (date per image, based on order × slots × start) ────────
 
-function generateDaySlots(n) {
-  const rawInterval = (24 * 60) / n
-  const interval = Math.max(30, Math.round(rawInterval / 30) * 30)
-
-  return Array.from({ length: n }, (_, i) => {
-    const min = (i * interval) % 1440
-    const h = Math.floor(min / 60)
-    const m = min % 60
-    const ampm = h < 12 ? 'AM' : 'PM'
-    const h12 = h % 12 === 0 ? 12 : h % 12
-    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`
-  })
-}
-
-// ── Row generation ────────────────────────────────────────────────────────────
-
-const rows = ref([])
-
-function regenerateRows() {
+const computedSchedule = computed(() => {
   const n = Math.max(1, perDay.value)
-  const slots = generateDaySlots(n)
+  const dayTimes = slots.value.length ? slots.value : autoSpacedSlots(n)
   let curDate = startDate.value
   let slotIdx = existingCountOnStartDay.value
 
-  rows.value = props.images.map(image => {
+  return orderedImages.value.map(image => {
     if (slotIdx >= n) {
       const d = new Date(`${curDate}T00:00:00`)
       d.setDate(d.getDate() + 1)
       curDate = localDateStr(d)
       slotIdx = 0
     }
-    const date = curDate
-    const time = slots[slotIdx] ?? slots[0]
+    const time = dayTimes[slotIdx] ?? dayTimes[0]
     slotIdx++
-    return { image, date, time }
+    return { image, date: curDate, time }
   })
-}
+})
 
-watch([startDate, perDay, () => props.scheduleInfo, () => props.images], regenerateRows, { immediate: true })
+const scheduleRange = computed(() => {
+  const sched = computedSchedule.value
+  if (sched.length === 0) return { first: startDate.value, last: startDate.value }
+  return { first: sched[0].date, last: sched[sched.length - 1].date }
+})
+
+const daySpan = computed(() => {
+  const sched = computedSchedule.value
+  if (sched.length === 0) return 0
+  const dates = new Set(sched.map(r => r.date))
+  return dates.size
+})
 
 // ── Display helpers ───────────────────────────────────────────────────────────
 
@@ -239,43 +334,15 @@ function fmt12Local(date) {
   return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`
 }
 
-const daySpreadText = computed(() => {
-  if (rows.value.length === 0) return ''
-  const dates = [...new Set(rows.value.map(r => r.date))]
-  if (dates.length === 1) return `All on ${formatDateDisplay(dates[0])}`
-  return `Spread across ${dates.length} days (${formatDateDisplay(dates[0])} – ${formatDateDisplay(dates[dates.length - 1])})`
-})
-
-const intervalText = computed(() => {
-  const n = Math.max(1, perDay.value)
-  const rawInterval = (24 * 60) / n
-  const interval = Math.max(30, Math.round(rawInterval / 30) * 30)
-  const h = Math.floor(interval / 60)
-  const m = interval % 60
-  if (h === 0) return `${m}min intervals`
-  if (m === 0) return `${h}h intervals`
-  return `${h}h ${m}min intervals`
-})
-
 // ── Apply ─────────────────────────────────────────────────────────────────────
-
-function parseTime12(timeStr) {
-  const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
-  if (!match) return { hours: 0, minutes: 0 }
-  let h = parseInt(match[1])
-  const min = parseInt(match[2])
-  if (match[3].toUpperCase() === 'AM' && h === 12) h = 0
-  if (match[3].toUpperCase() === 'PM' && h !== 12) h += 12
-  return { hours: h, minutes: min }
-}
 
 function handleApply() {
   const now = new Date().toISOString()
-  const updated = rows.value.map(({ image, date, time }) => {
+  const updated = computedSchedule.value.map(({ image, date, time }) => {
     const raw = toRaw(image)
+    const [hh, mm] = (time ?? '12:00').split(':').map(Number)
     const d = new Date(`${date}T00:00:00`)
-    const { hours, minutes } = parseTime12(time)
-    d.setHours(hours, minutes, 0, 0)
+    d.setHours(hh || 0, mm || 0, 0, 0)
     return {
       ...raw,
       pinterest: { ...toRaw(raw.pinterest), publishDate: d.toISOString() },
@@ -290,9 +357,9 @@ function handleApply() {
 .ps-modal {
   display: flex;
   flex-direction: column;
-  max-height: 85vh;
+  max-height: 88vh;
   width: 100%;
-  max-width: 720px;
+  max-width: 640px;
   background: #fff;
   border-radius: $radius-md;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
@@ -337,10 +404,10 @@ function handleApply() {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
-    padding: 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
   }
 
   // ── Config row ──────────────────────────────────────────────────────────────
@@ -356,8 +423,6 @@ function handleApply() {
     display: flex;
     flex-direction: column;
     gap: 4px;
-
-    &--info { justify-content: flex-end; }
   }
 
   &__label {
@@ -383,24 +448,150 @@ function handleApply() {
     &--sm { width: 90px; }
   }
 
-  &__count-badge {
+  // ── Counts ──────────────────────────────────────────────────────────────────
+
+  &__counts {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__count-chip {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    height: 34px;
-    padding: 0 14px;
-    background: #f0fdf4;
-    border: 1px solid #86efac;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    border: 1px solid transparent;
+
+    strong { font-weight: 700; }
+
+    &--ok { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+    &--skip { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+    &--info { background: #f0f4ff; border-color: #c7d7fd; color: #3730a3; }
+  }
+
+  // ── Slots editor ────────────────────────────────────────────────────────────
+
+  &__slots {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+
+  &__slots-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  &__slots-actions { display: flex; gap: 6px; }
+
+  &__slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  &__slot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
     border-radius: 8px;
-    font-size: 14px;
+  }
+
+  &__slot-num {
+    font-size: 11px;
     font-weight: 700;
-    color: #16a34a;
+    color: #9ca3af;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__slot-input {
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    background: transparent;
+    color: $color-primary;
+    font-variant-numeric: tabular-nums;
+
+    &:focus { outline: none; border-color: $color-accent; background: #fff; }
+  }
+
+  // ── Order section ──────────────────────────────────────────────────────────
+
+  &__order {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #fafafa;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    flex-wrap: wrap;
+  }
+
+  &__order-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  &__order-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  &__mini-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #fff;
+    font: inherit;
+    font-size: 12px;
+    color: $color-primary;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover { background: #f3f4f6; border-color: #d1d5db; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    &--accent {
+      background: $color-accent;
+      border-color: $color-accent;
+      color: #fff;
+      font-weight: 600;
+
+      &:hover { background: color-mix(in srgb, #{$color-accent} 94%, #000); border-color: color-mix(in srgb, #{$color-accent} 94%, #000); }
+    }
   }
 
   // ── Info box ────────────────────────────────────────────────────────────────
 
   &__info-box {
-    padding: 14px 16px;
+    padding: 12px 14px;
     background: #fffbeb;
     border: 1px solid #fcd34d;
     border-radius: 10px;
@@ -457,112 +648,17 @@ function handleApply() {
     color: #991b1b;
   }
 
-  // ── Spread summary ──────────────────────────────────────────────────────────
-
-  &__spread-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 12px;
-    color: #374151;
-  }
-
-  &__slot-info {
-    font-size: 11px;
-    color: #6b7280;
-  }
-
   // ── Empty ───────────────────────────────────────────────────────────────────
 
   &__empty {
     text-align: center;
-    padding: 32px 16px;
+    padding: 24px 16px;
     color: #9ca3af;
     font-size: 13px;
-  }
-
-  // ── Rows table ──────────────────────────────────────────────────────────────
-
-  &__rows-wrap {
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  &__rows-head {
-    display: flex;
-    align-items: center;
-    padding: 7px 10px;
     background: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-    font-size: 11px;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    gap: 8px;
+    border: 1px dashed #e5e7eb;
+    border-radius: 8px;
   }
-
-  &__rows-body {
-    overflow-y: auto;
-    max-height: 340px;
-  }
-
-  &__row {
-    display: flex;
-    align-items: center;
-    padding: 7px 10px;
-    gap: 8px;
-    border-bottom: 1px solid #f3f4f6;
-    font-size: 13px;
-
-    &:last-child { border-bottom: none; }
-    &:hover { background: #fafafa; }
-  }
-
-  &__row-num {
-    color: #9ca3af;
-    font-size: 11px;
-  }
-
-  &__row-name {
-    color: $color-primary;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__row-date {
-    color: #374151;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__time-select {
-    height: 28px;
-    padding: 0 6px;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font: inherit;
-    font-size: 12px;
-    background: #fff;
-    color: $color-primary;
-    cursor: pointer;
-
-    &:focus { outline: none; border-color: $color-accent; }
-  }
-
-  // Column widths
-  .ps-col-idx  { flex: 0 0 28px; text-align: center; }
-  .ps-col-name { flex: 1; min-width: 0; }
-  .ps-col-date { flex: 0 0 90px; text-align: center; }
-  .ps-col-time { flex: 0 0 120px; }
 
   // ── Footer ──────────────────────────────────────────────────────────────────
 
@@ -572,6 +668,7 @@ function handleApply() {
     padding: 16px 20px;
     border-top: 1px solid #f3f4f6;
     flex-shrink: 0;
+    align-items: center;
   }
 
   &__btn {

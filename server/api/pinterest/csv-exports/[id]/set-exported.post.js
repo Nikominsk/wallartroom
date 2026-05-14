@@ -13,16 +13,25 @@ export default defineEventHandler(async (event) => {
   if (exportErr) throw createError({ statusCode: 404, statusMessage: 'Export not found' })
 
   const imageIds = exportRow.image_ids ?? []
-  if (imageIds.length === 0) return { ok: true, updated: 0 }
-
   const now = new Date().toISOString()
 
-  const { error } = await client
-    .from('pinterest_image')
-    .update({ status: 'exported', exported_at: now })
-    .in('image_id', imageIds)
+  if (imageIds.length > 0) {
+    const { error } = await client
+      .from('pinterest_image')
+      .update({ status: 'exported', exported_at: now })
+      .in('image_id', imageIds)
 
-  if (error) throw createError({ statusCode: 500, statusMessage: error.message })
+    if (error) throw createError({ statusCode: 500, statusMessage: error.message })
+  }
 
-  return { ok: true }
+  // Persist on the export row itself so the history view can render the green
+  // "Exported" badge across page reloads.
+  const { error: markErr } = await client
+    .from('pinterest_csv_export')
+    .update({ marked_exported_at: now })
+    .eq('id', id)
+
+  if (markErr) throw createError({ statusCode: 500, statusMessage: markErr.message })
+
+  return { ok: true, marked_exported_at: now }
 })

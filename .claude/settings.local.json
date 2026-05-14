@@ -11,7 +11,9 @@
       "PowerShell(Get-ChildItem \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\" | Where-Object { $_.Name -ne 'node_modules' } | ForEach-Object { \"$\\($_.PSIsContainer\\) $\\($_.Name\\)\" })",
       "PowerShell(Get-ChildItem \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\app\" | ForEach-Object { $_.Name })",
       "PowerShell(New-Item *)",
-      "PowerShell(Move-Item *)"
+      "PowerShell(Move-Item *)",
+      "Bash(npm install *)",
+      "Bash(npx nuxi *)"
     ]
   }
 }

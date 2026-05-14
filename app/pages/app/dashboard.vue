@@ -132,7 +132,7 @@ const greeting = computed(() => {
 const planLabel = computed(() => {
   const p = me.value?.plan
   if (!p) return '·'
-  return { free: 'Free', starter: 'Starter', plus: 'Plus', studio: 'Studio' }[p]
+  return ({ free: 'Free', pro: 'Pro' } as Record<string, string>)[p] ?? p
 })
 
 const lowCredits   = computed(() => !!me.value && me.value.wallet.available < 5)

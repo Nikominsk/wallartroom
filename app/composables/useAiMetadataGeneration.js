@@ -26,6 +26,41 @@ function defaultOptions() {
   }
 }
 
+const MAX_UNIQUENESS_ATTEMPTS = 3
+const DISAMBIGUATOR_SUFFIXES = [
+  'Print', 'Wall Art', 'Decor', 'Edition',
+  'Style', 'Collection', 'Series', 'Design',
+]
+
+function norm(t) {
+  return String(t ?? '').trim().toLowerCase()
+}
+
+// When the model keeps returning duplicates despite the prompt warning, force
+// uniqueness in code by appending a small disambiguator (or as a last resort,
+// a numeric suffix). Stays within maxLen.
+function disambiguateTitle(title, used, maxLen) {
+  const base = String(title ?? '').trim()
+  if (!base) return base
+
+  for (const suffix of DISAMBIGUATOR_SUFFIXES) {
+    const trimmed = base.length + 1 + suffix.length <= maxLen
+      ? base
+      : base.slice(0, Math.max(0, maxLen - suffix.length - 1)).trim()
+    const candidate = `${trimmed} ${suffix}`.trim()
+    if (!used.has(norm(candidate))) return candidate
+  }
+  for (let n = 2; n < 1000; n++) {
+    const suffix = ` ${n}`
+    const trimmed = base.length + suffix.length <= maxLen
+      ? base
+      : base.slice(0, Math.max(0, maxLen - suffix.length)).trim()
+    const candidate = `${trimmed}${suffix}`
+    if (!used.has(norm(candidate))) return candidate
+  }
+  return base
+}
+
 export function useAiMetadataGeneration() {
   const options = reactive(defaultOptions())
 
@@ -37,6 +72,7 @@ export function useAiMetadataGeneration() {
     successCount: 0,
     failedCount: 0,
     skippedCount: 0,
+    duplicateRetryCount: 0,
     failedIds: [],
   })
 
@@ -48,6 +84,7 @@ export function useAiMetadataGeneration() {
     progress.successCount = 0
     progress.failedCount = 0
     progress.skippedCount = 0
+    progress.duplicateRetryCount = 0
     progress.failedIds = []
   }
 
@@ -68,6 +105,15 @@ export function useAiMetadataGeneration() {
     progress.status = 'running'
     progress.total = images.length
 
+    // Track titles used in this run (case-insensitive). Seed with titles that
+    // already exist on the batch — those are still "taken" relative to new
+    // generations, even though they were set before this run.
+    const usedTitles = new Set()
+    for (const img of images) {
+      const t = img?.pinterest?.title
+      if (t) usedTitles.add(norm(t))
+    }
+
     for (const img of images) {
       if (progress.status === 'cancelled') break
 
@@ -82,7 +128,17 @@ export function useAiMetadataGeneration() {
       progress.current++
 
       try {
-        const partial = await generateFn(img, options)
+        const partial = await generateUnique(img, generateFn, usedTitles)
+
+        // Drop the image's prior title from the used set before re-adding,
+        // otherwise re-running on the same image flags its own old title as
+        // a collision.
+        const prior = norm(img?.pinterest?.title)
+        if (prior) usedTitles.delete(prior)
+
+        const newTitle = partial?.pinterest?.title
+        if (newTitle) usedTitles.add(norm(newTitle))
+
         const updated = {
           ...img,
           pinterest: { ...img.pinterest, ...partial.pinterest },
@@ -100,6 +156,45 @@ export function useAiMetadataGeneration() {
     }
 
     if (progress.status !== 'cancelled') progress.status = 'done'
+  }
+
+  async function generateUnique(img, generateFn, usedTitles) {
+    const wantsTitle = options.generateFor.pinterestTitle
+    const maxLen = Math.max(10, Math.min(100, Number(options.maxPinterestTitleLength) || 100))
+
+    let last
+    for (let attempt = 0; attempt < MAX_UNIQUENESS_ATTEMPTS; attempt++) {
+      last = await generateFn(img, options, {
+        existingTitles: [...usedTitles],
+        attempt,
+      })
+
+      // No title requested in this run — no uniqueness check needed.
+      if (!wantsTitle) return last
+
+      const t = norm(last?.pinterest?.title)
+      if (!t) return last
+      if (!usedTitles.has(t)) return last
+
+      // Duplicate — retry with the same prompt (the server already includes the
+      // updated list of existing titles). The composable bumps a counter for
+      // visibility in the UI.
+      progress.duplicateRetryCount++
+    }
+
+    // The AI couldn't produce a unique title after several tries — disambiguate
+    // programmatically as a last-resort. This guarantees uniqueness regardless
+    // of model behavior.
+    if (wantsTitle && last?.pinterest?.title) {
+      last = {
+        ...last,
+        pinterest: {
+          ...last.pinterest,
+          title: disambiguateTitle(last.pinterest.title, usedTitles, maxLen),
+        },
+      }
+    }
+    return last
   }
 
   function cancel() {

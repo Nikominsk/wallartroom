@@ -2,14 +2,16 @@ import type { H3Event } from 'h3'
 
 // ─── Plan → monthly credit allowance ──────────────────────────────────────────
 // Used by Stripe webhook on invoice.paid to grant the next month's credits.
+//
+// Single paid tier ("pro") plus the always-on "free" tier. Monthly credits
+// reset on each billing cycle (no rollover); purchased credit packs persist
+// independently as a top-up bucket.
 
-export type PlanTier = 'free' | 'starter' | 'plus' | 'studio'
+export type PlanTier = 'free' | 'pro'
 
 export const PLAN_MONTHLY_CREDITS: Record<PlanTier, number> = {
-  free:    0,
-  starter: 50,
-  plus:    150,
-  studio:  500,
+  free: 0,
+  pro:  100,
 }
 
 // ─── Credit cost table for paid actions ───────────────────────────────────────

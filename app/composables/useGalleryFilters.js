@@ -1,3 +1,5 @@
+import { isInvalidImage } from './useImageUrlValidation.js'
+
 function defaultFilters() {
   return {
     search: '',
@@ -5,7 +7,9 @@ function defaultFilters() {
     adobeStockComplete: '',
     pinterestDate: '',
     adobeStockDate: '',
-    pinterestExported: '',
+    // Default: hide already-exported pins so the grid focuses on work still to
+    // be done. The user can flip it to "Any" or "Exported" via the filter UI.
+    pinterestExported: 'not-exported',
     pinterestPublished: '',
     pinterestBoard: '',
     onlySelected: false,
@@ -17,11 +21,20 @@ export function useGalleryFilters(images, selectedIds) {
   const sortField = ref('createdAt')
   const sortDirection = ref('desc')
 
-  const hasFilters = computed(() =>
-    !!(filters.search || filters.pinterestComplete || filters.adobeStockComplete ||
-      filters.pinterestDate || filters.adobeStockDate || filters.pinterestExported ||
-      filters.pinterestPublished || filters.pinterestBoard || filters.onlySelected)
-  )
+  // Invalid-URL images never appear in the main grid; they're managed via the
+  // separate "Show invalid images" modal so they can be fixed or deleted.
+  const validImages = computed(() => images.value.filter(img => !isInvalidImage(img)))
+  const invalidImages = computed(() => images.value.filter(isInvalidImage))
+
+  // "Has filters" really means "any filter differs from its default." That way
+  // the default not-exported filter doesn't trip the badge dot / reset button.
+  const defaultsSnapshot = defaultFilters()
+  const hasFilters = computed(() => {
+    for (const key of Object.keys(defaultsSnapshot)) {
+      if (filters[key] !== defaultsSnapshot[key]) return true
+    }
+    return false
+  })
 
   function isPinterestComplete(img) {
     return !!(img.pinterest.title && img.pinterest.description && img.pinterest.board && img.pinterest.link)
@@ -34,7 +47,7 @@ export function useGalleryFilters(images, selectedIds) {
   const filteredImages = computed(() => {
     const q = filters.search.toLowerCase().trim()
 
-    let result = images.value.filter(img => {
+    let result = validImages.value.filter(img => {
       if (q) {
         const hay = [
           img.filename, img.prompt ?? '',
@@ -123,5 +136,10 @@ export function useGalleryFilters(images, selectedIds) {
     }
   }
 
-  return { filters, sortField, sortDirection, hasFilters, filteredImages, isPinterestComplete, isAdobeStockComplete, resetFilters, setSort }
+  return {
+    filters, sortField, sortDirection, hasFilters,
+    filteredImages, validImages, invalidImages,
+    isPinterestComplete, isAdobeStockComplete,
+    resetFilters, setSort,
+  }
 }
