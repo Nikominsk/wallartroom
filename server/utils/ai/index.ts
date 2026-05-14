@@ -6,7 +6,8 @@ import { mockProvider } from './mock'
 import { getAiConfig } from './config'
 
 export * from './types'
-export { getAiConfig } from './config'
+// `getAiConfig` is already auto-imported from ./config — re-exporting it here
+// produced a Nuxt "duplicated imports" warning, so we leave it at its source.
 
 export function getAi(): AiProvider {
   const cfg = getAiConfig()

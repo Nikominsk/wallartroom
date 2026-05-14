@@ -16,8 +16,8 @@
 
     <div class="img-card__image">
       <img
-        v-if="image.thumbnailUrl || image.mediaUrl"
-        :src="image.thumbnailUrl || image.mediaUrl"
+        v-if="safeImgSrc"
+        :src="safeImgSrc"
         :alt="image.filename"
         loading="lazy"
       />
@@ -69,7 +69,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { isWellFormedImageUrl } from '~/composables/useImageUrlValidation.js'
+
+const props = defineProps({
   image: Object,
   selected: Boolean,
   active: Boolean,
@@ -79,6 +81,15 @@ defineProps({
   adobeStockComplete: Boolean,
 })
 defineEmits(['card-click', 'toggle-select'])
+
+// Guard against any URL the dev server would treat as a relative path. Without
+// this, junk-prefixed URLs (e.g. dotenvx banner text glued onto an https://...
+// URL) become relative requests against localhost and fill the Nuxt log with
+// Vue Router 404s during dev.
+const safeImgSrc = computed(() => {
+  const candidates = [props.image?.thumbnailUrl, props.image?.mediaUrl]
+  return candidates.find(isWellFormedImageUrl) ?? null
+})
 </script>
 
 <style scoped lang="scss">

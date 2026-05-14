@@ -55,7 +55,7 @@
       >
         <div class="inv-modal__preview">
           <img
-            v-if="row.previewOk && row.draftUrl"
+            v-if="row.previewOk && urlLooksValid(row.draftUrl)"
             :src="row.draftUrl"
             :alt="row.image.filename"
             @error="row.previewOk = false"
