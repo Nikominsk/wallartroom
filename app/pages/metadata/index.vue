@@ -217,14 +217,18 @@
               :mode="mode"
               @manage-boards="showBoardsManager = true"
             />
-            <div class="meta-page__save-row">
-              <button
-                class="meta-page__btn meta-page__btn--primary"
-                :disabled="activeFieldCount === 0 || saving"
-                @click="handleApplyBulk"
-              >Apply to {{ selectedCount }} images</button>
-            </div>
           </template>
+        </div>
+
+        <div v-if="selectedCount > 1" class="meta-page__bulk-apply-bar">
+          <span class="meta-page__bulk-apply-hint">
+            {{ activeFieldCount === 0 ? 'Enable at least one field above' : `${activeFieldCount} field${activeFieldCount !== 1 ? 's' : ''} will be applied` }}
+          </span>
+          <button
+            class="meta-page__btn meta-page__btn--primary"
+            :disabled="activeFieldCount === 0 || saving"
+            @click="handleApplyBulk"
+          >Apply to {{ selectedCount }}</button>
         </div>
 
         <div class="meta-page__panel-footer">
@@ -1297,6 +1301,27 @@ function goToPage(page) {
   }
 
   &__save-row { display: flex; gap: 8px; }
+
+  &__bulk-apply-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid #e5e7eb;
+    background: #fafafa;
+  }
+
+  &__bulk-apply-hint {
+    font-size: 12px;
+    color: #9ca3af;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   &__btn {
     display: inline-flex;

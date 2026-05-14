@@ -47,6 +47,11 @@
               <path d="M9 1V0H8v1H4V0H3v1H1a1 1 0 00-1 1v9a1 1 0 001 1h10a1 1 0 001-1V2a1 1 0 00-1-1H9zM1 4h10v7H1V4zm2 2h1v1H3V6zm2 0h1v1H5V6zm2 0h1v1H7V6z"/>
             </svg>
           </span>
+          <span
+            v-if="image.pinterest.link"
+            class="img-card__dot img-card__dot--link"
+            :title="`Redirect URL: ${image.pinterest.link}`"
+          >W</span>
           <span v-if="image.pinterest.exportedAt" class="img-card__badge img-card__badge--exported">EXP</span>
           <span v-if="image.pinterest.publishedAt" class="img-card__badge img-card__badge--published">PUB</span>
         </template>
@@ -233,6 +238,7 @@ const safeImgSrc = computed(() => {
     &--warn { background: #fef3c7; color: #d97706; }
     &--date { background: #dbeafe; color: #2563eb; }
     &--none { background: #f3f4f6; color: #9ca3af; }
+    &--link { background: #f0fdf4; color: #16a34a; }
     &--icon { font-size: 7px; }
   }
 

@@ -1,2077 +1,1980 @@
 <template>
-  <section class="page-root" id="visualizer-page">
+  <div class="lp" id="top">
 
-    <header class="site-header">
-      <div class="container nav">
-        <a class="brand" href="#">Wall<span>Art</span>Room</a>
-        <nav class="nav-links">
+    <!-- ── Cursor follower (hidden on touch/coarse pointer) ────────────────── -->
+    <div ref="cursorRef" class="cursor" aria-hidden="true">
+      <div class="cursor__inner" />
+    </div>
+
+
+    <!-- ── Nav ─────────────────────────────────────────────────────────────── -->
+    <header class="nav">
+      <div class="nav__inner">
+        <a class="nav__brand" href="#top">Wall<span>Art</span>Room</a>
+        <nav class="nav__links">
+          <a href="#features">Features</a>
           <a href="#how">How it works</a>
-          <a href="#visualizer">Visualizer</a>
-          <a href="#rooms">Room Guides</a>
-          <NuxtLink to="/pricing">Pricing</NuxtLink>
-          <NuxtLink to="/gallery">Gallery</NuxtLink>
-          <NuxtLink v-if="isAuthed" to="/app/dashboard" class="nav-cta">Dashboard</NuxtLink>
-          <NuxtLink v-else to="/login" class="nav-cta">Sign in</NuxtLink>
+          <a href="#waitlist" class="nav__cta">Join the waitlist</a>
         </nav>
-           </div>
+      </div>
     </header>
 
     <main>
 
-      <!-- ════ 1 · HERO · BEFORE/AFTER ════ -->
-      <section class="hero" id="showcase">
-        <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
-        <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
+      <!-- ══ HERO ═════════════════════════════════════════════════════════════ -->
+      <section class="hero">
+        <div class="hero__orb hero__orb--1" aria-hidden="true" />
+        <div class="hero__orb hero__orb--2" aria-hidden="true" />
+        <div class="hero__grain" aria-hidden="true" />
 
-        <div class="container hero-grid">
-          <div class="hero-copy">
-            <span class="eyebrow">Wall Art Visualizer</span>
-            <h1>See your art on your wall<br><em>before you hang it</em></h1>
-            <p class="hero-lead">
-              Upload your room, drop in any piece, and preview a true-to-scale render in seconds —
-              with palette analysis baked in.
+        <div class="hero__inner">
+
+          <div class="hero__copy">
+            <span class="hero__eyebrow hero-enter">
+              <span class="hero__eyebrow-dot" />
+              Private beta · launching very soon
+            </span>
+
+            <h1 class="hero__title hero-enter">
+              200 pins to Pinterest<br>
+              <em>in four clicks.</em>
+            </h1>
+
+            <p class="hero__lead hero-enter">
+              Drop in your images. <strong>WallArtRoom</strong> writes the titles and
+              descriptions, spreads them across your boards, picks the times, and exports
+              a Pinterest-ready CSV. You just upload to Printerest.
             </p>
-            <div class="actions">
-              <a class="btn btn-primary" href="#visualizer" @click.prevent="goToVisualizer">
-                Try the Visualizer
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </a>
-              <a class="btn btn-ghost" href="#how">How it works</a>
-            </div>
-            <ul class="hero-feats">
-              <li><span class="hf-dot"></span>True-to-scale rendering</li>
-              <li><span class="hf-dot"></span>Smart palette harmony</li>
-              <li><span class="hf-dot"></span>Any room, any wall</li>
-            </ul>
-          </div>
 
-          <div
-            class="hero-compare"
-            ref="compareEl"
-            @pointerdown="startDrag"
-            @pointermove="onDrag"
-            @pointerup="endDrag"
-            @pointercancel="endDrag"
-            @pointerleave="endDrag"
-          >
-            <div class="hc-stage">
-              <!-- BEFORE: empty wall -->
-              <div class="hc-layer hc-before" aria-hidden="true">
-                <img class="hc-room" src="@@/assets/images/showcase-empty-wall.png" alt="" />
-                <div class="hc-tag hc-tag-before">Before</div>
-              </div>
-
-              <!-- AFTER: artwork placed -->
-              <div class="hc-layer hc-after" :style="{ clipPath: `inset(0 0 0 ${pos}%)` }" aria-hidden="true">
-                <img class="hc-room" src="@@/assets/images/showcase.png" alt="" />
-                <div class="hc-tag hc-tag-after">After</div>
-              </div>
-
-              <!-- Divider + handle -->
-              <div class="hc-divider" :style="{ left: `${pos}%` }">
-                <button class="hc-handle" type="button" aria-label="Drag to compare">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M9 6l-5 6 5 6M15 6l5 6-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
+            <form
+              class="hero__form hero-enter"
+              @submit.prevent="handleSubmit"
+            >
+              <!-- Honeypot — visually hidden, off-screen, and excluded from
+                   tab order. Real users never see or touch it; bots that auto-
+                   fill form fields almost always do, and the server silently
+                   drops submissions where this is filled. -->
+              <input
+                v-model="honeypot"
+                type="text"
+                name="company"
+                autocomplete="off"
+                tabindex="-1"
+                aria-hidden="true"
+                class="hp-field"
+              />
+              <div class="hero__form-row">
+                <input
+                  v-model="email"
+                  type="email"
+                  required
+                  placeholder="you@studio.com"
+                  class="hero__input"
+                  :disabled="submitting || submitted"
+                  aria-label="Email address"
+                />
+                <button
+                  type="submit"
+                  class="hero__btn"
+                  :disabled="submitting || submitted || !email"
+                >
+                  <template v-if="submitted && alreadyJoined">Already in ✓</template>
+                  <template v-else-if="submitted">You're in ✓</template>
+                  <template v-else-if="submitting">Saving…</template>
+                  <template v-else>
+                    Join the waitlist
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 7h8m-3-3l3 3-3 3" />
+                    </svg>
+                  </template>
                 </button>
               </div>
+              <p class="hero__form-note" :class="{ 'hero__form-note--err': formError }">
+                <template v-if="formError">{{ formError }}</template>
+                <template v-else-if="submitted && alreadyJoined">Welcome back — we'll let you know.</template>
+                <template v-else-if="submitted">We'll send one email when we open the doors.</template>
+                <template v-else>No spam, ever. One email when we launch.</template>
+              </p>
+            </form>
 
-              <div class="hc-hint" v-if="!hasInteracted">Drag to compare</div>
+            <div class="hero__feat-cards hero-enter">
+              <div class="hero__feat-card">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.636 5.636l2.121 2.121M16.243 16.243l2.121 2.121M5.636 18.364l2.121-2.121M16.243 7.757l2.121-2.121"/>
+                </svg>
+                <span>AI metadata generation</span>
+              </div>
+              <div class="hero__feat-card">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="17" rx="2"/>
+                  <path d="M3 9h18M8 2v4M16 2v4"/>
+                </svg>
+                <span>Bulk publish scheduling</span>
+              </div>
+              <div class="hero__feat-card">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3v13M7 12l5 5 5-5"/>
+                  <path d="M4 20h16"/>
+                </svg>
+                <span>One-click CSV export</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product preview — static image. Cheap to paint = silky scroll. -->
+          <div class="hero__preview hero-enter">
+            <img
+              :src="heroImg"
+              alt="WallArtRoom Pinterest gallery preview"
+              class="hero__img"
+              loading="eager"
+              decoding="async"
+              draggable="false"
+            />
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ══ PROBLEM ══════════════════════════════════════════════════════════ -->
+      <section class="problem">
+        <div class="container">
+          <div class="problem__head">
+            <span class="kicker">The problem</span>
+            <h2>Pinning at scale wasn't designed for creators.</h2>
+            <p>If you publish more than a handful of pins a week, you already know the workflow gets ugly fast.</p>
+          </div>
+
+          <div class="problem__grid">
+            <div
+              v-for="p in painPoints"
+              :key="p.title"
+              class="pain"
+            >
+              <div class="pain__icon" v-html="p.icon" />
+              <h3>{{ p.title }}</h3>
+              <p>{{ p.body }}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ════ 2 · MARQUEE ════ -->
-      <div class="marquee-strip" aria-hidden="true">
-        <div class="marquee-track">
-          <span class="mq-item">Photorealistic Preview</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Instant Placement</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Color Harmony</span><span class="mq-sep">✦</span>
-          <span class="mq-item">True to Scale</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Any Room</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Zero Guesswork</span><span class="mq-sep">✦</span>
-          <span class="mq-item">18-Second Previews</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Decide with Confidence</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Photorealistic Preview</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Instant Placement</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Color Harmony</span><span class="mq-sep">✦</span>
-          <span class="mq-item">True to Scale</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Any Room</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Zero Guesswork</span><span class="mq-sep">✦</span>
-          <span class="mq-item">18-Second Previews</span><span class="mq-sep">✦</span>
-          <span class="mq-item">Decide with Confidence</span><span class="mq-sep">✦</span>
-        </div>
-      </div>
 
-      <!-- ════ 3 · STATS ════ -->
-      <div class="stats-strip">
-        <div class="container stats-row">
-          <div class="stat reveal">
-            <span class="stat-num" data-target="2400" data-suffix="+" data-comma>0</span>
-            <span class="stat-label">Rooms visualized</span>
-          </div>
-          <div class="stat-sep" aria-hidden="true"></div>
-          <div class="stat reveal" style="--delay:80ms">
-            <span class="stat-num" data-target="18" data-suffix=" sec">0</span>
-            <span class="stat-label">Avg. to first preview</span>
-          </div>
-          <div class="stat-sep" aria-hidden="true"></div>
-          <div class="stat reveal" style="--delay:160ms">
-            <span class="stat-num" data-target="4.8" data-suffix=" / 5" data-decimal>0</span>
-            <span class="stat-label">Collector satisfaction</span>
-          </div>
-        </div>
-      </div>
+      <!-- ══ PROOF / WHAT'S POSSIBLE ═════════════════════════════════════════ -->
+      <section class="proof">
+        <div class="container proof__grid">
 
-      <!-- ════ 4 · HOW IT WORKS ════ -->
-      <section class="section how-section" id="how">
-        <div class="container">
-          <div class="how-layout">
-
-            <div class="how-left reveal">
-              <span class="eyebrow">The Process</span>
-              <h2>From blank wall<br>to <em>perfect placement</em></h2>
-              <p class="how-sub">Three steps. Zero guesswork.</p>
-            </div>
-
-            <div class="how-steps">
-              <div class="how-step reveal">
-                <div class="step-ico">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2 1.586-1.586a2 2 0 0 1 2.828 0L20 14m-6-6h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <div class="step-content">
-                  <span class="step-num">01</span>
-                  <div class="step-body">
-                    <h3>Upload your room</h3>
-                    <p>Photograph your wall or choose from sample interiors. The visualizer adapts to any space.</p>
-                  </div>
-                </div>
-              </div>
-              <div class="how-step reveal" style="--delay:80ms">
-                <div class="step-ico">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0-5 5M4 16v4m0 0h4m-4 0 5-5m11 5-5-5m5 5v-4m0 4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <div class="step-content">
-                  <span class="step-num">02</span>
-                  <div class="step-body">
-                    <h3>Place the artwork</h3>
-                    <p>Browse the collection or upload your own piece. Drag, scale, and reposition in real time.</p>
-                  </div>
-                </div>
-              </div>
-              <div class="how-step reveal" style="--delay:160ms">
-                <div class="step-ico">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <div class="step-content">
-                  <span class="step-num">03</span>
-                  <div class="step-body">
-                    <h3>Commit with confidence</h3>
-                    <p>See the piece at real scale with accurate proportions. Order once. Get it right.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <!-- ════ 5 · PLACEMENT DEMO ════ -->
-      <section class="section placement-section" id="visualizer">
-        <div class="container">
-          <div class="placement-layout">
-
-            <div class="placement-content reveal">
-              <span class="eyebrow">Live Demo</span>
-              <h2>Watch artwork<br><em>find its place</em></h2>
-              <p>Place any piece on your wall in real proportions — accounting for scale, lighting, and color harmony with your existing interior.</p>
-              <ul class="placement-feats">
-                <li><span class="pf-dot"></span>True-to-life scale rendering</li>
-                <li><span class="pf-dot"></span>Drag, resize, and reposition freely</li>
-                <li><span class="pf-dot"></span>Instant color harmony analysis</li>
-              </ul>
-              <div class="actions" style="margin-top:32px">
-                <a class="btn btn-primary" href="#visualizer" @click.prevent="goToVisualizer">
-                  Open Visualizer
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </a>
-              </div>
-            </div>
-
-            <div class="placement-demo reveal" style="--delay:120ms">
-              <div class="demo-shell">
-                <div class="demo-bar">
-                  <div class="demo-dots"><span></span><span></span><span></span></div>
-                  <div class="demo-bar-title">WallArtRoom · Visualizer</div>
-                  <div class="demo-chips">
-                    <span class="demo-chip">Upload Room</span>
-                    <span class="demo-chip demo-chip--active">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 4v16m-8-8h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-                      Place Art
-                    </span>
-                  </div>
-                </div>
-                <div class="demo-canvas">
-                  <img class="demo-room" src="@@/assets/images/image.png" alt="" />
-                  <!-- <div class="demo-gl demo-gl-h"></div>
-                  <div class="demo-gl demo-gl-v"></div>
-                  <div class="demo-art">
-                    <img src="@@/assets/images/showcase.png" alt="" />
-                    <span class="da-handle da-tl"></span>
-                    <span class="da-handle da-tr"></span>
-                    <span class="da-handle da-bl"></span>
-                    <span class="da-handle da-br"></span>
-                    <div class="da-badge">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                      Perfect fit
-                    </div>
-                  </div> -->
-                  <div class="demo-palette">
-                    <div class="dp-head">Palette match</div>
-                    <div class="dp-swatches">
-                      <span class="dp-sw" style="--c:#8b7355;--i:0"></span>
-                      <span class="dp-sw" style="--c:#c5a059;--i:1"></span>
-                      <span class="dp-sw" style="--c:#4a3f35;--i:2"></span>
-                      <span class="dp-sw" style="--c:#d4b896;--i:3"></span>
-                    </div>
-                    <div class="dp-match">
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#7dc97d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                      Harmonious
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <!-- ════ 6 · BENTO ════ -->
-      <section class="section bento-section">
-        <div class="container">
-          <div class="bento-header reveal">
-            <span class="eyebrow">Features</span>
-            <h2>Built for the moment<br>of <em>decision</em></h2>
-          </div>
-          <div class="bento-grid">
-
-            <div class="bento-card bento-tall reveal">
-              <span class="bento-tag">Visualization</span>
-              <h3>Photorealistic wall preview in your actual space</h3>
-              <p>Accurate lighting, scale, and shadow rendered from your room photo.</p>
-              <div class="bento-visual">
-                <img src="@@/assets/images/showcase.png" alt="Wall visualization preview"/>
-                <div class="bv-live"><span class="bv-dot"></span>Rendered live</div>
-              </div>
-            </div>
-
-            <div class="bento-card bento-speed reveal" style="--delay:80ms">
-              <span class="bento-tag">Speed</span>
-              <h3>First preview under 30 seconds</h3>
-              <p>Upload a photo, choose a piece. The result appears before doubt sets in.</p>
-              <div class="speed-demo">
-                <div class="sd-track"><div class="sd-fill"></div></div>
-                <div class="sd-labels">
-                  <span>Upload</span>
-                  <span class="sd-ready">✦ Preview ready</span>
-                </div>
-                <div class="sd-time">18 sec avg.</div>
-              </div>
-            </div>
-
-            <div class="bento-card bento-color reveal" style="--delay:160ms">
-              <span class="bento-tag">Color</span>
-              <h3>Palette harmony</h3>
-              <p>See how each artwork's tones interact with your existing interior.</p>
-              <div class="color-row">
-                <span class="cr-sw" style="--c:#8b7355;--i:0"></span>
-                <span class="cr-sw" style="--c:#c5a059;--i:1"></span>
-                <span class="cr-sw" style="--c:#4a3f35;--i:2"></span>
-                <span class="cr-sw" style="--c:#d4b896;--i:3"></span>
-                <span class="cr-sw" style="--c:#f0e8da;--i:4"></span>
-                <span class="cr-sw" style="--c:#2d2926;--i:5"></span>
-              </div>
-            </div>
-
-            <div class="bento-card bento-sm reveal" style="--delay:240ms">
-              <span class="bento-tag">Scale</span>
-              <h3>Any room, any wall</h3>
-              <p>Textured plaster, painted brick, white linen — the tool adapts.</p>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <!-- ════ 7 · ROOM GUIDES ════ -->
-      <section class="section rooms-section" id="rooms">
-        <div class="container">
-          <div class="rooms-header reveal">
-            <span class="eyebrow">Room Guides</span>
-            <h2>Art advice for <em>every room</em></h2>
-            <p class="rooms-sub">Practical guides on size, placement, color, and framing — written for each space in your home.</p>
-          </div>
-          <div class="rooms-grid">
-            <a href="/livingroom" class="room-card reveal">
-              <span class="room-card-num">01</span>
-              <div class="room-card-body">
-                <h3>Living Room</h3>
-                <p>Scale, gallery walls, focal points, and color connection for the most-seen wall in your home.</p>
-              </div>
-              <span class="room-card-arrow">→</span>
-            </a>
-            <a href="/bedroom" class="room-card reveal" style="--delay:60ms">
-              <span class="room-card-num">02</span>
-              <div class="room-card-body">
-                <h3>Bedroom</h3>
-                <p>Calming palettes, headboard scale, and how to make your bedroom feel like a true sanctuary.</p>
-              </div>
-              <span class="room-card-arrow">→</span>
-            </a>
-            <a href="/kitchen" class="room-card reveal" style="--delay:120ms">
-              <span class="room-card-num">03</span>
-              <div class="room-card-body">
-                <h3>Kitchen</h3>
-                <p>Practical tips for art in a functional space — materials, scale, themes, and placement.</p>
-              </div>
-              <span class="room-card-arrow">→</span>
-            </a>
-            <a href="/office" class="room-card reveal" style="--delay:180ms">
-              <span class="room-card-num">04</span>
-              <div class="room-card-body">
-                <h3>Office</h3>
-                <p>Art that supports focus, color psychology for productivity, and framing for video calls.</p>
-              </div>
-              <span class="room-card-arrow">→</span>
+          <div class="proof__visual">
+            <img
+              :src="exampleStatsImg"
+              alt="Pinterest analytics from a real creator account showing impressions, saves, and outbound clicks"
+              class="proof__img"
+              loading="lazy"
+              decoding="async"
+              draggable="false"
+            />
+            <a
+              class="proof__credit"
+              href="https://de.pinterest.com/DigiDesignArt/"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6" />
+                <path d="M10 2H7M10 2v3M10 2L5 7" />
+              </svg>
+              View live account
             </a>
           </div>
+
+          <div class="proof__copy">
+            <span class="kicker">Real example</span>
+            <h2>See what's <em>possible</em>.</h2>
+            <p class="proof__lead">
+              This is a real Pinterest account run by one person, using the same
+              workflow we're building. No team. No agency.
+            </p>
+
+            <ul class="proof__points">
+              <li>
+                <span class="proof__bullet-icon">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 7l3.5 3.5L12 4" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>Already pinning at scale?</strong>
+                  This is the tool you wish Pinterest gave you.
+                </div>
+              </li>
+              <li>
+                <span class="proof__bullet-icon">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 7l3.5 3.5L12 4" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>New to Pinterest?</strong>
+                  Build a full presence here without writing a single title or
+                  touching a spreadsheet.
+                </div>
+              </li>
+              <li>
+                <span class="proof__bullet-icon">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 7l3.5 3.5L12 4" />
+                  </svg>
+                </span>
+                <div>
+                  <strong>Bring your own images.</strong>
+                  Make them in Midjourney, Canva, Photoshop — anywhere. Drop
+                  them in, we handle the rest.
+                </div>
+              </li>
+            </ul>
+
+            <p class="proof__future">
+              <span class="proof__future-tag">Coming next</span>
+              Generate images right inside WallArtRoom — no extra tool needed.
+            </p>
+          </div>
+
         </div>
       </section>
 
-      <!-- ════ 8 · QUOTE ════ -->
-      <section class="quote-section" id="journal">
-        <div class="container quote-wrap">
-          <div class="quote-star reveal">✦</div>
-          <blockquote class="reveal" style="--delay:60ms">"Art is not just a visual filler; it is the atmospheric anchor of a home. We believe the future of curation lies in the fusion of human intent and digital precision."</blockquote>
-          <div class="quote-source reveal" style="--delay:120ms">— The WallArtRoom</div>
-        </div>
-      </section>
 
-      <!-- ════ 8 · CTA ════ -->
-      <section class="cta-section">
-        <div class="cta-orb cta-orb-1" aria-hidden="true"></div>
-        <div class="cta-orb cta-orb-2" aria-hidden="true"></div>
+      <!-- ══ FEATURES ════════════════════════════════════════════════════════ -->
+      <section class="features" id="features">
         <div class="container">
-          <div class="cta-inner reveal">
-            <div class="cta-content">
-              <span class="eyebrow cta-eyebrow">Get started</span>
-              <h2>Your wall deserves a decision,<br><em>not a guess</em></h2>
-              <p>Free to use. No account needed to preview your first artwork.</p>
-              <div class="actions">
-                <a class="btn btn-primary-inv" href="#visualizer" @click.prevent="goToVisualizer">
-                  Open the Visualizer
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-5-5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </a>
-                <a class="btn btn-outline-inv" href="#how">See how it works</a>
+          <div class="features__head">
+            <span class="kicker">What's inside</span>
+            <h2>Everything you wish Pinterest's editor did.</h2>
+            <p>One workspace for managing thousands of pins — without the spreadsheet chaos.</p>
+          </div>
+
+          <div class="features__list">
+            <div
+              v-for="(f, i) in featureList"
+              :key="f.title"
+              class="feature"
+              :class="{ 'feature--reverse': i % 2 === 1 }"
+            >
+              <div class="feature__copy">
+                <span class="feature__num">0{{ i + 1 }}</span>
+                <h3>{{ f.title }}</h3>
+                <p>{{ f.body }}</p>
+                <ul class="feature__bullets">
+                  <li v-for="b in f.bullets" :key="b">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2 7l3.5 3.5L12 4" />
+                    </svg>
+                    {{ b }}
+                  </li>
+                </ul>
               </div>
-            </div>
-            <div class="cta-deco" aria-hidden="true">
-              <div class="cta-ring r1"></div>
-              <div class="cta-ring r2"></div>
-              <div class="cta-ring r3"></div>
-              <span class="cta-glyph">✦</span>
+
+              <div class="feature__visual">
+                <component :is="f.visual" />
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+
+      <!-- ══ HOW IT WORKS ═════════════════════════════════════════════════════ -->
+      <section class="how" id="how">
+        <div class="container">
+          <div class="how__head">
+            <span class="kicker">The flow</span>
+            <h2>From upload to published in three steps.</h2>
+          </div>
+
+          <div class="how__steps">
+            <div class="how__line" aria-hidden="true" />
+            <div
+              v-for="s in steps"
+              :key="s.title"
+              class="step"
+            >
+              <div class="step__num">{{ i + 1 }}</div>
+              <h3>{{ s.title }}</h3>
+              <p>{{ s.body }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ══ FINAL CTA ════════════════════════════════════════════════════════ -->
+      <section class="cta" id="waitlist">
+        <div class="container">
+          <div class="cta__inner">
+            <span class="kicker kicker--light">Be first</span>
+            <h2>Get an invite when we launch.</h2>
+            <p>We're inviting creators in waves — leave your email and we'll send one short message when your slot opens.</p>
+
+            <form class="cta__form" @submit.prevent="handleSubmit">
+              <input
+                v-model="honeypot"
+                type="text"
+                name="company"
+                autocomplete="off"
+                tabindex="-1"
+                aria-hidden="true"
+                class="hp-field"
+              />
+              <input
+                v-model="email"
+                type="email"
+                required
+                placeholder="you@studio.com"
+                class="cta__input"
+                :disabled="submitting || submitted"
+                aria-label="Email address"
+              />
+              <button type="submit" class="cta__btn" :disabled="submitting || submitted || !email">
+                <template v-if="submitted && alreadyJoined">Already in ✓</template>
+                <template v-else-if="submitted">You're in ✓</template>
+                <template v-else-if="submitting">Saving…</template>
+                <template v-else>Reserve my spot</template>
+              </button>
+            </form>
+            <p class="cta__note" :class="{ 'cta__note--err': formError }">
+              <template v-if="formError">{{ formError }}</template>
+              <template v-else>One email. No marketing list. Unsubscribe with one click.</template>
+            </p>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ══ FOOTER ══════════════════════════════════════════════════════════ -->
+      <footer class="footer">
+        <div class="container footer__inner">
+          <a class="footer__brand" href="#top">Wall<span>Art</span>Room</a>
+          <p class="footer__copy">© {{ year }} · A Pinterest content studio · Built with care.</p>
+          <div class="footer__links">
+            <a href="mailto:hello@wallartroom.com">Contact</a>
+          </div>
+        </div>
+      </footer>
 
     </main>
-
-    <!-- ════ COMING-SOON MODAL ════ -->
-    <Transition name="soon">
-      <div v-if="showSoonModal" class="soon-overlay" @click.self="closeSoonModal" role="dialog" aria-modal="true" aria-labelledby="soon-title">
-        <div class="soon-card">
-          <button class="soon-close" type="button" aria-label="Close" @click="closeSoonModal">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M6 18 18 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          </button>
-
-          <div class="soon-badge">
-            <span class="soon-badge-dot"></span>
-            In Development
-          </div>
-
-          <h3 id="soon-title" class="soon-title">
-            The Visualizer is<br><em>almost ready</em>
-          </h3>
-          <p class="soon-text">
-            We're putting the finishing touches on the live editor. Soon you'll be able to upload
-            your room, drop in any artwork, and preview the perfect fit — right here.
-          </p>
-
-          <div class="soon-actions">
-            <button class="btn btn-primary" type="button" @click="closeSoonModal">
-              Got it
-            </button>
-          </div>
-
-          <div class="soon-foot">Thanks for your patience — it's worth the wait.</div>
-        </div>
-      </div>
-    </Transition>
-
-    <footer>
-      <div class="container footer-grid">
-        <div class="tmp-grid">
-          <div class="w50">
-            <div class="footer-brand">WallArtRoom</div>
-            <div class="footer-copy footer-left">
-              Refining the digital art landscape through sophisticated curation and architectural visualization.
-            </div>
-          </div>
-          <div class="footer-copy">© 2026 The WallArtRoom. All rights reserved.<br/>Crafted for the modern collector.</div>
-        </div>
-      </div>
-    </footer>
-
-  </section>
+  </div>
 </template>
 
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { defineComponent, h } from 'vue'
+import heroImg from '@@/assets/images/hero.png'
+import exampleStatsImg from '@@/assets/images/examplestatistic.png'
 
-const supabaseUser = useSupabaseUser()
-const isAuthed     = computed(() => !!supabaseUser.value)
+// ── Feature visuals (defined here so script-setup template can reference them) ─
 
-// CTA dispatch: logged-in users go to the editor; anon users land on signup
-// (which is the same OAuth screen as login but with "Create your account" copy).
-const goToVisualizer = () => {
-  navigateTo(isAuthed.value ? '/app/new' : '/signup?next=/app/new')
+const FeatureAi = defineComponent({
+  setup: () => () => h('div', { class: 'vis vis--ai' }, [
+    h('div', { class: 'vis__panel' }, [
+      h('div', { class: 'vis__panel-head' }, [h('span', 'AI generator'), h('span', { class: 'vis__pill' }, '8 selected')]),
+      h('div', { class: 'vis__row' }, [
+        h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#fde68a,#f59e0b);' }),
+        h('div', { class: 'vis__row-body' }, [
+          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'Sunlit Coastal Linen Print'),
+          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Warm minimalist art for the coastal home.'),
+        ]),
+        h('span', { class: 'vis__chip vis__chip--ai' }, '✨ AI'),
+      ]),
+      h('div', { class: 'vis__row' }, [
+        h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#bbf7d0,#22c55e);' }),
+        h('div', { class: 'vis__row-body' }, [
+          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'Forest Calm Botanical Study'),
+          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Hand-painted greens for the reading nook.'),
+        ]),
+        h('span', { class: 'vis__chip vis__chip--ai' }, '✨ AI'),
+      ]),
+      h('div', { class: 'vis__row' }, [
+        h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#fbcfe8,#ec4899);' }),
+        h('div', { class: 'vis__row-body' }, [
+          h('div', { class: 'vis__type-line vis__type-line--shimmer' }),
+          h('div', { class: 'vis__type-line vis__type-line--shimmer vis__type-line--short' }),
+        ]),
+        h('span', { class: 'vis__chip vis__chip--gen' }, 'Writing…'),
+      ]),
+    ]),
+  ]),
+})
+
+const FeatureBulk = defineComponent({
+  setup: () => () => h('div', { class: 'vis vis--bulk' }, [
+    h('div', { class: 'vis__panel' }, [
+      h('div', { class: 'vis__panel-head' }, [h('span', 'Bulk edit · 42 selected')]),
+      h('div', { class: 'vis__field' }, [
+        h('label', null, [h('span', { class: 'vis__check vis__check--on' }), 'Apply Pinterest board']),
+        h('div', { class: 'vis__input' }, 'Coastal Prints'),
+      ]),
+      h('div', { class: 'vis__field' }, [
+        h('label', null, [h('span', { class: 'vis__check vis__check--on' }), 'Apply redirect URL']),
+        h('div', { class: 'vis__input' }, 'https://shop.studio.com/p/...'),
+      ]),
+      h('div', { class: 'vis__field' }, [
+        h('label', null, [h('span', { class: 'vis__check' }), 'Apply Pinterest status']),
+      ]),
+      h('div', { class: 'vis__applybar' }, [
+        h('span', { class: 'vis__hint' }, '2 fields will be applied'),
+        h('span', { class: 'vis__btn' }, 'Apply to 42 →'),
+      ]),
+    ]),
+  ]),
+})
+
+const FeatureCalendar = defineComponent({
+  setup: () => () => h('div', { class: 'vis vis--cal' }, [
+    h('div', { class: 'vis__panel' }, [
+      h('div', { class: 'vis__panel-head' }, [h('span', 'Publish schedule'), h('span', { class: 'vis__pill' }, '7 days · 28 pins')]),
+      h('div', { class: 'vis__cal' },
+        ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((label, i) => {
+          const counts = [4, 3, 5, 4, 6, 3, 3]
+          return h('div', { class: 'vis__cal-day', key: i }, [
+            h('span', { class: 'vis__cal-day-label' }, label),
+            h('div', { class: 'vis__cal-bars' },
+              Array.from({ length: counts[i] }, (_, j) =>
+                h('span', {
+                  class: 'vis__cal-bar',
+                  key: j,
+                  style: `background: ${['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'][j % 6]};`,
+                })
+              )
+            ),
+            h('span', { class: 'vis__cal-day-num' }, String(counts[i])),
+          ])
+        })
+      ),
+    ]),
+  ]),
+})
+
+const FeatureCsv = defineComponent({
+  setup: () => () => h('div', { class: 'vis vis--csv' }, [
+    h('div', { class: 'vis__panel' }, [
+      h('div', { class: 'vis__panel-head' }, [h('span', 'CSV exports'), h('span', { class: 'vis__pill vis__pill--accent' }, '12 ready')]),
+      h('div', { class: 'vis__csv-row' }, [
+        h('div', { class: 'vis__csv-icon' }, '📄'),
+        h('div', { class: 'vis__csv-body' }, [
+          h('div', { class: 'vis__csv-name' }, 'pinterest-export-2026-05-14.csv'),
+          h('div', { class: 'vis__csv-meta' }, '120 pins · May 14 → May 28'),
+        ]),
+        h('span', { class: 'vis__chip vis__chip--ok' }, '✓ Exported'),
+      ]),
+      h('div', { class: 'vis__csv-row' }, [
+        h('div', { class: 'vis__csv-icon' }, '📄'),
+        h('div', { class: 'vis__csv-body' }, [
+          h('div', { class: 'vis__csv-name' }, 'pinterest-export-2026-05-07.csv'),
+          h('div', { class: 'vis__csv-meta' }, '84 pins · May 7 → May 14'),
+        ]),
+        h('span', { class: 'vis__chip vis__chip--ok' }, '✓ Exported'),
+      ]),
+      h('div', { class: 'vis__csv-row' }, [
+        h('div', { class: 'vis__csv-icon' }, '📄'),
+        h('div', { class: 'vis__csv-body' }, [
+          h('div', { class: 'vis__csv-name' }, 'pinterest-export-2026-04-30.csv'),
+          h('div', { class: 'vis__csv-meta' }, '156 pins · Apr 30 → May 7'),
+        ]),
+        h('span', { class: 'vis__chip vis__chip--pending' }, '○ Draft'),
+      ]),
+    ]),
+  ]),
+})
+
+useHead({
+  title: 'WallArtRoom — The Pinterest content studio for creators',
+  meta: [
+    { name: 'description', content: 'Generate AI metadata, batch-edit pins, schedule publishing, and export Pinterest-ready CSVs. The control room for pinning at scale.' },
+    { name: 'theme-color', content: '#1a1714' },
+  ],
+  link: [
+    { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+    { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+    { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap' },
+  ],
+})
+
+definePageMeta({ layout: false })
+
+const year = new Date().getFullYear()
+
+// ── Waitlist form ──────────────────────────────────────────────────────────
+const email = ref('')
+const submitting = ref(false)
+const submitted = ref(false)
+const alreadyJoined = ref(false)
+const formError = ref('')
+
+// Anti-abuse fields, sent with the request. The server checks both:
+// - `honeypot` must be empty (it's a hidden field bots auto-fill)
+// - the time between mount and submit must exceed a minimum threshold
+const honeypot = ref('')
+const mountedAt = ref(0)
+onMounted(() => { mountedAt.value = Date.now() })
+
+async function handleSubmit() {
+  if (!email.value || submitting.value || submitted.value) return
+  submitting.value = true
+  formError.value = ''
+  try {
+    const res = await $fetch('/api/waitlist/join', {
+      method: 'POST',
+      body: {
+        email: email.value,
+        source: 'landing-hero',
+        company: honeypot.value,
+        delay: mountedAt.value ? Date.now() - mountedAt.value : 0,
+      },
+    })
+    submitted.value = true
+    alreadyJoined.value = !!res.alreadyJoined
+  } catch (e) {
+    formError.value = e?.data?.statusMessage || e?.message || 'Could not save your email. Try again.'
+  } finally {
+    submitting.value = false
+  }
 }
 
-const compareEl     = ref(null)
-const pos           = ref(100)         // 100 = fully "before", 0 = fully "after"
-const hasInteracted = ref(false)
-const showSoonModal = ref(false)
 
-const closeSoonModal = () => {
-  showSoonModal.value = false
-  if (typeof document !== 'undefined') document.body.style.overflow = ''
-}
-const onKeydown = (e) => { if (e.key === 'Escape' && showSoonModal.value) closeSoonModal() }
+// ── Cursor follower ──────────────────────────────────────────────────────────
+const cursorRef = ref(null)
+const INTERACTIVE_SEL = 'a, button, input, textarea, select, label, [data-cursor]'
 
-let observer = null
-let dragging = false
-let introRaf = null
+const cursorState = { x: -100, y: -100, tx: -100, ty: -100 }
+let cursorRaf = null
+let cursorActive = false
 
-const setFromX = (clientX) => {
-  const el = compareEl.value
-  if (!el) return
-  const r = el.getBoundingClientRect()
-  const p = ((clientX - r.left) / r.width) * 100
-  pos.value = Math.max(0, Math.min(100, p))
+function onMouseMove(e) {
+  cursorState.tx = e.clientX
+  cursorState.ty = e.clientY
+  if (!cursorActive && cursorRef.value) {
+    cursorRef.value.classList.add('cursor--ready')
+    cursorActive = true
+  }
+  // Kick the loop awake only when needed. While idle, the RAF is parked so it
+  // doesn't compete with the compositor on every scroll frame.
+  if (!cursorRaf) cursorRaf = requestAnimationFrame(cursorLoop)
 }
 
-const startDrag = (e) => {
-  if (introRaf) { cancelAnimationFrame(introRaf); introRaf = null }
-  hasInteracted.value = true
-  dragging = true
-  compareEl.value?.setPointerCapture?.(e.pointerId)
-  setFromX(e.clientX)
+function onMouseOver(e) {
+  if (!cursorRef.value) return
+  const isHover = !!(e.target?.closest && e.target.closest(INTERACTIVE_SEL))
+  cursorRef.value.classList.toggle('cursor--hover', isHover)
 }
-const onDrag = (e) => { if (dragging) setFromX(e.clientX) }
-const endDrag = (e) => {
-  dragging = false
-  try { compareEl.value?.releasePointerCapture?.(e.pointerId) } catch {}
+
+function cursorLoop() {
+  const dx = cursorState.tx - cursorState.x
+  const dy = cursorState.ty - cursorState.y
+  // Settle threshold: once the ring is within 0.4px of the target, stop the
+  // loop entirely. The next mousemove will restart it.
+  if (Math.abs(dx) < 0.4 && Math.abs(dy) < 0.4) {
+    cursorRaf = null
+    return
+  }
+  cursorState.x += dx * 0.2
+  cursorState.y += dy * 0.2
+  if (cursorRef.value) {
+    cursorRef.value.style.transform =
+      `translate3d(${cursorState.x - 18}px, ${cursorState.y - 18}px, 0)`
+  }
+  cursorRaf = requestAnimationFrame(cursorLoop)
 }
+
+
+// ── Mount / unmount ──────────────────────────────────────────────────────────
+// No scroll listeners. No IntersectionObservers. The page is fully static
+// during scroll so the compositor has zero JS work to do. Hero entrance is
+// pure CSS keyframes fired by mount, not by scroll position.
 
 onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
-
-  // ── Scroll-reveal ─────────────────────────────────────────────────
-  observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('is-revealed')
-        observer.unobserve(e.target)
-      }
-    })
-  }, { threshold: 0.1, rootMargin: '0px 0px -32px 0px' })
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
-
-  // ── Animated counters ─────────────────────────────────────────────
-  const counterObs = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (!e.isIntersecting) return
-      const el      = e.target
-      const target  = parseFloat(el.dataset.target)
-      const suffix  = el.dataset.suffix || ''
-      const decimal = 'decimal' in el.dataset
-      const comma   = 'comma' in el.dataset
-      let startTs   = null
-      const duration = 1600
-      const tick = ts => {
-        if (!startTs) startTs = ts
-        const p     = Math.min((ts - startTs) / duration, 1)
-        const eased = 1 - Math.pow(1 - p, 3)
-        const cur   = target * eased
-        if (decimal)     el.textContent = cur.toFixed(1) + suffix
-        else if (comma)  el.textContent = Math.floor(cur).toLocaleString() + suffix
-        else             el.textContent = Math.floor(cur) + suffix
-        if (p < 1) requestAnimationFrame(tick)
-      }
-      requestAnimationFrame(tick)
-      counterObs.unobserve(el)
-    })
-  }, { threshold: 0.6 })
-  document.querySelectorAll('.stat-num[data-target]').forEach(el => counterObs.observe(el))
-
-  // ── Compare-slider intro: sweep 100 → 50 (easeOutCubic) ──────────
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (prefersReducedMotion) { pos.value = 50; return }
-
-  const from = 100, to = 50, duration = 1500
-  let startTs = null
-  const tick = (ts) => {
-    if (hasInteracted.value) { introRaf = null; return }
-    if (!startTs) startTs = ts + 600   // brief delay before sweep
-    const elapsed = ts - startTs
-    if (elapsed < 0) { introRaf = requestAnimationFrame(tick); return }
-    const p = Math.min(elapsed / duration, 1)
-    const eased = 1 - Math.pow(1 - p, 3)
-    pos.value = from + (to - from) * eased
-    if (p < 1) introRaf = requestAnimationFrame(tick)
-    else introRaf = null
+  if (typeof window === 'undefined') return
+  if (window.matchMedia('(pointer: fine)').matches) {
+    window.addEventListener('mousemove', onMouseMove, { passive: true })
+    document.addEventListener('mouseover', onMouseOver, { passive: true })
   }
-  introRaf = requestAnimationFrame(tick)
 })
 
-onUnmounted(() => {
-  if (introRaf) cancelAnimationFrame(introRaf)
-  observer?.disconnect()
-  window.removeEventListener('keydown', onKeydown)
-  if (typeof document !== 'undefined') document.body.style.overflow = ''
+onBeforeUnmount(() => {
+  if (typeof window === 'undefined') return
+  window.removeEventListener('mousemove', onMouseMove)
+  document.removeEventListener('mouseover', onMouseOver)
+  if (cursorRaf) cancelAnimationFrame(cursorRaf)
 })
+
+
+// ── Pain points ─────────────────────────────────────────────────────────────
+const painPoints = [
+  {
+    title: 'Manual metadata, every single pin',
+    body: 'Typing titles, descriptions, and links one pin at a time turns a 50-pin batch into a six-hour evening.',
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v3H4zM4 11h10v3H4zM4 18h13v3H4z"/></svg>`,
+  },
+  {
+    title: 'Spreadsheets that break on import',
+    body: "Pinterest's bulk CSV is unforgiving. One stray comma, one missing column, and your whole upload is rejected.",
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>`,
+  },
+  {
+    title: "No view of what's published, scheduled, or stuck",
+    body: "You publish, you forget, you re-publish. There's no single dashboard that says: this is what's live, this is what's next.",
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>`,
+  },
+]
+
+
+// ── Features (each one has an inline SVG-based visual) ──────────────────────
+const featureList = [
+  {
+    title: 'AI titles & descriptions, written like you',
+    body: 'Feed it a prompt and your image. Get on-brand titles and SEO-aware descriptions in seconds.',
+    bullets: ['Pinterest-tuned tone', 'Unique-title guarantee', 'Bulk-generate for hundreds at once'],
+    visual: FeatureAi,
+  },
+  {
+    title: 'Batch-edit hundreds of pins at once',
+    body: "Change the board, the redirect URL, the publish date, the status — across your whole selection. The kind of bulk edits a spreadsheet can do, but with safety rails.",
+    bullets: ['Selective field updates', 'Clear or replace, your choice', 'Undo until you save'],
+    visual: FeatureBulk,
+  },
+  {
+    title: 'Visual scheduler that actually plans your month',
+    body: "Spread pins across days at a glance. Drag a date range, auto-distribute times, see your week before you commit.",
+    bullets: ['Daily breakdown view', 'Auto-spaced time slots', 'Per-board color coding'],
+    visual: FeatureCalendar,
+  },
+  {
+    title: 'One-click Pinterest CSV exports',
+    body: "Hit Export and download a file that imports cleanly into Pinterest's bulk uploader the first time. Every time. With a history log of every export you've shipped.",
+    bullets: ['Pinterest-exact CSV format', 'Sorted by publish date', 'Export history with diffs'],
+    visual: FeatureCsv,
+  },
+]
+
+
+// ── Step-by-step ────────────────────────────────────────────────────────────
+const steps = [
+  { title: 'Upload your pin images', body: 'Drag-drop hundreds at a time. We store them on fast CDN-backed object storage so they load instantly in the gallery.' },
+  { title: 'Generate or write metadata', body: 'Use the AI panel to draft titles, descriptions, and keywords — or bulk-paste your own. Edit anything inline.' },
+  { title: 'Schedule, export, and publish', body: 'Pick a date range, hit Export CSV, drop the file into Pinterest. Done — and tracked in your history.' },
+]
 </script>
 
 
-<style lang="scss">
+<style scoped lang="scss">
 
-/* ─── Design tokens ──────────────────────────────────────────────── */
-:root {
-  --primary:    #c5a059;
-  --secondary:  #2d2926;
-  --neutral:    #f5f2ed;
-  --neutral-2:  #ece7df;
-  --text:       #2d2926;
-  --muted:      #7d7367;
-  --white:      #ffffff;
-  --border:     #d8d0c5;
-  --shadow:     0 18px 40px rgba(45,41,38,.09);
-  --radius:     24px;
-  --container:  min(1180px, calc(100vw - 40px));
-  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+// ── Tokens (page-local; reuse global $color-accent for the orange) ───────────
 
+$ink-1: #1a1714;   // primary headlines
+$ink-2: #2d2926;   // body
+$ink-3: #6b5e52;   // secondary
+$ink-4: #8a7a6e;   // tertiary
+$cream: #faf7f2;   // page bg
+$paper: #ffffff;
+$line:  #ede0d0;   // warm divider
+$gold:  #c5a059;   // secondary accent
+$plum:  #4b2e83;   // deep contrast (rare)
 
-      --bg: #faf7f2;
-      --text: #2d2925;
-      --subtext: #6f655b;
-      --soft: #efe7dc;
-      --accent: #9b5f3d;
-      --accent-2: #38564a;
-      --title: #3f342c;
-      --line: #ded2c5;
-      --dark: #24211e;
+.lp {
+  background: $cream;
+  color: $ink-2;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* ─── Reset ──────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body {
-  margin: 0;
-  font-family: "Manrope", system-ui, sans-serif;
-  color: var(--text);
-  background: var(--neutral);
-  line-height: 1.55;
-  overflow-x: hidden;
-}
-html { overflow-x: hidden; }
-img { max-width: 100%; display: block; }
-a { text-decoration: none; color: inherit; }
-button, input { font: inherit; }
+// ── Hero entrance animation (page-load only, no scroll involvement) ──────────
+// Pure CSS keyframes — fire on mount when the browser paints the page, then
+// the elements stay at their final state forever. Zero JS, zero observers,
+// nothing runs during scroll.
 
-/* ─── Utilities ──────────────────────────────────────────────────── */
-.container { width: var(--container); margin: 0 auto; }
-
-.eyebrow {
-  display: inline-block;
-  letter-spacing: .26em;
-  text-transform: uppercase;
-  font-size: .66rem;
-  color: #9a8c77;
-  margin-bottom: 14px;
+@keyframes heroEnter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.section { padding: 96px 0; }
-
-/* ─── Reveal ─────────────────────────────────────────────────────── */
-.reveal {
+.hero-enter {
   opacity: 0;
-  transform: translateY(26px);
-  transition:
-    opacity  0.72s var(--ease-out) var(--delay, 0ms),
-    transform 0.72s var(--ease-out) var(--delay, 0ms);
+  animation: heroEnter 800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--enter-delay, 0ms);
 }
-.reveal.is-revealed { opacity: 1; transform: translateY(0); }
 
-/* ─── Navigation ─────────────────────────────────────────────────── */
-.site-header {
+@media (prefers-reduced-motion: reduce) {
+  .hero-enter {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+
+// ── Honeypot field ───────────────────────────────────────────────────────────
+// Visible to bots that parse the DOM, invisible + non-focusable to humans and
+// screen readers. Don't use `display: none` — some bots skip those fields.
+
+.hp-field {
+  position: absolute !important;
+  left: -10000px !important;
+  top: auto !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+// ── Cursor follower ──────────────────────────────────────────────────────────
+// Outline ring that lerps after the mouse. Hidden on touch / coarse pointer
+// devices (phones, tablets) so it doesn't get stranded in the middle of the
+// screen. `mix-blend-mode: difference` makes the ring readable on any
+// background — light on dark, dark on light — without us picking a color per
+// section.
+
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0;
+  transform: translate3d(-100px, -100px, 0);
+  will-change: transform;
+  transition: opacity 0.3s ease;
+
+  &--ready { opacity: 1; }
+
+  @media (pointer: coarse), (hover: none) {
+    display: none;
+  }
+}
+
+.cursor__inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 107, 53, 0.65);
+  background: rgba(255, 107, 53, 0.04);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+  transform: scale(1);
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.cursor--hover .cursor__inner {
+  transform: scale(1.8);
+  background: rgba(255, 107, 53, 0.14);
+  border-color: rgba(255, 107, 53, 0.9);
+}
+
+// ── Shared ───────────────────────────────────────────────────────────────────
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.kicker {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: $gold;
+  margin-bottom: 18px;
+
+  &--light { color: rgba(255, 255, 255, 0.6); }
+}
+
+h2 {
+  margin: 0 0 18px;
+  font-size: clamp(32px, 4.4vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  color: $ink-1;
+
+  em {
+    font-family: 'Instrument Serif', 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: $color-accent;
+  }
+}
+
+// ── Nav ──────────────────────────────────────────────────────────────────────
+
+.nav {
   position: sticky;
   top: 0;
-  z-index: 20;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  background: rgba(245,242,237,.84);
-  border-bottom: 1px solid rgba(216,208,197,.65);
-}
-.nav {
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
-.brand {
-  font-family: "Noto Serif", Georgia, serif;
-  font-size: 1.38rem;
-  white-space: nowrap;
-  letter-spacing: -.01em;
-  span { color: #c5a059; }
-}
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 26px;
-  color: var(--muted);
-  font-size: .9rem;
-  a { transition: color .2s ease; &:hover { color: var(--secondary); } }
-}
-.nav-cta {
-  padding: 8px 16px;
-  background: var(--secondary, #1a1714);
-  color: #fff !important;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: .82rem;
-  &:hover { background: var(--primary, #2d2926); color: #fff !important; }
-}
-.btn-nav {
-  display: inline-flex;
-  align-items: center;
-  height: 38px;
-  padding: 0 16px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: .84rem;
-  font-weight: 600;
-  color: var(--secondary);
-  background: rgba(255,255,255,.5);
-  transition: background .22s ease, color .22s ease, border-color .22s ease;
-  &:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+  z-index: 50;
+  // Solid background, always. No JS scroll listener, no class toggling —
+  // the nav never changes appearance, so scrolling does zero work for it.
+  background: $cream;
+  border-bottom: 1px solid rgba(237, 224, 208, 0.6);
+
+  &__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+  }
+
+  &__brand {
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.04em;
+    color: $ink-1;
+    text-decoration: none;
+    span { color: $color-accent; }
+  }
+
+  &__links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+
+    a {
+      font-size: 14px;
+      font-weight: 500;
+      color: $ink-3;
+      text-decoration: none;
+      transition: color 0.15s;
+      &:hover { color: $ink-1; }
+    }
+  }
+
+  &__cta {
+    padding: 9px 18px;
+    background: $ink-1;
+    color: #fff !important;
+    border-radius: 999px;
+    font-weight: 600 !important;
+    transition: background 0.15s, transform 0.15s;
+    &:hover { background: #2d2926; transform: translateY(-1px); }
+  }
 }
 
-/* ─── Buttons ────────────────────────────────────────────────────── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 52px;
-  padding: 0 24px;
-  border-radius: 13px;
-  border: 1px solid transparent;
-  font-weight: 600;
-  font-size: .93rem;
-  cursor: pointer;
-  transition: transform .22s var(--ease-out), box-shadow .22s ease;
+// ── HERO ─────────────────────────────────────────────────────────────────────
+
+.hero {
   position: relative;
+  padding: 80px 32px 200px;
   overflow: hidden;
 
+  // Soft fade INTO the next section. Bleeds the cream background up over the
+  // orb edges so they never end on a hard line.
   &::after {
     content: '';
     position: absolute;
-    inset: 0;
-    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.12) 50%, transparent 60%);
-    transform: translateX(-100%);
-    transition: transform 0s;
-  }
-  &:hover::after {
-    transform: translateX(200%);
-    transition: transform 0.55s ease;
-  }
-}
-.btn-primary {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 8px 24px rgba(140,108,37,.2);
-  &:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(140,108,37,.28); }
-}
-.btn-primary-inv {
-  background: #f5f2ed;
-  color: var(--secondary);
-  box-shadow: 0 8px 24px rgba(45,41,38,.14);
-  &:hover { transform: translateY(-2px); }
-}
-.btn-outline-inv {
-  background: transparent;
-  color: rgba(245,242,237,.65);
-  border-color: rgba(245,242,237,.18);
-  &:hover { background: rgba(245,242,237,.08); color: #f5f2ed; transform: translateY(-2px); }
-}
-.actions { display: flex; gap: 12px; flex-wrap: wrap; }
-
-/* Reset global room-page styles that bleed into the landing page */
-#visualizer-page {
-  display: block;
-  width: 100%;
-
-  main {
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    padding: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 240px;
+    background: linear-gradient(to bottom, rgba(250, 247, 242, 0) 0%, rgba(250, 247, 242, 0.85) 55%, $cream 100%);
+    pointer-events: none;
+    z-index: 1;
   }
 
-  #showcase {
-    padding: 25px 0 50px;
+  // Subtle fade INTO the header (top edge under the sticky nav). Catches the
+  // orb top-color before it hits the nav's transparent backdrop.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 120px;
+    background: linear-gradient(to top, rgba(250, 247, 242, 0) 0%, rgba(250, 247, 242, 0.6) 100%);
+    pointer-events: none;
+    z-index: 1;
   }
 
-  /* Room pages define .hero { max-width: 760px } — neutralise it here */
-  .hero {
+  &__inner {
     position: relative;
-    max-width: none;
-    margin-bottom: 0;
+    z-index: 2;
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 64px;
+    align-items: center;
   }
 
-  /* Room pages define .nav { max-width: 980px; padding: 22px; border-bottom: … } */
-  .nav {
-    max-width: none;
-    padding: 0;
-    border-bottom: none;
-  }
+  &__copy { max-width: 580px; }
 
-  /* Room pages define .kicker with a different colour */
-  .kicker {
-    color: #9a8c77;
-  }
-}
-/* ════════════════════════════════════════════════════════════════════
-   1 · HERO · BEFORE/AFTER COMPARE
-═══════════════════════════════════════════════════════════════════ */
-
-.hero-orb {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(2px);
-}
-.hero-orb-1 {
-  width: 520px; height: 520px;
-  top: -180px; right: -120px;
-  background: radial-gradient(circle, rgba(197,160,89,.18), transparent 70%);
-}
-.hero-orb-2 {
-  width: 360px; height: 360px;
-  bottom: -140px; left: -80px;
-  background: radial-gradient(circle, rgba(197,160,89,.08), transparent 70%);
-}
-
-.hero-grid {
-  display: grid;
-  grid-template-columns: 1fr 0.9fr;
-  gap: 64px;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-  min-height: 560px;
-}
-
-.hero-copy {
-  h1 {
-    font-family: "Noto Serif", Georgia, serif;
-    font-size: clamp(2.4rem, 4.4vw, 4.2rem);
-    line-height: .98;
-    font-weight: 500;
-    letter-spacing: -.03em;
-    margin: 14px 0 22px;
-    color: var(--secondary);
-    em { font-style: italic; font-weight: 400; color: var(--primary); }
-  }
-  .hero-lead {
-    font-size: 1.02rem;
-    line-height: 1.65;
-    color: var(--muted);
-    margin: 0 0 28px;
-    max-width: 460px;
-  }
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--secondary);
-  border-color: var(--border);
-  &:hover { background: rgba(255,255,255,.6); transform: translateY(-2px); }
-}
-
-.hero-feats {
-  list-style: none;
-  padding: 0;
-  margin: 32px 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 22px;
-  li {
-    display: flex;
+  &__eyebrow {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: .82rem;
-    color: var(--secondary);
-  }
-}
-.hf-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--primary);
-  flex-shrink: 0;
-}
-
-/* ── Compare slider ── */
-.hero-compare {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  max-height: 80vh;
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: 0 36px 80px rgba(45,41,38,.18), 0 0 0 1px rgba(45,41,38,.06);
-  background: #1c1814;
-  touch-action: none;
-  user-select: none;
-  cursor: ew-resize;
-}
-.hc-stage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-.hc-layer {
-  overflow: hidden;
-}
-.hc-before {
-  position: absolute;
-  inset: 0;
-}
-.hc-before .hc-room {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  pointer-events: none;
-}
-.hc-after {
-  position: absolute;
-  inset: 0;
-  will-change: clip-path;
-}
-.hc-after .hc-room {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  pointer-events: none;
-}
-
-.hc-tag {
-  position: absolute;
-  top: 14px;
-  font-size: .56rem;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.92);
-  background: rgba(18,15,12,.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 6px 12px;
-  border-radius: 100px;
-  border: 1px solid rgba(255,255,255,.14);
-}
-.hc-tag-before { left: 14px; }
-.hc-tag-after  { right: 14px; }
-
-.hc-divider {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(255,255,255,.92);
-  transform: translateX(-50%);
-  pointer-events: none;
-  box-shadow: 0 0 14px rgba(0,0,0,.35);
-}
-.hc-handle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  background: var(--primary);
-  border: 3px solid #fff;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: ew-resize;
-  pointer-events: auto;
-  box-shadow: 0 8px 22px rgba(0,0,0,.35);
-  transition: transform .2s var(--ease-out);
-
-  &:hover { transform: translate(-50%, -50%) scale(1.06); }
-  &:active { transform: translate(-50%, -50%) scale(.96); }
-}
-
-.hc-hint {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: .58rem;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.7);
-  background: rgba(18,15,12,.55);
-  backdrop-filter: blur(8px);
-  padding: 6px 12px;
-  border-radius: 100px;
-  border: 1px solid rgba(255,255,255,.12);
-  pointer-events: none;
-  animation: hc-hint-pulse 2.4s ease-in-out infinite;
-}
-@keyframes hc-hint-pulse {
-  0%, 100% { opacity: .6; }
-  50%      { opacity: 1; }
-}
-
-
-/* ════════════════════════════════════════════════════════════════════
-   2 · MARQUEE
-═══════════════════════════════════════════════════════════════════ */
-.marquee-strip {
-  background: var(--secondary);
-  overflow: hidden;
-  padding: 15px 0;
-  border-top: 1px solid rgba(255,255,255,.04);
-}
-.marquee-track {
-  display: flex;
-  white-space: nowrap;
-  width: max-content;
-  animation: marquee 40s linear infinite;
-}
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.mq-item {
-  padding: 0 30px;
-  font-size: .67rem;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: rgba(245,242,237,.3);
-}
-.mq-sep {
-  color: rgba(197,160,89,.45);
-  font-size: .7rem;
-  align-self: center;
-}
-
-
-/* ════════════════════════════════════════════════════════════════════
-   3 · STATS
-═══════════════════════════════════════════════════════════════════ */
-.stats-strip {
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 44px 0;
-  background: rgba(255,255,255,.3);
-}
-.stats-row {
-  display: flex;
-  align-items: center;
-}
-.stat {
-  flex: 1;
-  text-align: center;
-  padding: 4px 16px;
-}
-.stat-num {
-  display: block;
-  font-family: "Noto Serif", Georgia, serif;
-  font-size: clamp(2rem, 3vw, 3rem);
-  font-weight: 500;
-  letter-spacing: -.04em;
-  color: var(--secondary);
-  line-height: 1;
-  margin-bottom: 8px;
-}
-.stat-label {
-  display: block;
-  font-size: .68rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.stat-sep {
-  width: 1px; height: 46px;
-  background: var(--border);
-  flex-shrink: 0;
-}
-
-
-/* ════════════════════════════════════════════════════════════════════
-   4 · HOW IT WORKS
-═══════════════════════════════════════════════════════════════════ */
-.how-section {
-  .how-layout {
-    display: grid;
-    grid-template-columns: 1fr 1.65fr;
-    gap: 72px;
-    align-items: start;
+    padding: 6px 14px 6px 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(197, 160, 89, 0.3);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: $ink-2;
+    backdrop-filter: blur(8px);
   }
 
-  .how-left {
-    position: sticky;
-    top: calc(72px + 48px);
-
-    h2 {
-      font-family: "Noto Serif", Georgia, serif;
-      font-size: clamp(2rem, 3.2vw, 3.2rem);
-      line-height: 1.06;
-      font-weight: 500;
-      letter-spacing: -.03em;
-      margin: 0 0 14px;
-      em { font-style: italic; font-weight: 400; color: var(--primary); }
-    }
-    .how-sub { font-size: .9rem; color: var(--muted); margin: 0; }
+  &__eyebrow-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: $color-accent;
+    box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.18);
+    animation: pulse 2.4s ease-in-out infinite;
   }
 
-  .how-steps { border-top: 1px solid var(--border); }
+  &__title {
+    margin: 24px 0 22px;
+    font-size: clamp(40px, 6.4vw, 76px);
+    font-weight: 700;
+    letter-spacing: -0.045em;
+    line-height: 0.98;
+    color: $ink-1;
 
-  .how-step {
-    display: grid;
-    grid-template-columns: 48px 1fr;
-    gap: 20px;
-    padding: 28px 0;
-    border-bottom: 1px solid var(--border);
-    align-items: start;
-    cursor: default;
-    transition: padding-left .3s var(--ease-out);
-
-    &:hover {
-      padding-left: 6px;
-      .step-ico {
-        border-color: var(--primary);
-        color: var(--primary);
-        background: rgba(197,160,89,.08);
-        box-shadow: 0 0 0 4px rgba(197,160,89,.1);
-      }
-      .step-num { color: var(--primary); }
+    em {
+      font-family: 'Instrument Serif', 'Times New Roman', serif;
+      font-style: italic;
+      font-weight: 400;
+      letter-spacing: -0.015em;
+      color: $color-accent;
     }
   }
 
-  .step-ico {
-    width: 44px; height: 44px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
+  &__lead {
+    max-width: 520px;
+    font-size: 17px;
+    line-height: 1.6;
+    color: $ink-3;
+    margin: 0 0 32px;
+
+    strong { color: $ink-1; font-weight: 600; }
+  }
+
+  &__form { width: 100%; max-width: 480px; }
+
+  &__form-row {
     display: flex;
+    gap: 8px;
+    padding: 6px;
+    background: $paper;
+    border: 1px solid $line;
+    border-radius: 14px;
+    box-shadow: 0 18px 50px -22px rgba(60, 40, 20, 0.18);
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:focus-within {
+      border-color: $color-accent;
+      box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.12), 0 18px 50px -22px rgba(60, 40, 20, 0.22);
+    }
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 0 12px;
+    font: inherit;
+    font-size: 15px;
+    color: $ink-1;
+    outline: 0;
+
+    &::placeholder { color: $ink-4; }
+    &:disabled { color: $ink-3; }
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 22px;
+    border: 0;
+    background: $ink-1;
+    color: #fff;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, transform 0.15s;
+
+    &:hover:not(:disabled) { background: $color-accent; transform: translateY(-1px); }
+    &:disabled { opacity: 0.55; cursor: not-allowed; }
+  }
+
+  &__form-note {
+    margin: 12px 4px 0;
+    font-size: 13px;
+    color: $ink-4;
+    transition: color 0.2s;
+    &--err { color: #b91c1c; }
+  }
+
+&__feat-cards {
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 620px;
+}
+
+&__feat-card {
+  padding: 10px 4px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid rgba(223, 193, 156, 0.9);
+  border-radius: 11px;
+  color: $ink-1;
+  backdrop-filter: blur(10px);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+
+  svg {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    color: $color-accent;
+    stroke: currentColor;
+  }
+
+  span {
+    display: block;
+    font-size: 13px;
+    line-height: 1.18;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+}
+
+  // Background flourishes. Pure radial-gradient with no filter, no layer hint
+  // — they paint once and the browser composites them with the rest of the
+  // hero. Forcing layers (`will-change`, `translateZ(0)`) only helped when
+  // these were animated; static, they cost more than they saved.
+  &__orb {
+    position: absolute;
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+
+    &--1 {
+      width: 620px;
+      height: 620px;
+      top: -180px;
+      right: -160px;
+      background: radial-gradient(circle at 50% 50%, rgba(255, 107, 53, 0.55) 0%, rgba(255, 107, 53, 0.18) 35%, transparent 70%);
+    }
+
+    &--2 {
+      width: 520px;
+      height: 520px;
+      bottom: -200px;
+      left: -140px;
+      background: radial-gradient(circle at 50% 50%, rgba(197, 160, 89, 0.5) 0%, rgba(197, 160, 89, 0.15) 35%, transparent 70%);
+    }
+  }
+
+  &__grain {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.4;
+    pointer-events: none;
+    background-image:
+      radial-gradient(rgba(26, 23, 20, 0.04) 1px, transparent 1px),
+      radial-gradient(rgba(26, 23, 20, 0.03) 1px, transparent 1px);
+    background-size: 18px 18px, 9px 9px;
+    background-position: 0 0, 9px 9px;
+  }
+}
+
+// ── Hero preview (fake app screenshot in pure CSS) ───────────────────────────
+
+.hero__preview {
+  position: relative;
+  perspective: 1600px;
+}
+
+.hero__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(237, 224, 208, 0.6);
+  box-shadow:
+    0 28px 60px -28px rgba(60, 40, 20, 0.22),
+    0 12px 22px -16px rgba(60, 40, 20, 0.14);
+  transform: rotateX(2deg) rotateY(-4deg);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.18); }
+  50%      { box-shadow: 0 0 0 6px rgba(255, 107, 53, 0.06); }
+}
+
+// ── PROBLEM ──────────────────────────────────────────────────────────────────
+
+.problem {
+  padding: 120px 0 100px;
+  background: $cream;
+
+  &__head {
+    max-width: 720px;
+    margin: 0 auto 60px;
+    text-align: center;
+
+    p {
+      margin: 18px auto 0;
+      font-size: 18px;
+      line-height: 1.6;
+      color: $ink-3;
+      max-width: 580px;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+}
+
+.pain {
+  padding: 32px 28px;
+  background: $paper;
+  border: 1px solid $line;
+  border-radius: 18px;
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: rgba(197, 160, 89, 0.5);
+    box-shadow: 0 18px 40px -20px rgba(60, 40, 20, 0.18);
+  }
+
+  &__icon {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--muted);
-    background: rgba(255,255,255,.5);
-    transition: border-color .28s ease, color .28s ease, background .28s ease, box-shadow .28s ease;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #faf3e3;
+    color: $color-accent;
+    margin-bottom: 18px;
+  }
+
+  h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    font-weight: 700;
+    color: $ink-1;
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: $ink-3;
+  }
+}
+
+// ── PROOF / WHAT'S POSSIBLE ──────────────────────────────────────────────────
+// White-background section to differentiate from the cream sections above and
+// below. The white frame also lets the Pinterest screenshot read clearly.
+
+.proof {
+  padding: 110px 0;
+  background: $paper;
+  border-top: 1px solid #f3eadc;
+  border-bottom: 1px solid #f3eadc;
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 72px;
+    align-items: center;
+  }
+
+  &__visual {
+    position: relative;
+  }
+
+  &__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 14px;
+    border: 1px solid $line;
+    box-shadow:
+      0 28px 60px -28px rgba(60, 40, 20, 0.22),
+      0 12px 24px -16px rgba(60, 40, 20, 0.12);
+    user-select: none;
+  }
+
+  &__credit {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    padding: 7px 14px;
+    background: $cream;
+    border: 1px solid $line;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: $ink-3;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+    svg { color: $color-accent; }
+    &:hover {
+      background: #fff7ed;
+      border-color: rgba(255, 107, 53, 0.4);
+      color: $ink-1;
+    }
+  }
+
+  &__copy {
+    max-width: 480px;
+
+    h2 {
+      margin: 16px 0 18px;
+    }
+  }
+
+  &__lead {
+    margin: 0 0 24px;
+    font-size: 17px;
+    line-height: 1.6;
+    color: $ink-3;
+  }
+
+  &__points {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 15px;
+      line-height: 1.55;
+      color: $ink-2;
+
+      strong {
+        display: block;
+        color: $ink-1;
+        font-weight: 700;
+        margin-bottom: 1px;
+      }
+    }
+  }
+
+  &__bullet-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255, 107, 53, 0.12);
+    color: $color-accent;
     flex-shrink: 0;
     margin-top: 2px;
   }
 
-  .step-content { display: flex; flex-direction: column; gap: 4px; }
-
-  .step-num {
-    font-family: "Noto Serif", Georgia, serif;
-    font-size: .74rem;
-    font-weight: 400;
-    color: var(--muted);
-    letter-spacing: .14em;
-    transition: color .28s ease;
-  }
-
-  .step-body {
-    h3 {
-      font-family: "Noto Serif", Georgia, serif;
-      font-size: 1.1rem;
-      font-weight: 500;
-      margin: 0 0 7px;
-      letter-spacing: -.01em;
-    }
-    p {
-      font-size: .9rem;
-      color: var(--muted);
-      margin: 0;
-      max-width: 380px;
-      line-height: 1.65;
-    }
-  }
-}
-
-
-/* ════════════════════════════════════════════════════════════════════
-   5 · PLACEMENT DEMO
-═══════════════════════════════════════════════════════════════════ */
-.placement-section {
-  background: var(--neutral-2);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-
-.placement-layout {
-  display: grid;
-  grid-template-columns: 1fr 1.35fr;
-  gap: 72px;
-  align-items: center;
-  padding: 0 20px;
-}
-
-.placement-content {
-  h2 {
-    font-family: "Noto Serif", Georgia, serif;
-    font-size: clamp(1.9rem, 3vw, 3rem);
-    font-weight: 500;
-    line-height: 1.04;
-    letter-spacing: -.03em;
-    margin: 0 0 18px;
-    em { font-style: italic; font-weight: 400; color: var(--primary); }
-  }
-  p {
-    font-size: .95rem;
-    color: var(--muted);
-    line-height: 1.7;
-    margin: 0 0 24px;
-  }
-}
-
-.placement-feats {
-  list-style: none;
-  padding: 0; margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  li {
+  &__future {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: .88rem;
-    color: var(--secondary);
+    margin: 0;
+    padding: 12px 16px;
+    background: #faf3e3;
+    border: 1px dashed rgba(197, 160, 89, 0.5);
+    border-radius: 12px;
+    font-size: 13px;
+    color: $ink-2;
+  }
+
+  &__future-tag {
+    flex-shrink: 0;
+    padding: 3px 9px;
+    background: $gold;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 999px;
   }
 }
-.pf-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--primary);
+
+// ── FEATURES ─────────────────────────────────────────────────────────────────
+
+.features {
+  padding: 120px 0 100px;
+  background:
+    radial-gradient(ellipse at top left, rgba(255, 107, 53, 0.06), transparent 50%),
+    $cream;
+
+  &__head {
+    max-width: 720px;
+    margin: 0 auto 80px;
+    text-align: center;
+
+    p {
+      margin: 18px auto 0;
+      font-size: 18px;
+      line-height: 1.6;
+      color: $ink-3;
+      max-width: 580px;
+    }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 110px;
+  }
+}
+
+.feature {
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: 72px;
+  align-items: center;
+
+  &--reverse {
+    grid-template-columns: 1.05fr 1fr;
+    direction: rtl;
+    & > * { direction: ltr; }
+  }
+
+  &__copy { max-width: 460px; }
+
+  &__num {
+    display: inline-block;
+    font-family: 'Instrument Serif', serif;
+    font-size: 48px;
+    font-style: italic;
+    color: $color-accent;
+    line-height: 1;
+    margin-bottom: 18px;
+  }
+
+  h3 {
+    margin: 0 0 16px;
+    font-size: clamp(26px, 2.6vw, 34px);
+    font-weight: 700;
+    color: $ink-1;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+
+  p {
+    margin: 0 0 24px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: $ink-3;
+  }
+
+  &__bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: $ink-2;
+      font-weight: 500;
+
+      svg { color: $color-accent; flex-shrink: 0; }
+    }
+  }
+
+  &__visual {
+    position: relative;
+  }
+}
+
+// Feature visual panels — shared shell
+:deep(.vis) {
+  position: relative;
+  border-radius: 18px;
+  padding: 30px;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.06), rgba(197, 160, 89, 0.08));
+  border: 1px solid $line;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.vis__panel) {
+  width: 100%;
+  max-width: 380px;
+  background: $paper;
+  border: 1px solid $line;
+  border-radius: 12px;
+  padding: 16px 16px 14px;
+  box-shadow: 0 18px 50px -22px rgba(60, 40, 20, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+:deep(.vis__panel-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: $ink-1;
+}
+
+:deep(.vis__pill) {
+  font-size: 10px;
+  font-weight: 600;
+  background: #f6efe2;
+  color: $ink-3;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+:deep(.vis__pill--accent) { background: $color-accent; color: #fff; }
+
+:deep(.vis__row) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: #fafaf7;
+  border-radius: 8px;
+  border: 1px solid #f3eadc;
+}
+
+:deep(.vis__row-img) {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background-size: cover;
+}
+
+:deep(.vis__row-body) {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+:deep(.vis__type-line) {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+:deep(.vis__type-line:not(.vis__type-line--strong):nth-child(2)) {
+  height: 7px;
+  background: #f3f4f6;
+  width: 80%;
+}
+:deep(.vis__type-line--strong) {
+  height: auto;
+  background: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: $ink-1;
+}
+:deep(.vis__type-line--short) { width: 60% !important; }
+:deep(.vis__type-line--shimmer) {
+  background: linear-gradient(90deg, #f3f4f6 0%, #faf3e3 50%, #f3f4f6 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+// Text variant — renders real copy, not a placeholder bar.
+// Must override the nth-child(2) placeholder rule, hence the explicit width.
+:deep(.vis__type-line--text) {
+  height: auto !important;
+  width: 100% !important;
+  background: none !important;
+  font-size: 10px;
+  font-weight: 500;
+  color: $ink-3;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+:deep(.vis__chip) {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+:deep(.vis__chip--ai)      { background: #ede9fe; color: #7c3aed; }
+:deep(.vis__chip--gen)     { background: #faf3e3; color: $gold; }
+:deep(.vis__chip--ok)      { background: #dcfce7; color: #16a34a; }
+:deep(.vis__chip--pending) { background: #f3f4f6; color: $ink-3; }
+
+// Bulk visual
+:deep(.vis__field) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: $ink-2;
+  }
+}
+
+:deep(.vis__check) {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 3px;
+  background: #fff;
+  position: relative;
+}
+:deep(.vis__check--on) {
+  background: $color-accent;
+  border-color: $color-accent;
+}
+:deep(.vis__check--on::after) {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  width: 3px;
+  height: 6px;
+  border-right: 1.5px solid #fff;
+  border-bottom: 1.5px solid #fff;
+  transform: rotate(45deg);
+}
+
+:deep(.vis__input) {
+  padding: 8px 10px;
+  background: #fafaf7;
+  border: 1px solid #f3eadc;
+  border-radius: 6px;
+  font-size: 12px;
+  color: $ink-1;
+  font-weight: 500;
+}
+
+:deep(.vis__applybar) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px 0;
+  margin-top: 6px;
+  border-top: 1px solid #f3eadc;
+  font-size: 11px;
+}
+
+:deep(.vis__hint) { color: $ink-4; }
+:deep(.vis__btn) {
+  padding: 5px 12px;
+  background: $color-accent;
+  color: #fff;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+// Calendar visual
+:deep(.vis__cal) {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+:deep(.vis__cal-day) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  background: #fafaf7;
+  border: 1px solid #f3eadc;
+  border-radius: 7px;
+}
+
+:deep(.vis__cal-day-label) {
+  font-size: 10px;
+  font-weight: 700;
+  color: $ink-4;
+  letter-spacing: 0.06em;
+}
+
+:deep(.vis__cal-bars) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+:deep(.vis__cal-bar) {
+  height: 4px;
+  border-radius: 2px;
+}
+
+:deep(.vis__cal-day-num) {
+  font-size: 13px;
+  font-weight: 800;
+  color: $ink-1;
+  margin-top: 2px;
+}
+
+// CSV visual
+:deep(.vis__csv-row) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #fafaf7;
+  border-radius: 8px;
+  border: 1px solid #f3eadc;
+}
+
+:deep(.vis__csv-icon) {
+  width: 30px;
+  height: 36px;
+  background: #fff;
+  border: 1px solid $line;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
-/* Demo shell (app mockup) */
-.demo-shell {
-  background: #1c1814;
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.07);
-  box-shadow: 0 40px 80px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.2);
-}
-
-.demo-bar {
-  background: #241f1b;
-  padding: 11px 16px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  border-bottom: 1px solid rgba(255,255,255,.06);
-}
-.demo-dots {
-  display: flex; gap: 5px;
-  span {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: rgba(255,255,255,.13);
-    &:first-child { background: rgba(255,96,89,.5); }
-    &:nth-child(2) { background: rgba(255,190,46,.5); }
-    &:nth-child(3) { background: rgba(36,201,60,.5); }
-  }
-}
-.demo-bar-title {
+:deep(.vis__csv-body) {
   flex: 1;
-  font-size: .64rem;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.25);
-  text-align: center;
-}
-.demo-chips { display: flex; gap: 6px; }
-.demo-chip {
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: .6rem;
-  letter-spacing: .07em;
-  color: rgba(255,255,255,.35);
-  border: 1px solid rgba(255,255,255,.08);
-  display: flex; align-items: center; gap: 4px;
-
-  &--active {
-    background: var(--primary);
-    color: #fff;
-    border-color: transparent;
-  }
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.demo-canvas {
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 16/10;
-  background: #0e0c0a;
-}
-.demo-room {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
-  opacity: .85;
-}
-
-/* Artwork frame */
-.demo-art {
-  position: absolute;
-  width: 32%;
-  aspect-ratio: 3/4;
-  top: 10%;
-  left: 50%;
-  border: 2px solid rgba(255,255,255,.75);
-  border-radius: 2px;
-  overflow: visible;
-  cursor: move;
-  img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: block;
-    border-radius: 1px;
-  }
-}
-.da-handle {
-  position: absolute;
-  width: 8px; height: 8px;
-  border: 2px solid var(--primary);
-  background: #fff;
-  border-radius: 2px;
-}
-.da-tl { top: -4px; left: -4px; }
-.da-tr { top: -4px; right: -4px; }
-.da-bl { bottom: -4px; left: -4px; }
-.da-br { bottom: -4px; right: -4px; }
-
-.da-badge {
-  position: absolute;
-  bottom: -32px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--primary);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 100px;
-  font-size: .58rem;
-  white-space: nowrap;
-  display: flex; align-items: center; gap: 4px;
-  letter-spacing: .06em;
+:deep(.vis__csv-name) {
+  font-size: 11px;
   font-weight: 600;
-}
-
-/* Guide lines */
-.demo-gl {
-  position: absolute;
-  background: rgba(197,160,89,.4);
-  pointer-events: none;
-}
-.demo-gl-h { width: 100%; height: 1px; top: 38%; }
-.demo-gl-v { width: 1px; height: 100%; left: 50%; top: 0; }
-
-/* Palette panel */
-.demo-palette {
-  position: absolute;
-  bottom: 12px; right: 12px;
-  background: rgba(18,15,12,.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 12px;
-  padding: 10px 12px;
-  min-width: 118px;
-}
-.dp-head {
-  font-size: .54rem;
-  letter-spacing: .15em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.32);
-  margin-bottom: 7px;
-}
-.dp-swatches { display: flex; gap: 4px; margin-bottom: 7px; }
-.dp-sw {
-  width: 16px; height: 16px;
-  border-radius: 4px;
-  background: var(--c);
-}
-.dp-match {
-  font-size: .58rem;
-  color: #7dc97d;
-  display: flex; align-items: center; gap: 3px;
-  letter-spacing: .06em;
-}
-
-/* ── Desktop-only demo animations (triggered on reveal) ── */
-@media (min-width: 769px) {
-  .demo-art {
-    opacity: 0;
-    transform: translateX(-80%) translateY(-30%) scale(0.55) rotate(-4deg);
-  }
-  .demo-gl { opacity: 0; }
-  .da-badge { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.85); }
-  .demo-palette { opacity: 0; transform: translateY(10px); }
-  .dp-sw { transform: scale(0) rotate(-15deg); }
-
-  .placement-demo.is-revealed {
-    .demo-art {
-      animation: da-enter 1.8s cubic-bezier(0.16,1,0.3,1) 0.7s both;
-    }
-    .demo-gl {
-      animation: gl-appear 0.4s ease 2.1s both;
-    }
-    .da-badge {
-      animation: badge-appear 0.5s cubic-bezier(0.16,1,0.3,1) 2.3s both;
-    }
-    .demo-palette {
-      animation: palette-appear 0.6s cubic-bezier(0.16,1,0.3,1) 2.5s both;
-    }
-    .dp-sw {
-      animation: swatch-pop 0.5s cubic-bezier(0.16,1,0.3,1) calc(2.7s + var(--i) * 0.1s) both;
-    }
-  }
-}
-
-/* Show static state on mobile */
-@media (max-width: 768px) {
-  .demo-art { opacity: 1; transform: translateX(-50%) !important; }
-  .demo-gl { opacity: 0.5; }
-  .da-badge { opacity: 1; transform: translateX(-50%) !important; }
-  .demo-palette { opacity: 1; transform: none !important; }
-  .dp-sw { transform: scale(1) !important; }
-}
-
-@keyframes da-enter {
-  from { opacity: 0; transform: translateX(-80%) translateY(-30%) scale(0.55) rotate(-4deg); }
-  60%  { transform: translateX(-50%) translateY(2px) scale(1.04) rotate(0deg); opacity: 1; }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1) rotate(0deg); }
-}
-@keyframes gl-appear {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes badge-appear {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.85); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-}
-@keyframes palette-appear {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes swatch-pop {
-  from { transform: scale(0) rotate(-15deg); }
-  70%  { transform: scale(1.15) rotate(2deg); }
-  to   { transform: scale(1) rotate(0); }
-}
-
-
-/* ════════════════════════════════════════════════════════════════════
-   6 · BENTO
-═══════════════════════════════════════════════════════════════════ */
-.bento-section {
-  .bento-header {
-    margin-bottom: 40px;
-
-    h2 {
-      font-family: "Noto Serif", Georgia, serif;
-      font-size: clamp(2rem, 3.4vw, 3.4rem);
-      font-weight: 500;
-      line-height: 1.04;
-      letter-spacing: -.03em;
-      margin: 0;
-      em { font-style: italic; font-weight: 400; color: var(--primary); }
-    }
-  }
-
-  .bento-grid {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 14px;
-
-    .bento-card:nth-child(1) { grid-column: 1; grid-row: 1 / 3; }
-    .bento-card:nth-child(2) { grid-column: 2 / 4; grid-row: 1; }
-    .bento-card:nth-child(3) { grid-column: 2; grid-row: 2; }
-    .bento-card:nth-child(4) { grid-column: 3; grid-row: 2; }
-  }
-
-  .bento-card {
-    background: rgba(255,255,255,.52);
-    border: 1px solid rgba(216,208,197,.7);
-    border-radius: var(--radius);
-    padding: 28px;
-    overflow: hidden;
-    position: relative;
-    transition: box-shadow .32s var(--ease-out), transform .32s var(--ease-out), border-color .32s ease;
-
-    &:hover {
-      box-shadow: 0 22px 52px rgba(45,41,38,.09);
-      transform: translateY(-3px);
-      border-color: rgba(197,160,89,.3);
-    }
-
-    .bento-tag {
-      display: inline-block;
-      font-size: .62rem;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-      color: var(--primary);
-      margin-bottom: 12px;
-    }
-    h3 {
-      font-family: "Noto Serif", Georgia, serif;
-      font-size: 1.15rem;
-      font-weight: 500;
-      line-height: 1.22;
-      letter-spacing: -.02em;
-      margin: 0 0 10px;
-    }
-    p { font-size: .87rem; color: var(--muted); margin: 0; line-height: 1.65; }
-  }
-
-  /* Tall card */
-  .bento-tall {
-    display: flex;
-    flex-direction: column;
-    h3 { font-size: 1.38rem; max-width: 260px; margin-bottom: 12px; }
-    .bento-visual {
-      flex: 1;
-      margin-top: 22px;
-      border-radius: 14px;
-      overflow: hidden;
-      min-height: 160px;
-      position: relative;
-      img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    }
-  }
-
-  .bv-live {
-    position: absolute;
-    bottom: 10px; left: 10px;
-    background: rgba(18,15,12,.82);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,.1);
-    border-radius: 100px;
-    padding: 5px 10px;
-    font-size: .58rem;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,.7);
-    display: flex; align-items: center; gap: 6px;
-  }
-  .bv-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #7dc97d;
-    animation: bv-pulse 1.8s ease-in-out infinite;
-  }
-  @keyframes bv-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: .5; transform: scale(1.4); }
-  }
-
-  /* Speed card */
-  .bento-speed {
-    h3 { font-size: 1.22rem; max-width: 320px; }
-  }
-  .speed-demo { margin-top: 20px; }
-  .sd-track {
-    height: 5px;
-    background: rgba(45,41,38,.08);
-    border-radius: 100px;
-    overflow: hidden;
-    margin-bottom: 8px;
-    position: relative;
-  }
-  .sd-fill {
-    height: 100%;
-    width: 0;
-    background: linear-gradient(90deg, var(--primary), #e8c07a);
-    border-radius: 100px;
-    transition: width 1.4s cubic-bezier(0.16,1,0.3,1);
-  }
-  .bento-card.is-revealed .sd-fill { width: 72%; }
-  .sd-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: .6rem;
-    letter-spacing: .09em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-  .sd-ready { color: var(--primary); }
-  .sd-time {
-    font-family: "Noto Serif", Georgia, serif;
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--secondary);
-    margin-top: 12px;
-    letter-spacing: -.04em;
-  }
-
-  /* Color card */
-  .color-row {
-    display: flex;
-    gap: 7px;
-    margin-top: 16px;
-    flex-wrap: wrap;
-  }
-  .cr-sw {
-    width: 34px; height: 34px;
-    border-radius: 9px;
-    background: var(--c);
-    transform: scale(0) rotate(-18deg);
-    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1) calc(var(--i) * 70ms + 200ms);
-  }
-  .bento-card.is-revealed .cr-sw { transform: scale(1) rotate(0); }
-}
-
-
-/* ════════════════════════════════════════════════════════════════════
-   7 · QUOTE
-═══════════════════════════════════════════════════════════════════ */
-.quote-section {
-  background: #ded8d0;
-  padding: 120px 0;
-  position: relative;
+  color: $ink-1;
   overflow: hidden;
-
-  &::before, &::after {
-    content: '✦';
-    position: absolute;
-    font-size: 12rem;
-    color: rgba(197,160,89,.07);
-    pointer-events: none;
-    line-height: 1;
-  }
-  &::before { top: -40px; left: -40px; }
-  &::after  { bottom: -40px; right: -40px; }
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.quote-wrap {
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  padding: 0 8px;
+
+:deep(.vis__csv-meta) {
+  font-size: 10px;
+  color: $ink-4;
+}
+
+// ── HOW IT WORKS ─────────────────────────────────────────────────────────────
+
+.how {
+  padding: 120px 0;
+  background: $ink-1;
+  color: #fff;
+
+  .kicker { color: rgba(255, 255, 255, 0.55); }
+  h2 { color: #fff; em { color: #f9b779; } }
+
+  &__head {
+    max-width: 760px;
+    margin: 0 auto 80px;
+    text-align: center;
+  }
+
+  &__steps {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  &__line {
+    position: absolute;
+    top: 28px;
+    left: 8%;
+    right: 8%;
+    height: 1px;
+    background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.18) 50%, transparent 100%);
+    z-index: 0;
+  }
+}
+
+.step {
   position: relative;
   z-index: 1;
-}
-.quote-star { color: #c8a96a; font-size: 1.4rem; margin-bottom: 24px; }
-blockquote {
-  margin: 0 auto 32px;
-  font-family: "Noto Serif", Georgia, serif;
-  font-style: italic;
-  font-size: clamp(1.55rem, 2.8vw, 2.7rem);
-  line-height: 1.16;
-  letter-spacing: -.02em;
-  max-width: 820px;
-  color: #3a342d;
-}
-.quote-source {
-  font-size: .76rem;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: #6d655b;
+  text-align: center;
+  padding: 0 12px;
+
+  &__num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 24px;
+    background: $ink-1;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 28px;
+    color: $color-accent;
+  }
+
+  h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.65);
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
+// ── FINAL CTA ────────────────────────────────────────────────────────────────
 
-/* ════════════════════════════════════════════════════════════════════
-   8 · CTA
-═══════════════════════════════════════════════════════════════════ */
-.cta-section {
-  background: var(--secondary);
-  padding: 96px 0;
-  position: relative;
-  overflow: hidden;
+.cta {
+  padding: 120px 0;
+  background:
+    radial-gradient(ellipse at center, rgba(255, 107, 53, 0.18), transparent 60%),
+    linear-gradient(180deg, $ink-1 0%, #0f0d0b 100%);
+  color: #fff;
 
-  .cta-inner {
+  &__inner {
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+
+    h2 { color: #fff; em { color: $color-accent; } }
+
+    p {
+      margin: 20px auto 36px;
+      font-size: 17px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 540px;
+    }
+  }
+
+  &__form {
+    display: flex;
+    gap: 8px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    max-width: 480px;
+    margin: 0 auto;
+    backdrop-filter: blur(10px);
+
+    &:focus-within {
+      border-color: $color-accent;
+      box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.18);
+    }
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 15px;
+    color: #fff;
+    outline: 0;
+
+    &::placeholder { color: rgba(255, 255, 255, 0.45); }
+  }
+
+  &__btn {
+    padding: 12px 22px;
+    border: 0;
+    background: $color-accent;
+    color: #fff;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+
+    &:hover:not(:disabled) { background: #ff8451; transform: translateY(-1px); }
+    &:disabled { opacity: 0.55; cursor: not-allowed; }
+  }
+
+  &__note {
+    margin: 16px auto 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+
+    &--err { color: #fca5a5; }
+  }
+}
+
+// ── FOOTER ───────────────────────────────────────────────────────────────────
+
+.footer {
+  padding: 40px 0;
+  background: #0f0d0b;
+  color: rgba(255, 255, 255, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+  &__inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 40px;
-    padding: 0 20px;
-  }
-
-  .cta-content {
-    max-width: 560px;
-    position: relative;
-    z-index: 1;
-
-    h2 {
-      font-family: "Noto Serif", Georgia, serif;
-      font-size: clamp(2.2rem, 3.8vw, 3.8rem);
-      font-weight: 500;
-      line-height: .96;
-      letter-spacing: -.03em;
-      color: #f5f2ed;
-      margin: 0 0 18px;
-      em { font-style: italic; font-weight: 400; color: var(--primary); }
-    }
-    p {
-      font-size: .96rem;
-      color: rgba(245,242,237,.5);
-      margin: 0 0 32px;
-      max-width: 380px;
-    }
-  }
-
-  .cta-eyebrow { color: rgba(197,160,89,.65); }
-}
-
-/* Ambient orbs */
-.cta-orb {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-.cta-orb-1 {
-  width: 560px; height: 560px;
-  top: -160px; right: -100px;
-  background: radial-gradient(circle, rgba(197,160,89,.12), transparent 70%);
-}
-.cta-orb-2 {
-  width: 320px; height: 320px;
-  bottom: -80px; left: 5%;
-  background: radial-gradient(circle, rgba(197,160,89,.09), transparent 70%);
-  animation: orb-drift 14s ease-in-out infinite;
-}
-@keyframes orb-drift {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50%       { transform: translateY(-22px) scale(1.06); }
-}
-
-/* Animated rings decoration */
-.cta-deco {
-  flex-shrink: 0;
-  position: relative;
-  width: 160px; height: 160px;
-  display: flex; align-items: center; justify-content: center;
-}
-.cta-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(197,160,89,.2);
-  top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  animation: ring-pulse 4s ease-out infinite;
-}
-.r1 { width: 80px;  height: 80px; }
-.r2 { width: 120px; height: 120px; animation-delay: .9s; }
-.r3 { width: 160px; height: 160px; animation-delay: 1.8s; }
-@keyframes ring-pulse {
-  0%   { transform: translate(-50%,-50%) scale(1); opacity: .6; }
-  100% { transform: translate(-50%,-50%) scale(1.6); opacity: 0; }
-}
-.cta-glyph {
-  font-size: 2.2rem;
-  color: rgba(197,160,89,.45);
-  line-height: 1;
-  position: relative;
-  z-index: 1;
-  animation: glyph-spin 20s linear infinite;
-}
-@keyframes glyph-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-
-/* ════════════════════════════════════════════════════════════════════
-   7 · ROOM GUIDES
-═══════════════════════════════════════════════════════════════════ */
-.rooms-section {
-  border-top: 1px solid var(--border);
-
-  .rooms-header {
-    margin-bottom: 44px;
-
-    h2 {
-      font-family: "Noto Serif", Georgia, serif;
-      font-size: clamp(2rem, 3.4vw, 3.2rem);
-      font-weight: 500;
-      line-height: 1.04;
-      letter-spacing: -.03em;
-      margin: 0 0 14px;
-      em { font-style: italic; font-weight: 400; color: var(--primary); }
-    }
-  }
-
-  .rooms-sub {
-    font-size: .95rem;
-    color: var(--muted);
-    margin: 0;
-    max-width: 480px;
-    line-height: 1.65;
-  }
-
-  .rooms-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    flex-wrap: wrap;
     gap: 14px;
   }
 
-  .room-card {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 26px 24px;
-    background: rgba(255,255,255,.52);
-    border: 1px solid rgba(216,208,197,.7);
-    border-radius: var(--radius);
+  &__brand {
+    font-weight: 800;
+    font-size: 16px;
+    color: #fff;
     text-decoration: none;
-    color: inherit;
-    transition: box-shadow .32s var(--ease-out), transform .32s var(--ease-out), border-color .32s ease;
-
-    &:hover {
-      box-shadow: 0 22px 52px rgba(45,41,38,.09);
-      transform: translateY(-3px);
-      border-color: rgba(197,160,89,.3);
-
-      .room-card-arrow { transform: translateX(4px); color: var(--primary); }
-    }
-
-    h3 {
-      font-family: "Noto Serif", Georgia, serif;
-      font-size: 1.15rem;
-      font-weight: 500;
-      margin: 0 0 8px;
-      letter-spacing: -.02em;
-      color: var(--secondary);
-    }
-
-    p {
-      font-size: .86rem;
-      color: var(--muted);
-      margin: 0;
-      line-height: 1.6;
-    }
+    letter-spacing: -0.03em;
+    span { color: $color-accent; }
   }
 
-  .room-card-num {
-    font-family: "Noto Serif", Georgia, serif;
-    font-size: .74rem;
-    color: var(--primary);
-    letter-spacing: .1em;
-    font-weight: 400;
+  &__copy {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0;
   }
 
-  .room-card-body { flex: 1; }
-
-  .room-card-arrow {
-    font-size: .9rem;
-    color: var(--muted);
-    transition: transform .22s var(--ease-out), color .22s ease;
-    align-self: flex-end;
-  }
-}
-
-@media (max-width: 900px) {
-  .rooms-section .rooms-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 540px) {
-  .rooms-section .rooms-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-/* ════════════════════════════════════════════════════════════════════
-   FOOTER
-═══════════════════════════════════════════════════════════════════ */
-footer { padding: 36px 0 52px; }
-.footer-grid {
-  display: grid;
-  grid-template-columns: 1.4fr .9fr .9fr;
-  gap: 30px;
-  align-items: start;
-
-  .tmp-grid {
+  &__links {
     display: flex;
-    grid-column: 1 / 4;
+    gap: 22px;
 
-    .w50 {
-      width: 50%;
-      .footer-left {
-        margin-top: 0;
-        max-width: 360px;
-        text-transform: none;
-        letter-spacing: .05em;
-        line-height: 1.7;
-      }
-    }
-  }
-}
-.footer-brand { font-family: "Noto Serif", serif; font-style: italic; margin-bottom: 18px; }
-.footer-copy { margin-top: 28px; font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: #6f665b; }
-
-
-/* ════════════════════════════════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════════════════════════════ */
-@media (max-width: 1024px) {
-  .bento-section {
-    .bento-grid {
-      grid-template-columns: 1.4fr 1fr;
-      .bento-card:nth-child(1) { grid-column: 1; grid-row: 1 / 3; }
-      .bento-card:nth-child(2) { grid-column: 2; grid-row: 1; }
-      .bento-card:nth-child(3) { grid-column: 2; grid-row: 2; }
-      .bento-card:nth-child(4) { grid-column: 1 / 3; grid-row: 3; }
+    a {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.55);
+      text-decoration: none;
+      transition: color 0.15s;
+      &:hover { color: #fff; }
     }
   }
 }
 
-@media (max-width: 900px) {
-  .how-section {
-    .how-layout { grid-template-columns: 1fr; gap: 40px; }
-    .how-left { position: static; }
+// ── Responsive ───────────────────────────────────────────────────────────────
+
+// Side-by-side layout stays on desktop. Only collapses on tablet portrait+.
+@media (max-width: 1240px) {
+  .hero__inner { gap: 48px; }
+  .feature, .feature--reverse { gap: 56px; }
+}
+
+@media (max-width: 920px) {
+  .hero__inner { grid-template-columns: 1fr; gap: 56px; }
+  .hero__preview { max-width: 560px; margin: 0 auto; }
+  .preview { transform: none; }
+
+  .feature, .feature--reverse {
+    grid-template-columns: 1fr;
+    direction: ltr;
+    gap: 40px;
   }
 
-  .placement-layout { grid-template-columns: 1fr; gap: 40px; }
-
-  .cta-section .cta-deco { display: none; }
-}
-
-@media (max-width: 900px) {
-  .hero {
-    padding: 48px 0 72px;
-    .hero-grid {
-      grid-template-columns: 1fr;
-      gap: 40px;
-      min-height: auto;
-    }
+  .proof__grid {
+    grid-template-columns: 1fr;
+    gap: 48px;
   }
-  .hero-compare {
-    max-width: 560px;
-    margin: 0 auto;
-    aspect-ratio: 4 / 5;
-    max-height: 70vh;
-  }
+  .proof__copy { max-width: 100%; }
 }
 
-@media (max-width: 768px) {
-  .section { padding: 68px 0; }
+@media (max-width: 760px) {
+  .container { padding: 0 20px; }
+  .nav__inner { padding: 14px 20px; gap: 16px; }
+  .nav__links { gap: 16px; a:not(.nav__cta) { display: none; } }
 
-  .bento-section {
-    .bento-grid {
-      grid-template-columns: 1fr;
-      .bento-card:nth-child(n) { grid-column: 1 !important; grid-row: auto !important; }
-    }
-  }
+  .hero { padding: 56px 20px 80px; }
+  .hero__title { font-size: clamp(36px, 9vw, 56px); }
+  .hero__lead { font-size: 16px; }
+  .hero__form-row { flex-direction: column; gap: 8px; }
+  .hero__btn { width: 100%; justify-content: center; }
 
-  .stats-row { flex-direction: column; gap: 24px; }
-  .stat-sep { width: 48px; height: 1px; }
+  .problem, .features, .how, .cta { padding: 80px 0 70px; }
 
-  .marquee-track { animation-duration: 26s; }
+  .problem__grid { grid-template-columns: 1fr; }
+  .features__list { gap: 70px; }
+  .feature__num { font-size: 38px; }
 
-  .hc-handle { width: 38px; height: 38px; }
-  .hc-tag { font-size: .52rem; padding: 5px 10px; }
-}
+  .how__steps { grid-template-columns: 1fr; gap: 48px; }
+  .how__line { display: none; }
 
-@media (max-width: 640px) {
-  :root { --container: min(100vw - 28px, 100vw - 28px); }
-  .site-header { position: static; }
-  .nav { min-height: auto; padding: 14px 0; flex-wrap: wrap; gap: 12px; }
-  .nav-links { order: 3; width: 100%; justify-content: flex-start; flex-wrap: wrap; gap: 12px 16px; font-size: .88rem; }
-  .btn-nav { display: none; }
-  .actions { flex-direction: column; align-items: stretch; }
-  .btn { width: 100%; }
-  .footer-grid .tmp-grid { flex-direction: column; .w50 { width: 100%; } }
-  .cta-section .cta-inner { flex-direction: column; }
+  .cta__form { flex-direction: column; }
+  .cta__btn { width: 100%; }
 
-  .demo-shell { border-radius: 14px; }
-  .demo-bar-title { display: none; }
+  .footer__inner { flex-direction: column; text-align: center; }
 }
-
-/* ── Reduced motion overrides ── */
-@media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; transition: none; }
-  .hc-hint, .marquee-track, .cta-orb-2, .cta-ring, .cta-glyph,
-  .bv-dot { animation: none !important; }
-  .demo-art { animation: none !important; opacity: 1 !important; transform: translateX(-50%) !important; }
-  .demo-gl { opacity: .5 !important; animation: none !important; }
-  .da-badge { animation: none !important; opacity: 1 !important; transform: translateX(-50%) !important; }
-  .demo-palette { animation: none !important; opacity: 1 !important; transform: none !important; }
-  .dp-sw, .cr-sw { animation: none !important; transform: scale(1) !important; }
-  .sd-fill { transition: none !important; }
-}
-
-
-/* ════════════════════════════════════════════════════════════════════
-   COMING-SOON MODAL
-═══════════════════════════════════════════════════════════════════ */
-.soon-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(20,17,14,.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.soon-card {
-  position: relative;
-  width: 100%;
-  max-width: 460px;
-  background: var(--neutral);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  padding: 44px 36px 32px;
-  text-align: center;
-  box-shadow: 0 30px 80px rgba(20,17,14,.35);
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -120px; left: 50%;
-    transform: translateX(-50%);
-    width: 320px; height: 320px;
-    background: radial-gradient(circle, rgba(197,160,89,.16), transparent 70%);
-    pointer-events: none;
-  }
-}
-.soon-close {
-  position: absolute;
-  top: 14px; right: 14px;
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,.6);
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background .2s ease, color .2s ease, border-color .2s ease;
-  &:hover { background: #fff; color: var(--secondary); border-color: var(--secondary); }
-}
-.soon-badge {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 100px;
-  background: rgba(197,160,89,.12);
-  border: 1px solid rgba(197,160,89,.3);
-  color: var(--primary);
-  font-size: .64rem;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  font-weight: 600;
-  margin-bottom: 20px;
-}
-.soon-badge-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--primary);
-  animation: soon-pulse 1.6s ease-in-out infinite;
-}
-@keyframes soon-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50%      { transform: scale(1.6); opacity: .5; }
-}
-.soon-title {
-  position: relative;
-  font-family: "Noto Serif", Georgia, serif;
-  font-size: clamp(1.6rem, 3vw, 2rem);
-  font-weight: 500;
-  line-height: 1.08;
-  letter-spacing: -.02em;
-  margin: 0 0 14px;
-  color: var(--secondary);
-  em { font-style: italic; font-weight: 400; color: var(--primary); }
-}
-.soon-text {
-  position: relative;
-  font-size: .92rem;
-  line-height: 1.6;
-  color: var(--muted);
-  margin: 0 0 26px;
-}
-.soon-actions {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  margin-bottom: 18px;
-  .btn { min-width: 160px; }
-}
-.soon-foot {
-  position: relative;
-  font-size: .66rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: #9a8c77;
-}
-
-/* Transition */
-.soon-enter-active, .soon-leave-active {
-  transition: opacity .28s ease;
-  .soon-card {
-    transition: transform .32s var(--ease-out), opacity .28s ease;
-  }
-}
-.soon-enter-from, .soon-leave-to {
-  opacity: 0;
-  .soon-card { transform: translateY(14px) scale(.96); opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .soon-badge-dot { animation: none !important; }
-  .soon-enter-active, .soon-leave-active,
-  .soon-enter-active .soon-card, .soon-leave-active .soon-card {
-    transition: none !important;
-  }
-}
-
 </style>
