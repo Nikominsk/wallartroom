@@ -1,22 +1,6 @@
 <template>
   <div class="gallery-toolbar">
     <div class="gallery-toolbar__row gallery-toolbar__row--main">
-      <!-- Platform mode dropdown -->
-      <div class="gallery-toolbar__mode">
-        <select
-          :value="mode"
-          class="gallery-toolbar__select gallery-toolbar__select--mode"
-          :class="{
-            'gallery-toolbar__select--mode-pinterest': mode === 'pinterest',
-            'gallery-toolbar__select--mode-adobe': mode === 'adobe',
-          }"
-          @change="emit('update:mode', $event.target.value)"
-        >
-          <option value="pinterest">Pinterest</option>
-          <option value="adobe">Adobe Stock</option>
-        </select>
-      </div>
-
       <!-- Sort -->
       <select
         :value="sortField"

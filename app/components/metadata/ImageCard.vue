@@ -15,12 +15,22 @@
     </label>
 
     <div class="img-card__image">
-      <img
-        v-if="safeImgSrc"
-        :src="safeImgSrc"
-        :alt="image.filename"
-        loading="lazy"
-      />
+      <template v-if="safeImgSrc">
+        <img
+          :src="safeImgSrc"
+          alt=""
+          loading="lazy"
+          :style="{ opacity: imgLoaded ? 1 : 0 }"
+          @load="imgLoaded = true"
+          @error="imgLoaded = true"
+        />
+        <div v-show="!imgLoaded" class="img-card__loading" aria-hidden="true">
+          <svg class="img-card__spinner" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="#e5e7eb" stroke-width="2.5"/>
+            <path d="M11 3a8 8 0 0 1 8 8" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </template>
       <div v-else class="img-card__placeholder">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -99,6 +109,9 @@ const safeImgSrc = computed(() => {
   const candidates = [props.image?.thumbnailUrl, props.image?.mediaUrl]
   return candidates.find(isWellFormedImageUrl) ?? null
 })
+
+const imgLoaded = ref(false)
+watch(safeImgSrc, () => { imgLoaded.value = false })
 </script>
 
 <style scoped lang="scss">
@@ -180,6 +193,7 @@ const safeImgSrc = computed(() => {
   }
 
   &__image {
+    position: relative;
     aspect-ratio: 3 / 4;
     background: #f3f4f6;
     overflow: hidden;
@@ -192,7 +206,21 @@ const safeImgSrc = computed(() => {
       height: 100%;
       object-fit: contain;
       display: block;
+      transition: opacity 0.18s ease;
     }
+  }
+
+  &__loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+  }
+
+  &__spinner {
+    animation: img-spin 0.75s linear infinite;
   }
 
   &__unsaved-dot {
@@ -255,5 +283,9 @@ const safeImgSrc = computed(() => {
     &--exported  { background: #ede9fe; color: #7c3aed; }
     &--published { background: #d1fae5; color: #059669; }
   }
+}
+
+@keyframes img-spin {
+  to { transform: rotate(360deg); }
 }
 </style>

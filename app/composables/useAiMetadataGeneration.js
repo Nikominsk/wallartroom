@@ -24,6 +24,7 @@ function defaultOptions() {
     adobeStockKeywordCount: 49,
     usePromptAsContext: true,
     useColorsAsContext: true,
+    skipFilled: true,
     overwriteMode: 'missing-only',
   }
 }
@@ -91,15 +92,16 @@ export function useAiMetadataGeneration() {
   }
 
   function needsGeneration(img) {
-    if (options.overwriteMode !== 'missing-only') return true
-    return (
-      (options.generateFor.pinterestTitle && !img.pinterest.title) ||
-      (options.generateFor.pinterestDescription && !img.pinterest.description) ||
-      (options.generateFor.pinterestBoard && !img.pinterest.board) ||
-      (options.generateFor.adobeStockTitle && !img.adobeStock.title) ||
-      (options.generateFor.adobeStockDescription && !img.adobeStock.description) ||
-      (options.generateFor.adobeStockKeywords && !img.adobeStock.keywords?.length)
-    )
+    if (!options.skipFilled) return true
+    // Skip the image only when every selected field is already filled.
+    const allFilled =
+      (!options.generateFor.pinterestTitle        || !!img.pinterest.title) &&
+      (!options.generateFor.pinterestDescription  || !!img.pinterest.description) &&
+      (!options.generateFor.pinterestBoard        || !!img.pinterest.board) &&
+      (!options.generateFor.adobeStockTitle       || !!img.adobeStock.title) &&
+      (!options.generateFor.adobeStockDescription || !!img.adobeStock.description) &&
+      (!options.generateFor.adobeStockKeywords    || !!img.adobeStock.keywords?.length)
+    return !allFilled
   }
 
   async function generate(images, onUpdate, generateFn) {

@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   const client = serverSupabaseServiceRole(event)
   const { data, error } = await client
     .from('pinterest_board')
-    .select('id, name')
+    .select('id, name, color')
     .order('name', { ascending: true })
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
   return data

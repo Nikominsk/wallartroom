@@ -24,7 +24,10 @@
       "Bash(powershell -Command \"Select-String -Path 'app\\\\pages\\\\index.vue' -Pattern '^\\\\.preview-archived|^@keyframes floatIn|^@keyframes pulse|^// .. PROBLEM' | Select-Object LineNumber, Line\")",
       "Bash(powershell -Command \"Select-String -Path 'app\\\\pages\\\\index.vue' -Pattern '^      <!-- .. FEATURES|^      <!-- .. PROBLEM' | Select-Object LineNumber, Line\")",
       "Bash(powershell -Command \"Select-String -Path 'app\\\\pages\\\\index.vue' -Pattern '^// .. FEATURES|^\\\\.pain \\\\{|^// .. PROBLEM' | Select-Object LineNumber, Line\")",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Skill(ui-ux-pro-max)",
+      "Bash(grep -E \"\\\\.\\(sql|ts|js\\)$\")",
+      "Bash(python *)"
     ]
   }
 }

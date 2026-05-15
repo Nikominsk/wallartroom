@@ -174,6 +174,8 @@
 </template>
 
 <script setup>
+definePageMeta({ layout: 'metadata' })
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const EMPTY_SET = new Set()
 

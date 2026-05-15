@@ -1,14 +1,19 @@
 import { serverSupabaseServiceRole } from '#supabase/server'
 
+const HEX = /^#[0-9a-fA-F]{6}$/
+
 export default defineEventHandler(async (event) => {
   const client = serverSupabaseServiceRole(event)
-  const { name } = await readBody(event)
+  const { name, color } = await readBody(event)
   if (!name?.trim()) throw createError({ statusCode: 400, statusMessage: 'Board name is required' })
+  if (color != null && !HEX.test(String(color))) {
+    throw createError({ statusCode: 400, statusMessage: 'Color must be a #RRGGBB hex string' })
+  }
 
   const { data, error } = await client
     .from('pinterest_board')
-    .insert({ name: name.trim() })
-    .select('id, name')
+    .insert({ name: name.trim(), color: color ?? null })
+    .select('id, name, color')
     .single()
 
   if (error) {
