@@ -5,9 +5,8 @@
         <NuxtLink to="/" class="pp-brand">Wall<span>Art</span>Room</NuxtLink>
         <nav class="pp-nav">
           <NuxtLink to="/">Home</NuxtLink>
-          <NuxtLink to="/gallery">Gallery</NuxtLink>
           <NuxtLink to="/pricing">Pricing</NuxtLink>
-          <NuxtLink v-if="isAuthed" to="/app/dashboard" class="pp-nav-cta">Dashboard</NuxtLink>
+          <NuxtLink v-if="isAuthed" to="/metadata" class="pp-nav-cta">Dashboard</NuxtLink>
           <NuxtLink v-else to="/login" class="pp-nav-cta">Sign in</NuxtLink>
         </nav>
       </div>
@@ -16,9 +15,17 @@
     <main class="pp-main">
       <section class="pp-hero">
         <span class="pp-eyebrow">Pricing</span>
-        <h1>Simple pricing. Cancel anytime.</h1>
-        <p>One subscription with monthly credits. Top up whenever a project needs more — no plan changes, no surprises.</p>
+        <h1>The Pinterest Revenue OS.<br>Simple pricing.</h1>
+        <p>Not per-channel. Not per-seat. Three plans that grow with your Pinterest traffic. Cancel anytime.</p>
       </section>
+
+      <!-- Toggle -->
+      <div class="pp-toggle">
+        <button :class="{ active: !annual }" @click="annual = false">Monthly</button>
+        <button :class="{ active: annual }" @click="annual = true">
+          Annual <span class="pp-toggle-save">Save 20%</span>
+        </button>
+      </div>
 
       <!-- Checkout error toast -->
       <div v-if="checkoutErr" class="pp-error">{{ checkoutErr }}</div>
@@ -38,14 +45,16 @@
           </header>
 
           <div class="pp-price">
-            <span v-if="plan.price > 0" class="pp-price-cur">€</span>
-            <span class="pp-price-num">{{ plan.price }}</span>
-            <span v-if="plan.price > 0" class="pp-price-per">/mo</span>
+            <span v-if="displayPrice(plan) > 0" class="pp-price-cur">€</span>
+            <span class="pp-price-num">{{ displayPrice(plan) === 0 ? 'Free' : displayPrice(plan) }}</span>
+            <span v-if="displayPrice(plan) > 0" class="pp-price-per">/mo</span>
           </div>
+          <p v-if="annual && plan.price > 0" class="pp-billed">
+            Billed €{{ Math.round(plan.price * 0.8 * 12) }} / year
+          </p>
 
-          <div class="pp-credits">
-            <strong>{{ plan.credits }}</strong>
-            <span>{{ plan.credits === 0 ? 'one-time signup credits' : 'credits / month — reset every cycle' }}</span>
+          <div class="pp-limits">
+            <div v-for="l in plan.limits" :key="l" class="pp-limit">{{ l }}</div>
           </div>
 
           <ul class="pp-features">
@@ -68,52 +77,41 @@
         </article>
       </section>
 
-      <!-- ─── Top-up packs ──────────────────────────────────────────────── -->
-      <section class="pp-packs">
-        <header class="pp-packs-head">
-          <span class="pp-eyebrow">Add-ons</span>
-          <h2>Top up your credits</h2>
-          <p>
-            Need more in a single month? Add a credit pack on top of your subscription.
-            Top-up credits don't expire and stack on top of your monthly grant.
-          </p>
-        </header>
-        <div class="pp-packs-grid">
-          <article v-for="pack in creditPacks" :key="pack.id" class="pp-pack">
-            <div class="pp-pack-credits">{{ pack.credits }}</div>
-            <div class="pp-pack-label">credits</div>
-            <div class="pp-pack-price">€{{ pack.price }}</div>
-            <div class="pp-pack-meta">€{{ (pack.price / pack.credits).toFixed(2) }} / credit</div>
-            <button class="pp-pack-cta"
-                    :disabled="checkoutBusy === `pack-${pack.id}`"
-                    @click="onPackCta(pack)">
-              {{ checkoutBusy === `pack-${pack.id}` ? 'Redirecting…' : 'Buy pack' }}
-            </button>
-          </article>
+      <!-- ─── Feature comparison ────────────────────────────────────────── -->
+      <section class="pp-compare">
+        <h2>Full feature comparison</h2>
+        <div class="pp-compare-table">
+          <div class="pp-compare-row pp-compare-row--header">
+            <div class="pp-compare-cell">Feature</div>
+            <div class="pp-compare-cell">Solo Traffic</div>
+            <div class="pp-compare-cell">Growth Commerce</div>
+            <div class="pp-compare-cell">Agency</div>
+          </div>
+          <div v-for="row in comparisonRows" :key="row.feature" class="pp-compare-row">
+            <div class="pp-compare-cell pp-compare-cell--feature">{{ row.feature }}</div>
+            <div class="pp-compare-cell">{{ row.solo }}</div>
+            <div class="pp-compare-cell">{{ row.growth }}</div>
+            <div class="pp-compare-cell">{{ row.agency }}</div>
+          </div>
         </div>
       </section>
 
-      <!-- ─── FAQ-ish strip ──────────────────────────────────────────────── -->
+      <!-- ─── FAQ ───────────────────────────────────────────────────────── -->
       <section class="pp-faq">
-        <div>
-          <h3>How does a credit work?</h3>
-          <p>1 credit = 1 standard preview. Realistic renders cost 2, HD exports cost 3. Failed generations are never charged.</p>
-        </div>
-        <div>
-          <h3>Do unused monthly credits roll over?</h3>
-          <p>No — your monthly grant resets each billing cycle. Top-up credits you bought separately stay in your wallet until you use them.</p>
-        </div>
-        <div>
-          <h3>Can I cancel anytime?</h3>
-          <p>Yes. You keep Pro access until the end of your billing period, then drop to the Free tier automatically.</p>
+        <h2>Frequently asked</h2>
+        <div class="pp-faq-grid">
+          <div v-for="q in faq" :key="q.q">
+            <h3>{{ q.q }}</h3>
+            <p>{{ q.a }}</p>
+          </div>
         </div>
       </section>
     </main>
 
     <footer class="pp-footer">
       <div class="pp-footer-inner">
-        <div>WallArtRoom · See what fits your room before you buy or hang it.</div>
-        <div>© 2026 WallArtRoom</div>
+        <div>WallArtRoom · The Pinterest Revenue OS</div>
+        <div>© 2026 WallArtRoom · API-compliant, no risky scraping</div>
       </div>
     </footer>
   </div>
@@ -123,99 +121,124 @@
 definePageMeta({ layout: false })
 
 interface Plan {
-  id:       'free' | 'pro'
-  name:     string
-  tagline:  string
-  price:    number
-  credits:  number
+  id: 'solo' | 'growth' | 'agency'
+  name: string
+  tagline: string
+  price: number
   featured?: boolean
+  limits: string[]
   features: string[]
 }
 
-interface CreditPack {
-  id:      'pack_25' | 'pack_100' | 'pack_300'
-  credits: number
-  price:   number
+const annual = ref(false)
+
+function displayPrice(plan: Plan) {
+  if (plan.price === 0) return 0
+  return annual.value ? Math.round(plan.price * 0.8) : plan.price
 }
 
 const plans: Plan[] = [
   {
-    id: 'free',
-    name: 'Free',
-    tagline: 'Try it on one wall.',
-    price: 0,
-    credits: 5,
+    id: 'solo',
+    name: 'Solo Traffic',
+    tagline: 'For bloggers, small shops, and side hustles.',
+    price: 19,
+    limits: ['1 Pinterest account', '1 domain / shop', '500 active pins / month'],
     features: [
-      '5 one-time signup credits',
-      'Up to 3 projects',
-      'Watermarked low-res preview',
-      'Basic AI tips',
-      'Gallery access',
+      'CSV Studio with validation',
+      'AI metadata generation',
+      'Bulk scheduling & editing',
+      'Link Health checks',
+      'UTM preset library',
+      'Export history & audit trail',
+      '14-day free trial',
     ],
   },
   {
-    id: 'pro',
-    name: 'Pro',
-    tagline: 'Everything you need, no plan tiers.',
-    price: 15,
-    credits: 100,
+    id: 'growth',
+    name: 'Growth Commerce',
+    tagline: 'For growing shops and creator brands.',
+    price: 49,
     featured: true,
+    limits: ['3 Pinterest accounts', '3 domains / shops', '5,000 pins / month'],
     features: [
-      '100 credits / month — reset every cycle',
-      'Unlimited projects',
-      'HD exports, no watermark',
-      'AI Style Reports (PDF)',
-      'Before / after exports',
-      'Top up with credit packs anytime',
-      'Cancel anytime',
+      'Board Intelligence (AI)',
+      'Pinterest SEO Copilot',
+      'Duplicate & Freshness Guard',
+      'Seasonal content calendar',
+      'Advanced analytics',
+      'Everything in Solo Traffic',
+      '14-day free trial',
+    ],
+  },
+  {
+    id: 'agency',
+    name: 'Agency',
+    tagline: 'For VAs, agencies, and multi-client teams.',
+    price: 99,
+    limits: ['10 Pinterest accounts', '10 client workspaces', 'Unlimited pins'],
+    features: [
+      'Approval workflows',
+      'White-label CSV exports',
+      'Client workspace isolation',
+      'Role management',
+      'API access',
+      'Priority support',
+      'Everything in Growth',
     ],
   },
 ]
 
-const creditPacks: CreditPack[] = [
-  { id: 'pack_25',  credits: 25,  price: 5  },
-  { id: 'pack_100', credits: 100, price: 15 },
-  { id: 'pack_300', credits: 300, price: 39 },
+const comparisonRows = [
+  { feature: 'Pinterest accounts', solo: '1', growth: '3', agency: '10' },
+  { feature: 'Pins / month', solo: '500', growth: '5,000', agency: 'Unlimited' },
+  { feature: 'AI metadata generation', solo: '✓', growth: '✓', agency: '✓' },
+  { feature: 'CSV Studio + validation', solo: '✓', growth: '✓', agency: '✓' },
+  { feature: 'Link Health checks', solo: '✓', growth: '✓', agency: '✓' },
+  { feature: 'UTM presets', solo: '✓', growth: '✓', agency: '✓' },
+  { feature: 'Board Intelligence (AI)', solo: '—', growth: '✓', agency: '✓' },
+  { feature: 'Pinterest SEO Copilot', solo: '—', growth: '✓', agency: '✓' },
+  { feature: 'Duplicate & Freshness Guard', solo: '—', growth: '✓', agency: '✓' },
+  { feature: 'Seasonal calendar', solo: '—', growth: '✓', agency: '✓' },
+  { feature: 'Approval workflows', solo: '—', growth: '—', agency: '✓' },
+  { feature: 'White-label exports', solo: '—', growth: '—', agency: '✓' },
+  { feature: 'API access', solo: '—', growth: '—', agency: '✓' },
+]
+
+const faq = [
+  { q: 'Is there a free trial?', a: 'Yes — 14 days, full access, no credit card required. You get the full Growth plan experience during trial.' },
+  { q: 'What counts as an "active pin"?', a: 'Any pin in your workspace with a scheduled or published status. Drafts and archived pins don\'t count toward your limit.' },
+  { q: 'Can I switch plans?', a: 'Anytime. Upgrading is instant. Downgrading takes effect at the end of your billing cycle. No penalties.' },
+  { q: 'Do you store my Pinterest login?', a: 'No. We use Pinterest\'s official OAuth flow. We never see or store your password. API-compliant, no scraping.' },
+  { q: 'What happens when my trial ends?', a: 'Your workspace stays intact. You just can\'t publish or export until you pick a plan. No surprise charges.' },
+  { q: 'Is there an annual discount?', a: 'Yes — save 20% with annual billing. That\'s €15/mo for Solo, €39/mo for Growth, €79/mo for Agency.' },
 ]
 
 const supabaseUser = useSupabaseUser()
 const isAuthed = computed(() => !!supabaseUser.value)
 
-const { data: me } = useMe()
-const isCurrentPlan = (planId: Plan['id']) => me.value?.plan === planId
+const checkoutBusy = ref<string | null>(null)
+const checkoutErr = ref<string | null>(null)
 
 function ctaLabel(plan: Plan) {
-  if (plan.id === 'free') return isAuthed.value ? 'Current plan' : 'Get started — free'
-  if (isCurrentPlan(plan.id)) return 'Current plan'
-  return `Subscribe — €${plan.price}/mo`
+  if (!isAuthed.value) return 'Start 14-day free trial'
+  return `Subscribe — €${displayPrice(plan)}/mo`
 }
 
 function ctaDisabled(plan: Plan) {
-  if (plan.id === 'free' && isAuthed.value) return true
-  return isCurrentPlan(plan.id)
+  return false
 }
-
-const checkoutBusy = ref<string | null>(null)
-const checkoutErr  = ref<string | null>(null)
 
 async function onPlanCta(plan: Plan) {
   if (!isAuthed.value) {
     return navigateTo(`/signup?next=${encodeURIComponent('/pricing')}`)
   }
-  if (plan.id === 'free' || isCurrentPlan(plan.id)) return
-  await goToCheckout(`plan-${plan.id}`, { kind: 'subscription', plan: plan.id })
-}
-
-async function onPackCta(pack: CreditPack) {
-  if (!isAuthed.value) {
-    return navigateTo(`/signup?next=${encodeURIComponent('/pricing')}`)
-  }
-  await goToCheckout(`pack-${pack.id}`, { kind: 'credit_pack', packId: pack.id })
+  await goToCheckout(`plan-${plan.id}`, { kind: 'subscription', plan: plan.id, annual: annual.value })
 }
 
 async function goToCheckout(key: string, body: Record<string, unknown>) {
   checkoutBusy.value = key
-  checkoutErr.value  = null
+  checkoutErr.value = null
   try {
     const { url } = await $fetch<{ url: string }>('/api/stripe/create-checkout-session', {
       method: 'POST',
@@ -236,6 +259,7 @@ async function goToCheckout(key: string, body: Record<string, unknown>) {
   color: #2d2926;
   display: flex;
   flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 .pp-top {
@@ -284,7 +308,7 @@ async function goToCheckout(key: string, body: Record<string, unknown>) {
 
 .pp-main {
   flex: 1;
-  max-width: 1080px;
+  max-width: 1100px;
   width: 100%;
   margin: 0 auto;
   padding: 60px 28px 80px;
@@ -292,21 +316,22 @@ async function goToCheckout(key: string, body: Record<string, unknown>) {
 
 .pp-hero {
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 40px;
 
   h1 {
     margin: 8px 0 16px;
-    font-size: clamp(32px, 5vw, 52px);
+    font-size: clamp(32px, 5vw, 48px);
     font-weight: 700;
     color: #1a1714;
     letter-spacing: -0.03em;
-    line-height: 1.05;
+    line-height: 1.1;
   }
   p {
-    max-width: 600px;
+    max-width: 560px;
     margin: 0 auto;
     color: #6b5e52;
     font-size: 17px;
+    line-height: 1.5;
   }
 }
 
@@ -317,6 +342,50 @@ async function goToCheckout(key: string, body: Record<string, unknown>) {
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: #c5a059;
+}
+
+.pp-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 40px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #ede0d0;
+  border-radius: 12px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+
+  button {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b5e52;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    &.active {
+      background: #1a1714;
+      color: #fff;
+    }
+  }
+
+  &-save {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    background: #22c55e;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
 }
 
 .pp-error {
@@ -333,9 +402,8 @@ async function goToCheckout(key: string, body: Record<string, unknown>) {
 
 .pp-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 22px;
-  max-width: 760px;
   margin: 0 auto 80px;
 }
 
@@ -344,7 +412,7 @@ async function goToCheckout(key: string, body: Record<string, unknown>) {
   background: #fff;
   border: 1px solid #ede0d0;
   border-radius: 18px;
-  padding: 32px 30px 30px;
+  padding: 32px 28px 28px;
   display: flex;
   flex-direction: column;
   transition: border-color 0.15s, transform 0.15s;
@@ -373,64 +441,61 @@ async function goToCheckout(key: string, body: Record<string, unknown>) {
 }
 
 .pp-card-head {
-  margin-bottom: 18px;
-
-  h2 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 700;
-    color: #1a1714;
-    letter-spacing: -0.02em;
-  }
+  margin-bottom: 16px;
+  h2 { margin: 0; font-size: 22px; font-weight: 700; color: #1a1714; letter-spacing: -0.02em; }
 }
-.pp-card-sub {
-  margin: 4px 0 0;
-  font-size: 14px;
-  color: #8a7a6e;
-}
+.pp-card-sub { margin: 4px 0 0; font-size: 13px; color: #8a7a6e; }
 
 .pp-price {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  margin-bottom: 8px;
-
-  &-cur { font-size: 22px; font-weight: 600; color: #6b5e52; }
-  &-num { font-size: 48px; font-weight: 700; color: #1a1714; letter-spacing: -0.04em; line-height: 1; }
+  margin-bottom: 4px;
+  &-cur { font-size: 20px; font-weight: 600; color: #6b5e52; }
+  &-num { font-size: 44px; font-weight: 700; color: #1a1714; letter-spacing: -0.04em; line-height: 1; }
   &-per { font-size: 14px; color: #6b5e52; margin-left: 4px; }
 }
 
-.pp-credits {
-  font-size: 13px;
-  color: #6b5e52;
-  margin-bottom: 22px;
-  padding-bottom: 22px;
+.pp-billed {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #8a7a6e;
+}
+
+.pp-limits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
   border-bottom: 1px solid #f3eadc;
-  strong {
-    color: #1a1714;
-    font-weight: 700;
-    font-size: 15px;
-    margin-right: 6px;
-  }
+}
+
+.pp-limit {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a1714;
+  padding: 4px 10px;
+  background: #faf3e3;
+  border-radius: 999px;
 }
 
 .pp-features {
   list-style: none;
   padding: 0;
-  margin: 0 0 26px;
+  margin: 0 0 24px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
   flex: 1;
 
   li {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    font-size: 13.5px;
+    font-size: 13px;
     color: #2d2926;
     line-height: 1.5;
-
     svg { flex-shrink: 0; margin-top: 4px; color: #c5a059; }
   }
 }
@@ -454,107 +519,63 @@ async function goToCheckout(key: string, body: Record<string, unknown>) {
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
-.pp-packs {
+// ── Feature comparison
+.pp-compare {
   margin-bottom: 70px;
-}
-.pp-packs-head {
-  text-align: center;
-  margin-bottom: 28px;
 
   h2 {
-    margin: 8px 0;
+    text-align: center;
+    margin: 0 0 30px;
     font-size: 28px;
     font-weight: 700;
     color: #1a1714;
     letter-spacing: -0.02em;
   }
-  p {
-    max-width: 560px;
-    margin: 0 auto;
-    color: #6b5e52;
-    font-size: 15px;
-    line-height: 1.55;
+}
+
+.pp-compare-table {
+  border: 1px solid #ede0d0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.pp-compare-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  &:not(:last-child) { border-bottom: 1px solid #f3eadc; }
+
+  &--header {
+    background: #1a1714;
+    .pp-compare-cell { color: #fff; font-weight: 700; font-size: 12px; letter-spacing: 0.02em; }
   }
 }
-.pp-packs-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  max-width: 880px;
-  margin: 0 auto;
-}
-.pp-pack {
-  background: #fff;
-  border: 1px solid #ede0d0;
-  border-radius: 16px;
-  padding: 26px 24px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 
-  &-credits {
-    font-size: 38px;
+.pp-compare-cell {
+  padding: 13px 16px;
+  font-size: 13px;
+  color: #2d2926;
+  &--feature { font-weight: 600; color: #1a1714; }
+}
+
+// ── FAQ
+.pp-faq {
+  h2 {
+    text-align: center;
+    margin: 0 0 30px;
+    font-size: 28px;
     font-weight: 700;
     color: #1a1714;
-    letter-spacing: -0.03em;
-    line-height: 1;
-  }
-  &-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #8a7a6e;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    margin-bottom: 14px;
-  }
-  &-price {
-    font-size: 22px;
-    font-weight: 600;
-    color: #c5a059;
-  }
-  &-meta {
-    font-size: 12px;
-    color: #8a7a6e;
-    margin-bottom: 16px;
-  }
-  &-cta {
-    width: 100%;
-    padding: 10px 16px;
-    border: 1px solid #ede0d0;
-    background: #faf7f2;
-    color: #1a1714;
-    border-radius: 10px;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
-
-    &:hover:not(:disabled) { background: #1a1714; color: #fff; border-color: #1a1714; }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    letter-spacing: -0.02em;
   }
 }
 
-.pp-faq {
+.pp-faq-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
-  padding: 36px 0 0;
-  border-top: 1px solid #ede0d0;
 
-  h3 {
-    margin: 0 0 6px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #1a1714;
-  }
-  p {
-    margin: 0;
-    color: #6b5e52;
-    font-size: 13px;
-    line-height: 1.55;
-  }
+  h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: #1a1714; }
+  p { margin: 0; color: #6b5e52; font-size: 13px; line-height: 1.55; }
 }
 
 .pp-footer {
@@ -572,8 +593,12 @@ async function goToCheckout(key: string, body: Record<string, unknown>) {
   color: #8a7a6e;
 }
 
-@media (max-width: 720px) {
-  .pp-grid, .pp-packs-grid, .pp-faq { grid-template-columns: 1fr; }
+@media (max-width: 860px) {
+  .pp-grid { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
+  .pp-compare-row { grid-template-columns: 1fr; }
+  .pp-compare-row--header { display: none; }
+  .pp-compare-cell--feature { font-weight: 700; background: #faf7f2; }
+  .pp-faq-grid { grid-template-columns: 1fr; }
   .pp-footer-inner { flex-direction: column; gap: 6px; }
 }
 </style>
