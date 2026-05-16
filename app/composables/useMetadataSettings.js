@@ -7,6 +7,7 @@ const FALLBACK = {
   ai_default_tone: '',
   ai_additional_instructions: '',
   ai_default_language: 'English',
+  csv_timezone: 'Europe/Berlin',
 }
 
 export function useMetadataSettings() {

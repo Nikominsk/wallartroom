@@ -40,17 +40,8 @@
         <span v-if="hasFilters" class="gallery-toolbar__filter-badge" />
       </button>
 
-      <!-- Upload (primary, always visible) -->
-      <button class="gallery-toolbar__btn gallery-toolbar__btn--upload" @click="emit('upload')">
-        <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 13v3a1 1 0 001 1h12a1 1 0 001-1v-3" />
-          <path d="M10 3v10M6 7l4-4 4 4" />
-        </svg>
-        Upload
-      </button>
-
-      <!-- Export CSV (Pinterest only, prominent) -->
-      <button v-if="mode === 'pinterest'" class="gallery-toolbar__btn gallery-toolbar__btn--accent" @click="emit('export-csv')">
+      <!-- Export CSV — only where preparing/exporting makes sense -->
+      <button v-if="mode === 'pinterest' && caps.exportCsv" class="gallery-toolbar__btn gallery-toolbar__btn--accent" @click="emit('export-csv')">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M8 1v8M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" />
         </svg>
@@ -74,7 +65,7 @@
 
         <div v-if="moreOpen" class="gallery-toolbar__menu">
           <button
-            v-if="mode === 'pinterest'"
+            v-if="mode === 'pinterest' && caps.timeManager"
             class="gallery-toolbar__menu-item"
             @click="emit('time-manager'); moreOpen = false"
           >
@@ -85,7 +76,7 @@
             Time Manager
           </button>
           <button
-            v-if="mode === 'pinterest'"
+            v-if="mode === 'pinterest' && caps.scheduling"
             class="gallery-toolbar__menu-item"
             @click="emit('pinterest-schedule'); moreOpen = false"
           >
@@ -94,19 +85,6 @@
             </svg>
             Pinterest Scheduling
           </button>
-          <NuxtLink
-            v-if="mode === 'pinterest'"
-            to="/metadata/csv-exports"
-            class="gallery-toolbar__menu-item"
-            @click="moreOpen = false"
-          >
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1z" />
-              <path d="M8 4v4l3 2" />
-            </svg>
-            CSV Exports History
-            <span v-if="unexportedHistoryCount > 0" class="gallery-toolbar__history-badge">{{ unexportedHistoryCount }}</span>
-          </NuxtLink>
           <button
             v-if="invalidCount > 0"
             class="gallery-toolbar__menu-item gallery-toolbar__menu-item--warn"
@@ -264,8 +242,12 @@ const props = defineProps({
   selectedCount: Number,
   boards: { type: Array, default: () => [] },
   invalidCount: { type: Number, default: 0 },
-  unexportedHistoryCount: { type: Number, default: 0 },
   mode: { type: String, default: 'pinterest' },
+  // Per-view action capabilities (see viewCaps in MetadataWorkspace).
+  caps: {
+    type: Object,
+    default: () => ({ exportCsv: true, scheduling: true, timeManager: true }),
+  },
 })
 
 const emit = defineEmits([
@@ -278,7 +260,6 @@ const emit = defineEmits([
   'pinterest-schedule',
   'export-csv',
   'show-invalid',
-  'upload',
   'update:mode',
 ])
 
@@ -287,7 +268,8 @@ const moreOpen = ref(false)
 const moreEl = ref(null)
 
 const hasAnyMenuItem = computed(() =>
-  props.mode === 'pinterest' || props.invalidCount > 0
+  (props.mode === 'pinterest' && (props.caps.timeManager || props.caps.scheduling)) ||
+  props.invalidCount > 0
 )
 
 function updateFilter(key, val) {
@@ -390,15 +372,6 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
       &:hover { background: color-mix(in srgb, #{$color-accent} 94%, #000); border-color: color-mix(in srgb, #{$color-accent} 94%, #000); }
     }
 
-    &--upload {
-      background: #f0fdf4;
-      border-color: #86efac;
-      color: #15803d;
-      font-weight: 600;
-
-      svg { stroke: #16a34a; }
-      &:hover { background: #dcfce7; border-color: #4ade80; }
-    }
   }
 
   &__sort-btn { padding: 0 9px; }
@@ -466,23 +439,6 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
     font-size: 12px;
     color: #9ca3af;
     text-align: center;
-  }
-
-  &__history-badge {
-    margin-left: auto;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    background: #7c3aed;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    flex-shrink: 0;
   }
 
   // ── Filters expanded ─────────────────────────────────────────────────────

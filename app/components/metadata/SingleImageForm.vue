@@ -5,15 +5,9 @@
         v-for="tab in visibleTabs"
         :key="tab.id"
         class="single-form__tab"
-        :class="{
-          'single-form__tab--active': activeTab === tab.id,
-          'single-form__tab--ai': tab.id === 'ai',
-        }"
+        :class="{ 'single-form__tab--active': activeTab === tab.id }"
         @click="activeTab = tab.id"
       >
-        <svg v-if="tab.id === 'ai'" class="single-form__ai-bolt" width="11" height="11" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
-        </svg>
         <span class="single-form__tab-label">{{ tab.label }}</span>
         <span v-if="tab.id === 'pinterest'" class="single-form__tab-dot"
           :class="isPinterestComplete ? 'single-form__tab-dot--ok' : 'single-form__tab-dot--warn'" />
@@ -60,6 +54,19 @@
     </div>
 
     <div class="single-form__body">
+      <button
+        v-if="mode === 'pinterest'"
+        class="single-form__ai-cta"
+        type="button"
+        title="Open the AI generator for this image"
+        @click="emit('open-ai')"
+      >
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+        </svg>
+        Generate with AI
+      </button>
+
       <!-- General tab -->
       <template v-if="activeTab === 'general'">
         <div class="single-form__field">
@@ -184,205 +191,6 @@
         </div>
       </template>
 
-      <!-- AI Generation tab -->
-      <template v-if="activeTab === 'ai' && aiOptions && aiProgress">
-
-        <!-- ── Progress state (running / done / cancelled) ──────────────────── -->
-        <template v-if="isAiWorking">
-          <div class="ai-panel__progress-bar-wrap">
-            <div
-              class="ai-panel__progress-fill"
-              :style="{ width: `${Math.round((aiProgress.current / Math.max(1, aiProgress.total)) * 100)}%` }"
-            />
-          </div>
-          <div class="ai-panel__progress-meta">
-            <span class="ai-panel__progress-label">
-              <template v-if="aiProgress.status === 'running'">{{ aiProgress.current }} / {{ aiProgress.total }}</template>
-              <template v-else-if="aiProgress.status === 'done'">Complete</template>
-              <template v-else>Cancelled</template>
-            </span>
-            <span class="ai-panel__progress-pct">{{ Math.round((aiProgress.current / Math.max(1, aiProgress.total)) * 100) }}%</span>
-          </div>
-          <div class="ai-panel__progress-stats">
-            <span class="ai-panel__stat ai-panel__stat--ok">
-              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5l3 3 7-7"/></svg>
-              {{ aiProgress.successCount }} updated
-            </span>
-            <span class="ai-panel__stat ai-panel__stat--skip">{{ aiProgress.skippedCount }} skipped</span>
-            <span v-if="aiProgress.failedCount" class="ai-panel__stat ai-panel__stat--fail">{{ aiProgress.failedCount }} failed</span>
-            <span v-if="aiProgress.duplicateRetryCount" class="ai-panel__stat ai-panel__stat--retry">{{ aiProgress.duplicateRetryCount }} retried</span>
-          </div>
-          <div class="ai-panel__progress-actions">
-            <button v-if="aiProgress.status === 'running'" class="ai-panel__btn ai-panel__btn--danger" type="button" @click="emit('ai-cancel')">
-              Cancel
-            </button>
-            <template v-else>
-              <button class="ai-panel__btn" type="button" @click="emit('ai-reset-progress')">Configure again</button>
-              <button class="ai-panel__btn ai-panel__btn--primary" type="button" @click="activeTab = 'pinterest'">Done</button>
-            </template>
-          </div>
-        </template>
-
-        <!-- ── Configure state ──────────────────────────────────────────────── -->
-        <template v-else>
-
-          <!-- 1 · Fields to generate -->
-          <div class="ai-panel__section">
-            <div class="ai-panel__section-title">
-              <span class="ai-panel__step">1</span>
-              Fields to generate
-            </div>
-            <div class="ai-panel__chips">
-              <label class="ai-panel__chip" :class="{ 'ai-panel__chip--on': aiOptions.generateFor.pinterestTitle }">
-                <input type="checkbox" v-model="aiOptions.generateFor.pinterestTitle" />
-                <span>Title</span>
-              </label>
-              <label class="ai-panel__chip" :class="{ 'ai-panel__chip--on': aiOptions.generateFor.pinterestDescription }">
-                <input type="checkbox" v-model="aiOptions.generateFor.pinterestDescription" />
-                <span>Description</span>
-              </label>
-              <label class="ai-panel__chip" :class="{ 'ai-panel__chip--on': aiOptions.generateFor.pinterestBoard, 'ai-panel__chip--disabled': !hasBoardsForAi }">
-                <input type="checkbox" v-model="aiOptions.generateFor.pinterestBoard" :disabled="!hasBoardsForAi" />
-                <span>Board</span>
-              </label>
-              <button v-if="!hasBoardsForAi" class="ai-panel__text-link" type="button" @click="emit('manage-boards')">
-                Add a board first →
-              </button>
-            </div>
-            <div class="ai-panel__fill-box">
-              <label class="ai-panel__check ai-panel__check--strong">
-                <input type="checkbox" v-model="aiOptions.skipFilled" />
-                <span>Skip images where all selected fields are filled</span>
-              </label>
-              <div class="ai-panel__radio-row">
-                <span class="ai-panel__radio-label">When fields exist:</span>
-                <label class="ai-panel__check">
-                  <input type="radio" v-model="aiOptions.overwriteMode" value="missing-only" />
-                  <span>Fill missing</span>
-                </label>
-                <label class="ai-panel__check">
-                  <input type="radio" v-model="aiOptions.overwriteMode" value="replace" />
-                  <span>Replace all</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div class="ai-panel__divider" />
-
-          <!-- 2 · Context -->
-          <div class="ai-panel__section">
-            <div class="ai-panel__section-title">
-              <span class="ai-panel__step">2</span>
-              Context
-              <span class="ai-panel__optional">optional</span>
-            </div>
-
-            <div class="ai-panel__field">
-              <label class="ai-panel__label">Additional context</label>
-              <textarea
-                class="ai-panel__input ai-panel__input--textarea"
-                v-model="aiOptions.additionalContext"
-                rows="2"
-                placeholder="e.g. Digital print shop selling boho wall art."
-              />
-            </div>
-
-            <div class="ai-panel__row2">
-              <div class="ai-panel__field">
-                <label class="ai-panel__label">Niche / topic</label>
-                <input class="ai-panel__input" v-model="aiOptions.niche" placeholder="e.g. boho living room" />
-              </div>
-              <div class="ai-panel__field">
-                <label class="ai-panel__label">Include keywords</label>
-                <input class="ai-panel__input" v-model="aiOptions.includeKeywords" placeholder="keyword1, keyword2" />
-              </div>
-            </div>
-
-            <div class="ai-panel__checks">
-              <label class="ai-panel__check">
-                <input type="checkbox" v-model="aiOptions.usePromptAsContext" />
-                <span>Use image prompt as context</span>
-              </label>
-              <label class="ai-panel__check">
-                <input type="checkbox" v-model="aiOptions.useColorsAsContext" />
-                <span>Use detected colors as context</span>
-              </label>
-            </div>
-
-            <button class="ai-panel__more-btn" type="button" @click="showAiMore = !showAiMore">
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="{ 'ai-panel__chevron--open': showAiMore }" class="ai-panel__chevron">
-                <path d="M2 4l4 4 4-4" />
-              </svg>
-              {{ showAiMore ? 'Fewer options' : 'More options' }}
-            </button>
-
-            <div v-if="showAiMore" class="ai-panel__row2">
-              <div class="ai-panel__field">
-                <label class="ai-panel__label">Target audience</label>
-                <input class="ai-panel__input" v-model="aiOptions.targetAudience" placeholder="e.g. home decorators" />
-              </div>
-              <div class="ai-panel__field">
-                <label class="ai-panel__label">Exclude keywords</label>
-                <input class="ai-panel__input" v-model="aiOptions.excludeKeywords" placeholder="word1, word2" />
-              </div>
-            </div>
-          </div>
-
-          <div class="ai-panel__divider" />
-
-          <!-- 3 · Tone & output -->
-          <div class="ai-panel__section">
-            <div class="ai-panel__section-title">
-              <span class="ai-panel__step">3</span>
-              Tone &amp; output
-            </div>
-            <div class="ai-panel__row2">
-              <div class="ai-panel__field">
-                <label class="ai-panel__label">Tone / style</label>
-                <input class="ai-panel__input" v-model="aiOptions.tone" placeholder="e.g. inspiring" />
-              </div>
-              <div class="ai-panel__field">
-                <label class="ai-panel__label">Language</label>
-                <select class="ai-panel__input" v-model="aiOptions.language">
-                  <option>English</option>
-                  <option>German</option>
-                  <option>French</option>
-                  <option>Spanish</option>
-                  <option>Italian</option>
-                  <option>Dutch</option>
-                </select>
-              </div>
-            </div>
-            <div class="ai-panel__row2">
-              <div class="ai-panel__field">
-                <label class="ai-panel__label">Max title length</label>
-                <input class="ai-panel__input" type="number" v-model.number="aiOptions.maxPinterestTitleLength" min="10" max="255" />
-              </div>
-              <div class="ai-panel__field">
-                <label class="ai-panel__label">Max description</label>
-                <input class="ai-panel__input" type="number" v-model.number="aiOptions.maxPinterestDescriptionLength" min="10" max="800" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Generate button -->
-          <button
-            class="ai-panel__generate-btn"
-            type="button"
-            :disabled="!canAiGenerate"
-            @click="emit('ai-generate')"
-          >
-            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
-            </svg>
-            Generate
-            <span v-if="aiFieldCount" class="ai-panel__generate-meta">{{ aiFieldCount }} field{{ aiFieldCount !== 1 ? 's' : '' }} · {{ aiOverwriteLabel }}</span>
-          </button>
-
-        </template>
-      </template>
-
       <!-- Adobe Stock tab -->
       <template v-if="activeTab === 'adobe'">
         <div class="single-form__field">
@@ -464,12 +272,9 @@ const props = defineProps({
   mode: { type: String, default: 'pinterest' },
   isDirty: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
-  // AI generation
-  aiOptions:  { type: Object, default: null },
-  aiProgress: { type: Object, default: null },
 })
 
-const emit = defineEmits(['update', 'save', 'discard', 'delete', 'ai-generate', 'ai-cancel', 'ai-reset-progress', 'manage-boards'])
+const emit = defineEmits(['update', 'save', 'discard', 'delete', 'open-ai', 'manage-boards'])
 
 const activeTab = ref(props.mode === 'adobe' ? 'adobe' : 'pinterest')
 
@@ -477,44 +282,20 @@ const tabs = [
   { id: 'general',   label: 'General' },
   { id: 'pinterest', label: 'Pinterest' },
   { id: 'adobe',     label: 'Adobe Stock' },
-  { id: 'ai',        label: 'AI' },
 ]
 
 // Hide the tab that belongs to the other platform so the user only sees their
 // current mode's fields. Switching mode while the panel is open auto-swaps the
 // active tab to the one that matches.
 const visibleTabs = computed(() => {
-  if (props.mode === 'adobe') return tabs.filter(t => t.id !== 'pinterest' && t.id !== 'ai')
+  if (props.mode === 'adobe') return tabs.filter(t => t.id !== 'pinterest')
   return tabs.filter(t => t.id !== 'adobe')
 })
 
 watch(() => props.mode, (newMode) => {
   if (newMode === 'pinterest' && activeTab.value === 'adobe') activeTab.value = 'pinterest'
-  if (newMode === 'adobe' && (activeTab.value === 'pinterest' || activeTab.value === 'ai')) activeTab.value = 'adobe'
+  if (newMode === 'adobe' && activeTab.value === 'pinterest') activeTab.value = 'adobe'
 })
-
-// ── AI tab helpers ────────────────────────────────────────────────────────────
-const showAiMore = ref(false)
-
-const hasBoardsForAi = computed(() => props.boards.length > 0)
-
-const aiFieldCount = computed(() => {
-  if (!props.aiOptions) return 0
-  const g = props.aiOptions.generateFor
-  return [g.pinterestTitle, g.pinterestDescription, g.pinterestBoard].filter(Boolean).length
-})
-
-const canAiGenerate = computed(() => aiFieldCount.value > 0)
-
-const isAiWorking = computed(() =>
-  props.aiProgress?.status === 'running' ||
-  props.aiProgress?.status === 'done'    ||
-  props.aiProgress?.status === 'cancelled'
-)
-
-const aiOverwriteLabel = computed(() =>
-  props.aiOptions?.overwriteMode === 'missing-only' ? 'missing fields only' : 'replaces all'
-)
 
 function update(key, value) {
   emit('update', { ...props.draft, [key]: value })
@@ -781,376 +562,33 @@ function fmtDate(iso) {
 
   &__color-label { color: #6b7280; }
 
-  // ── AI tab button ────────────────────────────────────────────────────────────
+  // ── AI CTA (opens the shared AI modal) ───────────────────────────────────────
 
-  &__tab--ai {
-    gap: 5px;
-
-    .single-form__ai-bolt {
-      color: $color-accent;
-      opacity: 0.55;
-      flex-shrink: 0;
-      transition: opacity 0.15s;
-    }
-
-    &.single-form__tab--active .single-form__ai-bolt { opacity: 1; }
-
-    &:hover .single-form__ai-bolt { opacity: 0.85; }
-  }
-}
-
-// ── AI generation panel (inside single-form__body) ───────────────────────────
-// Uses flat BEM class names (no parent selector) so scoped styles don't bleed.
-
-.ai-panel {
-
-  // ── Sections ──────────────────────────────────────────────────────────────
-
-  &__section {
-    display: flex;
-    flex-direction: column;
-    gap: 11px;
-  }
-
-  &__section-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    color: $color-primary;
-    letter-spacing: -0.005em;
-  }
-
-  &__step {
-    flex-shrink: 0;
-    width: 17px;
-    height: 17px;
-    border-radius: 50%;
-    background: color-mix(in srgb, #{$color-accent} 12%, #fff);
-    color: $color-accent;
-    font-size: 10px;
-    font-weight: 800;
+  &__ai-cta {
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  &__optional {
-    font-size: 11px;
-    font-weight: 500;
-    color: #9ca3af;
-    letter-spacing: 0;
-  }
-
-  &__divider {
-    height: 1px;
-    background: #f3f4f6;
-  }
-
-  // ── Field chips ────────────────────────────────────────────────────────────
-
-  &__chips {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-  }
-
-  &__chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 11px 4px 8px;
-    border: 1.5px solid #e5e7eb;
-    background: #fff;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 500;
-    color: #6b7280;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, color 0.15s;
-    user-select: none;
-
-    input { display: none; }
-
-    &:hover:not(.ai-panel__chip--disabled) {
-      border-color: $color-accent;
-      color: $color-primary;
-    }
-
-    &--on {
-      border-color: $color-accent;
-      background: color-mix(in srgb, #{$color-accent} 8%, #fff);
-      color: $color-primary;
-      font-weight: 600;
-    }
-
-    &--disabled { opacity: 0.45; cursor: not-allowed; }
-  }
-
-  &__text-link {
-    border: none;
-    background: none;
-    color: $color-accent;
-    font: inherit;
-    font-size: 12px;
-    cursor: pointer;
-    padding: 0 2px;
-    &:hover { text-decoration: underline; }
-  }
-
-  // ── Skip/overwrite box ─────────────────────────────────────────────────────
-
-  &__fill-box {
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-    padding: 10px 12px;
-    background: #fafafa;
-    border: 1px solid #f3f4f6;
-    border-radius: 8px;
-  }
-
-  &__radio-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  &__radio-label {
-    font-size: 11.5px;
-    color: #9ca3af;
-  }
-
-  // ── Form atoms ─────────────────────────────────────────────────────────────
-
-  &__field {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__row2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  &__label {
-    font-size: 11px;
-    font-weight: 600;
-    color: #1f2937;
-    letter-spacing: 0.01em;
-    text-transform: uppercase;
-  }
-
-  &__input {
-    width: 100%;
-    height: 32px;
-    padding: 0 9px;
-    border: 1px solid #374151;
-    border-radius: 7px;
-    font: inherit;
-    font-size: 12.5px;
-    background: #fff;
-    color: $color-primary;
-    box-sizing: border-box;
-    transition: border-color 0.15s;
-
-    &:focus { outline: none; border-color: $color-accent; }
-
-    &--textarea {
-      height: auto;
-      padding: 7px 9px;
-      resize: vertical;
-      line-height: 1.5;
-    }
-  }
-
-  &__checks {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  &__check {
-    display: inline-flex;
-    align-items: flex-start;
     gap: 7px;
-    font-size: 12.5px;
-    color: $color-primary;
-    cursor: pointer;
-    user-select: none;
-    line-height: 1.4;
-
-    input {
-      accent-color: $color-accent;
-      margin: 0;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    &--strong { font-weight: 500; }
-  }
-
-  // ── "More options" disclosure ──────────────────────────────────────────────
-
-  &__more-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    border: none;
-    background: none;
-    padding: 0;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 500;
-    color: #9ca3af;
-    cursor: pointer;
-    align-self: flex-start;
-    transition: color 0.15s;
-
-    &:hover { color: $color-primary; }
-  }
-
-  &__chevron {
-    transition: transform 0.15s ease;
-    &--open { transform: rotate(180deg); }
-  }
-
-  // ── Generate button ────────────────────────────────────────────────────────
-
-  &__generate-btn {
     width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 38px;
-    padding: 0 16px;
-    border: none;
+    height: 36px;
+    border: 1px solid color-mix(in srgb, #{$color-accent} 35%, #fff);
     border-radius: 9px;
-    background: $color-accent;
-    color: #fff;
+    background: color-mix(in srgb, #{$color-accent} 9%, #fff);
+    color: $color-accent;
     font: inherit;
     font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    margin-top: 4px;
-
-    &:hover:not(:disabled) {
-      background: color-mix(in srgb, #{$color-accent} 90%, #000);
-    }
-
-    &:disabled { opacity: 0.45; cursor: not-allowed; }
-  }
-
-  &__generate-meta {
-    font-size: 11.5px;
-    font-weight: 500;
-    opacity: 0.82;
-  }
-
-  // ── Progress state ─────────────────────────────────────────────────────────
-
-  &__progress-bar-wrap {
-    height: 4px;
-    background: #f3f4f6;
-    border-radius: 99px;
-    overflow: hidden;
-  }
-
-  &__progress-fill {
-    height: 100%;
-    background: $color-accent;
-    border-radius: 99px;
-    transition: width 0.3s ease;
-  }
-
-  &__progress-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  &__progress-label {
-    font-size: 12.5px;
     font-weight: 600;
-    color: $color-primary;
-  }
-
-  &__progress-pct {
-    font-size: 12.5px;
-    font-weight: 700;
-    color: $color-accent;
-  }
-
-  &__progress-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    font-size: 12px;
-  }
-
-  &__stat {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-weight: 600;
-
-    &--ok    { color: #16a34a; }
-    &--skip  { color: #9ca3af; }
-    &--fail  { color: #ef4444; }
-    &--retry { color: #d97706; }
-  }
-
-  &__progress-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: auto;
-    padding-top: 6px;
-  }
-
-  // ── Shared button atoms ────────────────────────────────────────────────────
-
-  &__btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    height: 32px;
-    padding: 0 12px;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 7px;
-    background: #fff;
-    font: inherit;
-    font-size: 12.5px;
-    font-weight: 500;
-    color: $color-primary;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
 
-    &:hover { background: #f9fafb; border-color: #d1d5db; }
+    svg { flex-shrink: 0; }
 
-    &--primary {
-      background: $color-accent;
+    &:hover {
+      background: color-mix(in srgb, #{$color-accent} 16%, #fff);
       border-color: $color-accent;
-      color: #fff;
-      font-weight: 600;
-      &:hover { background: color-mix(in srgb, #{$color-accent} 92%, #000); }
     }
 
-    &--danger {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #b91c1c;
-      &:hover { background: #fee2e2; }
-    }
+    &:focus-visible { outline: 2px solid $color-accent; outline-offset: 2px; }
   }
 }
 </style>

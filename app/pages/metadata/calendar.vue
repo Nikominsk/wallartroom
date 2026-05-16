@@ -55,13 +55,11 @@
       </span>
     </div>
 
-    <!-- ── Weekday headers ────────────────────────────────────────────────── -->
-    <div class="cal__weekdays" aria-hidden="true">
-      <div v-for="d in WEEKDAYS" :key="d" class="cal__weekday">{{ d }}</div>
-    </div>
-
-    <!-- ── Calendar grid ──────────────────────────────────────────────────── -->
+    <!-- ── Unified grid: weekday headers + day cells ─────────────────────── -->
     <div class="cal__grid" role="grid" :aria-label="monthLabel">
+
+      <!-- Weekday header row (inside the same grid = perfect column alignment) -->
+      <div v-for="d in WEEKDAYS" :key="d" class="cal__weekday" role="columnheader" aria-hidden="true">{{ d }}</div>
 
       <template v-if="status === 'pending'">
         <div v-for="n in 42" :key="n" class="cal__cell cal__cell--skel" role="gridcell" />
@@ -81,16 +79,17 @@
           <div class="cal__date" :class="{ 'cal__date--today': cell.isToday }">
             {{ cell.day }}
           </div>
-          <div v-if="cell.chips.length || cell.overflow" class="cal__chips">
+
+          <div v-if="cell.chips.length || cell.overflow > 0" class="cal__chips">
             <div
               v-for="pin in cell.chips"
               :key="pin.image_id"
               class="cal__chip"
               :style="{ '--bc': colorForBoard(pin.board) }"
-              :title="`${formatTime(pin.publish_date)} · ${pin.board || ''} · ${pin.title || 'Untitled'}`"
+              @mouseenter="showTip($event, pin)"
+              @mouseleave="hideTip"
             >
               <span class="cal__chip-time">{{ formatTime(pin.publish_date) }}</span>
-              <span class="cal__chip-title">{{ pin.title || 'Untitled' }}</span>
             </div>
             <div v-if="cell.overflow > 0" class="cal__chip-more">+{{ cell.overflow }} more</div>
           </div>
@@ -98,20 +97,45 @@
       </template>
 
     </div>
+
+    <!-- ── Floating tooltip (Teleport avoids overflow:hidden clipping) ────── -->
+    <Teleport to="body">
+      <div
+        v-if="tip.visible"
+        class="cal-tip"
+        :style="{ top: tip.y + 'px', left: tip.x + 'px' }"
+      >
+        <div class="cal-tip__title">{{ tip.title }}</div>
+        <div class="cal-tip__meta">
+          <span class="cal-tip__dot" :style="{ background: tip.color }" />
+          {{ tip.board }}
+          <span class="cal-tip__sep">·</span>
+          {{ tip.time }}
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
 <script setup>
 definePageMeta({ layout: 'metadata' })
 
-const WEEKDAYS      = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const FALLBACK_COLORS = ['#ff6b35', '#6366f1', '#22c55e', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6']
-const MAX_CHIPS     = 3
+const WEEKDAYS        = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const MAX_CHIPS       = 30
+const FALLBACK_COLOR  = '#6366f1'
 
 const todayDate        = new Date()
 const currentYear      = ref(todayDate.getFullYear())
 const currentMonth     = ref(todayDate.getMonth() + 1)
 const showOnlyExported = ref(true)
+
+const { settings, load: loadSettings } = useMetadataSettings()
+const tz = computed(() => settings.value?.csv_timezone || DEFAULT_METADATA_TIMEZONE)
+
+// Use the shared boards composable so colors are stable across month changes
+const { chipStyleForName, loadBoards } = usePinterestBoards()
+onMounted(() => { loadSettings(); loadBoards() })
 
 const { data, status, refresh } = useAsyncData(
   'schedule-calendar',
@@ -119,8 +143,9 @@ const { data, status, refresh } = useAsyncData(
     query: { year: currentYear.value, month: currentMonth.value },
   }),
   {
+    lazy:    true,
     watch:   [currentYear, currentMonth],
-    default: () => ({ pins: [], boardColors: {} }),
+    default: () => ({ pins: [] }),
   }
 )
 
@@ -143,24 +168,18 @@ function goToday() {
   currentMonth.value = now.getMonth() + 1
 }
 
-function autoColorForName(name) {
-  let h = 0
-  for (const c of (name ?? '')) h = (h + c.charCodeAt(0)) % 8
-  return FALLBACK_COLORS[h]
-}
 function colorForBoard(name) {
-  return data.value?.boardColors?.[name] ?? autoColorForName(name)
+  return chipStyleForName(name)?.background ?? FALLBACK_COLOR
 }
 
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 function formatTime(iso) {
-  const d = new Date(iso)
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return timeLabelInZone(iso, tz.value)
 }
 
-const todayStr = localDateStr(todayDate)
+const todayStr = computed(() => dateKeyInZone(new Date().toISOString(), tz.value))
 
 const filteredPins = computed(() => {
   const pins = data.value?.pins ?? []
@@ -181,7 +200,7 @@ const gridCells = computed(() => {
 
   const byDay = {}
   for (const p of filteredPins.value) {
-    const key = localDateStr(new Date(p.publish_date))
+    const key = dateKeyInZone(p.publish_date, tz.value)
     ;(byDay[key] ??= []).push(p)
   }
 
@@ -194,7 +213,7 @@ const gridCells = computed(() => {
       key,
       day:            d.getDate(),
       isCurrentMonth: d.getMonth() === m - 1,
-      isToday:        key === todayStr,
+      isToday:        key === todayStr.value,
       chips:          pins.slice(0, MAX_CHIPS),
       overflow:       Math.max(0, pins.length - MAX_CHIPS),
     }
@@ -208,6 +227,24 @@ const legendBoards = computed(() => {
   }
   return [...seen.entries()].map(([name, color]) => ({ name, color }))
 })
+
+// ── Tooltip ───────────────────────────────────────────────────────────────
+const tip = reactive({ visible: false, x: 0, y: 0, title: '', board: '', time: '', color: '' })
+
+function showTip(event, pin) {
+  const r = event.currentTarget.getBoundingClientRect()
+  // Position above the chip, centered
+  tip.x     = Math.round(r.left + r.width / 2)
+  tip.y     = Math.round(r.top - 8)
+  tip.title = pin.title || 'Untitled'
+  tip.board = pin.board || 'No board'
+  tip.time  = formatTime(pin.publish_date)
+  tip.color = colorForBoard(pin.board)
+  tip.visible = true
+}
+function hideTip() {
+  tip.visible = false
+}
 </script>
 
 <style scoped lang="scss">
@@ -385,24 +422,7 @@ const legendBoards = computed(() => {
     flex-shrink: 0;
   }
 
-  // ── Weekday row ───────────────────────────────────────────────────
-  &__weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    margin-bottom: 1px;
-  }
-
-  &__weekday {
-    text-align: center;
-    font-size: 11px;
-    font-weight: 600;
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 5px 0 6px;
-  }
-
-  // ── Grid ──────────────────────────────────────────────────────────
+  // ── Unified grid (weekday headers + day cells share columns) ──────
   &__grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -414,11 +434,23 @@ const legendBoards = computed(() => {
     flex: 1;
   }
 
+  // ── Weekday header (first 7 cells of the grid) ────────────────────
+  &__weekday {
+    background: #f9fafb;
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 6px 0 7px;
+  }
+
   // ── Cell ──────────────────────────────────────────────────────────
   &__cell {
     background: #fff;
-    padding: 6px 6px 8px;
-    min-height: 96px;
+    padding: 5px 4px 6px;
+    min-height: 90px;
 
     &--other { background: #fafafa; }
     &--skel  {
@@ -431,10 +463,10 @@ const legendBoards = computed(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 500;
     color: #6b7280;
     margin-bottom: 3px;
@@ -449,50 +481,95 @@ const legendBoards = computed(() => {
     }
   }
 
-  // ── Chips ─────────────────────────────────────────────────────────
+  // ── Chips container (2-column micro-grid) ─────────────────────────
   &__chips {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 2px;
   }
 
+  // ── Chip: board color bg + time only; tooltip via JS ─────────────
   &__chip {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 5px 2px 4px;
+    padding: 1px 4px;
     border-radius: 3px;
-    border-left: 3px solid var(--bc, #6366f1);
-    background: color-mix(in srgb, var(--bc, #6366f1) 9%, #fff);
+    border-left: 2px solid var(--bc, #6366f1);
+    background: color-mix(in srgb, var(--bc, #6366f1) 14%, transparent);
     overflow: hidden;
+    cursor: default;
+    min-width: 0;
+
+    &:hover {
+      background: color-mix(in srgb, var(--bc, #6366f1) 26%, transparent);
+    }
 
     &-time {
       flex-shrink: 0;
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: 700;
-      color: var(--bc, #6366f1);
-      line-height: 1.4;
-    }
-
-    &-title {
-      font-size: 10.5px;
-      color: #374151;
+      color: color-mix(in srgb, var(--bc, #6366f1) 80%, #111);
+      line-height: 1.5;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.3;
     }
   }
 
+  // "+n more" spans both columns
   &__chip-more {
-    font-size: 10px;
+    grid-column: 1 / -1;
+    font-size: 9.5px;
     font-weight: 500;
     color: #9ca3af;
-    padding: 1px 0;
+    padding: 1px 2px;
     line-height: 1;
   }
 }
 
 @keyframes cal-spin  { to { transform: rotate(360deg); } }
 @keyframes cal-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+</style>
+
+<!-- Tooltip lives at body level so overflow:hidden never clips it -->
+<style lang="scss">
+.cal-tip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  z-index: 9999;
+  pointer-events: none;
+  background: #1f2937;
+  color: #f9fafb;
+  border-radius: 7px;
+  padding: 7px 10px 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  white-space: nowrap;
+  max-width: 260px;
+
+  &__title {
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #9ca3af;
+    line-height: 1;
+  }
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__sep { color: #4b5563; }
+}
 </style>

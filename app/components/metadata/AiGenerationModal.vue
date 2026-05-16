@@ -70,6 +70,62 @@
         <!-- ── Configure state ─────────────────────────────────────────── -->
         <div v-else class="ai-modal__body">
 
+          <!-- ── Templates bar ──────────────────────────────────────────── -->
+          <div v-if="templates.length || loaded" class="ai-modal__tpl-bar">
+            <select
+              v-model="selectedTplId"
+              class="ai-modal__tpl-select"
+              :disabled="!templates.length"
+            >
+              <option value="">{{ templates.length ? 'Select template…' : 'No templates yet' }}</option>
+              <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">{{ tpl.name }}</option>
+            </select>
+            <button
+              class="ai-modal__tpl-btn"
+              type="button"
+              :disabled="!selectedTplId"
+              @click="applyTemplate"
+            >Load</button>
+
+            <span class="ai-modal__tpl-sep" />
+
+            <template v-if="showSaveForm">
+              <input
+                ref="saveNameInput"
+                v-model="saveName"
+                class="ai-modal__tpl-name-input"
+                type="text"
+                placeholder="Template name…"
+                maxlength="100"
+                @keydown.enter.prevent="saveAsTemplate"
+                @keydown.esc="showSaveForm = false; saveName = ''"
+              />
+              <button
+                class="ai-modal__tpl-btn ai-modal__tpl-btn--primary"
+                type="button"
+                :disabled="!saveName.trim() || saving"
+                @click="saveAsTemplate"
+              >{{ saving ? '…' : 'Save' }}</button>
+              <button
+                class="ai-modal__tpl-cancel"
+                type="button"
+                @click="showSaveForm = false; saveName = ''"
+              >
+                <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13"/></svg>
+              </button>
+            </template>
+            <button
+              v-else
+              class="ai-modal__tpl-save-as"
+              type="button"
+              @click="openSaveForm"
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg>
+              Save as template
+            </button>
+            <span v-if="saveError" class="ai-modal__tpl-err">{{ saveError }}</span>
+          </div>
+
           <!-- 1 · Fields -->
           <section class="ai-modal__section">
             <h3 class="ai-modal__section-title">
@@ -272,6 +328,57 @@ const emit = defineEmits(['close', 'generate', 'cancel', 'reset-progress', 'mana
 
 const showMore = ref(false)
 
+// ── Templates ─────────────────────────────────────────────────────────────────
+const { templates, loaded, load: loadTemplates, create: createTemplate } = useAiTemplates()
+
+const selectedTplId = ref('')
+const showSaveForm  = ref(false)
+const saveName      = ref('')
+const saving        = ref(false)
+const saveError     = ref('')
+const saveNameInput = ref(null)
+
+watch(() => props.open, (v) => { if (v) loadTemplates() })
+
+function applyTemplate() {
+  const tpl = templates.value.find(t => t.id === selectedTplId.value)
+  if (!tpl?.options) return
+  const o = tpl.options
+  for (const [k, v] of Object.entries(o)) {
+    if (k === 'generateFor' && v && typeof v === 'object') {
+      Object.assign(props.options.generateFor, v)
+    } else if (k in props.options) {
+      props.options[k] = v
+    }
+  }
+  selectedTplId.value = ''
+}
+
+function openSaveForm() {
+  showSaveForm.value = true
+  saveError.value = ''
+  nextTick(() => saveNameInput.value?.focus())
+}
+
+async function saveAsTemplate() {
+  const name = saveName.value.trim()
+  if (!name) return
+  saving.value   = true
+  saveError.value = ''
+  try {
+    await createTemplate(name, {
+      ...props.options,
+      generateFor: { ...props.options.generateFor },
+    })
+    showSaveForm.value = false
+    saveName.value     = ''
+  } catch (e) {
+    saveError.value = e?.data?.statusMessage ?? e?.message ?? 'Could not save template'
+  } finally {
+    saving.value = false
+  }
+}
+
 const hasBoardsConfigured = computed(() => props.boardCount > 0)
 
 const activeFieldCount = computed(() => {
@@ -390,6 +497,126 @@ function handleClose() {
 
   &:hover:not(:disabled) { background: #f3f4f6; color: $color-primary; border-color: #d1d5db; }
   &:disabled { opacity: 0.35; cursor: not-allowed; }
+}
+
+// ── Templates bar ─────────────────────────────────────────────────────────────
+.ai-modal__tpl-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 22px 0;
+  flex-shrink: 0;
+}
+
+.ai-modal__tpl-select {
+  height: 28px;
+  padding: 0 8px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  color: $color-primary;
+  background: #fff;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+
+  &:focus { outline: none; border-color: $color-accent; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.ai-modal__tpl-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: $color-primary;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover:not(:disabled) { background: #f3f4f6; border-color: #d1d5db; }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  &--primary {
+    background: $color-accent;
+    border-color: $color-accent;
+    color: #fff;
+    &:hover:not(:disabled) { background: color-mix(in srgb, #{$color-accent} 92%, #000); }
+  }
+}
+
+.ai-modal__tpl-sep {
+  width: 1px;
+  height: 16px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.ai-modal__tpl-name-input {
+  height: 28px;
+  padding: 0 8px;
+  border: 1.5px solid $color-accent;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+  color: $color-primary;
+  flex: 1;
+  min-width: 120px;
+  max-width: 180px;
+
+  &:focus { outline: none; }
+}
+
+.ai-modal__tpl-cancel {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  color: #9ca3af;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 4px;
+  flex-shrink: 0;
+
+  &:hover { color: $color-primary; background: #f3f4f6; }
+}
+
+.ai-modal__tpl-save-as {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: color 0.12s;
+
+  &:hover { color: $color-accent; }
+}
+
+.ai-modal__tpl-err {
+  width: 100%;
+  font-size: 11px;
+  color: #dc2626;
 }
 
 // ── Body ──────────────────────────────────────────────────────────────────────

@@ -206,12 +206,22 @@
                   :title="`${pin.title || '(No title)'}\n${pin.board || ''}`"
                 >
                   <div class="dash__up-thumb">
-                    <img
-                      v-if="pin.thumbnail_url"
-                      :src="pin.thumbnail_url"
-                      :alt="pin.title || 'Pin'"
-                      loading="lazy"
-                    />
+                    <template v-if="pin.thumbnail_url">
+                      <img
+                        :src="pin.thumbnail_url"
+                        :alt="pin.title || 'Pin'"
+                        loading="lazy"
+                        :style="{ opacity: thumbLoaded[pin.image_id] ? 1 : 0 }"
+                        @load="thumbLoaded[pin.image_id] = true"
+                        @error="thumbLoaded[pin.image_id] = true"
+                      />
+                      <div v-if="!thumbLoaded[pin.image_id]" class="dash__up-loading" aria-hidden="true">
+                        <svg class="dash__up-spinner" width="20" height="20" viewBox="0 0 22 22" fill="none">
+                          <circle cx="11" cy="11" r="8" stroke="#e5e7eb" stroke-width="2.5"/>
+                          <path d="M11 3a8 8 0 0 1 8 8" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                      </div>
+                    </template>
                     <div v-else class="dash__up-placeholder">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
                         <rect x="3" y="3" width="18" height="18" rx="3"/>
@@ -250,7 +260,9 @@ const STATUS_COLORS = {
   exported: '#f59e0b',
 }
 
-const { data, status, error, refresh } = useFetch('/api/metadata/dashboard')
+// lazy: navigate to the page immediately and load data async — the template
+// already renders a skeleton while `status === 'pending'`.
+const { data, status, error, refresh } = useFetch('/api/metadata/dashboard', { lazy: true })
 
 // ── Board color map ────────────────────────────────────────────────────────
 
@@ -352,6 +364,7 @@ const ITEM_W = 80 // 72px thumb + 8px gap
 
 const showOnlyExported = ref(true)
 const scrollIndex = ref(0)
+const thumbLoaded = reactive({})
 
 watch(showOnlyExported, () => { scrollIndex.value = 0 })
 
@@ -800,6 +813,7 @@ function formatTime(dateStr) {
   }
 
   &__up-thumb {
+    position: relative;
     width: 72px;
     height: 72px;
     border-radius: 8px;
@@ -811,7 +825,21 @@ function formatTime(dateStr) {
       height: 100%;
       object-fit: cover;
       display: block;
+      transition: opacity 0.18s ease;
     }
+  }
+
+  &__up-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+  }
+
+  &__up-spinner {
+    animation: spin 0.75s linear infinite;
   }
 
   &__up-placeholder {

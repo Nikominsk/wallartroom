@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   const client = serverSupabaseServiceRole(event)
   const { data, error } = await client
     .from('metadata_settings')
-    .select('ai_max_title_length, ai_max_description_length, ai_default_tone, ai_additional_instructions, ai_default_language')
+    .select('ai_max_title_length, ai_max_description_length, ai_default_tone, ai_additional_instructions, ai_default_language, csv_timezone')
     .eq('id', 1)
     .maybeSingle()
 
@@ -18,5 +18,6 @@ export default defineEventHandler(async (event) => {
     ai_default_tone: '',
     ai_additional_instructions: '',
     ai_default_language: 'English',
+    csv_timezone: 'Europe/Berlin',
   }
 })

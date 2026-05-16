@@ -27,7 +27,9 @@
       "Bash(npm uninstall *)",
       "Skill(ui-ux-pro-max)",
       "Bash(grep -E \"\\\\.\\(sql|ts|js\\)$\")",
-      "Bash(python *)"
+      "Bash(python *)",
+      "PowerShell($p = \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\app\\\\components\\\\metadata\\\\SingleImageForm.vue\"; $lines = [System.IO.File]::ReadAllLines\\($p\\); $keep = $lines[0..592]; $out = \\($keep -join \"`n\"\\) + \"`n</style>`n\"; $enc = New-Object System.Text.UTF8Encoding\\($false\\); [System.IO.File]::WriteAllText\\($p, $out, $enc\\); \"lines now: \" + \\([System.IO.File]::ReadAllLines\\($p\\)\\).Count)",
+      "Bash(npm run *)"
     ]
   }
 }

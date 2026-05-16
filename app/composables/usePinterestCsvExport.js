@@ -19,23 +19,6 @@ function escape(value) {
   return value
 }
 
-// Emits a local-time ISO-like string without timezone or millis, e.g.
-// 2023-12-17T08:00:00 — Pinterest's CSV importer expects this exact shape.
-function fmtDate(iso) {
-  try {
-    const d = new Date(iso)
-    const yyyy = d.getFullYear()
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const dd = String(d.getDate()).padStart(2, '0')
-    const hh = String(d.getHours()).padStart(2, '0')
-    const min = String(d.getMinutes()).padStart(2, '0')
-    const sec = String(d.getSeconds()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}:${sec}`
-  } catch {
-    return iso
-  }
-}
-
 export function usePinterestCsvExport() {
   function validate(images) {
     const valid = []
@@ -67,7 +50,11 @@ export function usePinterestCsvExport() {
     return { valid, invalid, optionalMissing }
   }
 
-  function buildCsv(images) {
+  // The publish date is a UTC instant; Pinterest reads the naked CSV time in
+  // the Pinterest account's timezone. Rendering the wall-clock for the
+  // user-configured `tz` makes the export independent of the export machine's
+  // timezone — this is what stops a 15:00 pick arriving as 17:00.
+  function buildCsv(images, tz = DEFAULT_METADATA_TIMEZONE) {
     // CSV rows are sorted by Pinterest publish date ascending so the file
     // matches the chronological posting order rather than whatever sort the
     // gallery happens to be on at the time of export.
@@ -85,7 +72,7 @@ export function usePinterestCsvExport() {
         escape(img.pinterest.board ?? ''),
         escape(img.pinterest.description ?? ''),
         escape(img.pinterest.link ?? ''),
-        escape(img.pinterest.publishDate ? fmtDate(img.pinterest.publishDate) : ''),
+        escape(img.pinterest.publishDate ? formatWallClockInZone(img.pinterest.publishDate, tz) : ''),
       ].join(',')
     )
     return [header, ...rows].join('\n')
@@ -98,9 +85,9 @@ export function usePinterestCsvExport() {
     return `pinterest-export-${ts}.csv`
   }
 
-  function downloadCsv(images) {
+  function downloadCsv(images, tz = DEFAULT_METADATA_TIMEZONE) {
     const filename = generateFilename()
-    const csv = buildCsv(images)
+    const csv = buildCsv(images, tz)
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

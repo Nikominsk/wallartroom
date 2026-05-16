@@ -55,8 +55,8 @@
         :selected-count="selectedCount"
         :boards="boards"
         :invalid-count="invalidImages.length"
-        :unexported-history-count="unexportedHistoryCount"
         :mode="mode"
+        :caps="viewCaps"
         @update:sort-field="setSort"
         @toggle-sort-dir="setSort(sortField)"
         @update:filter="onUpdateFilter"
@@ -66,7 +66,6 @@
         @pinterest-schedule="openPinterestScheduler"
         @export-csv="openExport"
         @show-invalid="showInvalidImages = true"
-        @upload="showUpload = true"
         @update:mode="setMode"
       />
     </header>
@@ -95,6 +94,21 @@
             @click="selectionMode = 'multi'"
           >Multi</button>
         </div>
+
+        <button
+          v-if="viewCaps.ai"
+          class="meta-page__btn meta-page__btn--ai"
+          :disabled="aiTargetImages.length === 0 || saving"
+          :title="aiCtaTitle"
+          @click="openAiModal"
+        >
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+          </svg>
+          AI generate
+          <span class="meta-page__ai-count">{{ aiTargetImages.length }}</span>
+        </button>
+
         <span v-if="totalUnsavedCount > 0" class="meta-page__unsaved-pill">
           {{ totalUnsavedCount }} unsaved
         </span>
@@ -197,15 +211,11 @@
               :mode="mode"
               :is-dirty="isDirty"
               :saving="saving"
-              :ai-options="aiOptions"
-              :ai-progress="aiProgress"
               @update="onDraftUpdate"
               @save="handleSaveSingle"
               @discard="discardDraft"
               @delete="handleDeleteActive"
-              @ai-generate="handleGenerate"
-              @ai-cancel="cancelAi"
-              @ai-reset-progress="resetAiProgress"
+              @open-ai="openAiModal"
               @manage-boards="showBoardsManager = true"
             />
           </template>
@@ -311,14 +321,6 @@
       />
     </div>
 
-    <!-- ── Upload modal ───────────────────────────────────────────────────── -->
-    <div v-if="showUpload" class="meta-page__overlay" @click.self="showUpload = false">
-      <MetadataUploadModal
-        @close="showUpload = false"
-        @uploaded="handleUploaded"
-      />
-    </div>
-
     <!-- ── CSV Export modal ───────────────────────────────────────────────── -->
     <div v-if="showExport" class="meta-page__overlay" @click.self="showExport = false">
       <div class="meta-page__modal meta-page__modal--export">
@@ -333,6 +335,17 @@
           <p>
             <strong>{{ exportSelectedImages.length }}</strong> of {{ csvExportImages.length }} image(s) selected for export.
           </p>
+
+          <div class="meta-page__export-tz">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="10" cy="10" r="8" /><path d="M10 5v5l3 2" />
+            </svg>
+            <span>
+              Publish times are written in <strong>{{ exportZoneLabel }}</strong>.
+              Set this to your Pinterest account timezone in
+              <NuxtLink to="/metadata/settings" class="meta-page__export-tz-link">Settings</NuxtLink>.
+            </span>
+          </div>
 
           <!-- Skipped: categorised by missing field -->
           <div v-if="csvValidation.invalid.length" class="meta-page__export-warn">
@@ -372,6 +385,7 @@
                   <th>Title</th>
                   <th>Description</th>
                   <th class="meta-page__export-col--board">Board</th>
+                  <th class="meta-page__export-col--date">Publish date</th>
                   <th>Redirect URL</th>
                 </tr>
               </thead>
@@ -402,6 +416,9 @@
                     >{{ img.pinterest.board }}</span>
                     <span v-else class="meta-page__export-board-empty">—</span>
                   </td>
+                  <td class="meta-page__export-col--date">
+                    <span class="meta-page__export-date">{{ fmtExportDate(img.pinterest?.publishDate) }}</span>
+                  </td>
                   <td><div class="meta-page__export-cell meta-page__export-cell--url">{{ img.pinterest?.link }}</div></td>
                 </tr>
               </tbody>
@@ -418,6 +435,20 @@
         </div>
       </div>
     </div>
+
+    <!-- ── AI generation modal (single + bulk) ────────────────────────────── -->
+    <MetadataAiGenerationModal
+      :open="showAiModal"
+      :options="aiOptions"
+      :progress="aiProgress"
+      :image-count="aiTargetImages.length"
+      :board-count="boards.length"
+      @generate="handleGenerate"
+      @cancel="cancelAi"
+      @reset-progress="resetAiProgress"
+      @close="closeAiModal"
+      @manage-boards="showBoardsManager = true"
+    />
 
     <!-- ── Image lightbox popup ───────────────────────────────────────────── -->
     <Teleport to="body">
@@ -466,17 +497,11 @@ const {
   deleteImage, deleteImages, updateImageUrl,
 } = useMetadataImages()
 
-onMounted(() => { loadImages(); loadBoards(); loadUnexportedCount() })
+onMounted(() => { loadImages(); loadBoards() })
 
-// ── Unexported CSV history count ──────────────────────────────────────────────
-const unexportedHistoryCount = ref(0)
-
-async function loadUnexportedCount() {
-  try {
-    const { count } = await $fetch('/api/pinterest/csv-exports/unexported-count')
-    unexportedHistoryCount.value = count ?? 0
-  } catch { /* non-critical; badge simply won't show */ }
-}
+// CSV-history badge now lives in the sidebar; we just bump the shared count
+// after a download here (see handleDownloadCsv).
+const { bump: bumpCsvBadge } = useCsvExportBadge()
 
 // ── Pinterest boards ──────────────────────────────────────────────────────────
 const { boards, loading: boardsLoading, loadBoards, addBoard, deleteBoard, chipStyleForName } = usePinterestBoards()
@@ -578,18 +603,18 @@ async function handleDeleteInvalidImage(id) {
   }
 }
 
-// ── Upload modal ─────────────────────────────────────────────────────────────
-const showUpload = ref(false)
-
 // ── Image lightbox ────────────────────────────────────────────────────────────
 const showImagePopup = ref(false)
 
-async function handleUploaded() {
-  // Refresh the gallery so new images appear with their joined Pinterest /
-  // Adobe rows. The cache is invalidated so loadImages does a fresh fetch.
-  invalidateCache()
-  await loadImages()
-}
+// Upload now lives in the sidebar (useMetadataUpload + the metadata layout).
+// Re-pull the gallery when an upload finishes so new images appear with their
+// joined Pinterest / Adobe rows.
+const { onUploaded } = useMetadataUpload()
+let _offUploaded = null
+onMounted(() => {
+  _offUploaded = onUploaded(async () => { invalidateCache(); await loadImages() })
+})
+onUnmounted(() => { _offUploaded?.() })
 
 // ── Delete (individual / bulk) ───────────────────────────────────────────────
 async function handleDeleteActive() {
@@ -948,6 +973,45 @@ async function handleGenerate() {
   )
 }
 
+// ── AI modal (single + bulk share one transparent flow) ──────────────────────
+const showAiModal = ref(false)
+
+const aiCtaTitle = computed(() => {
+  if (selectedCount.value > 0) return `Generate metadata for ${selectedCount.value} selected image${selectedCount.value !== 1 ? 's' : ''}`
+  if (activeId.value) return 'Generate metadata for this image'
+  return `Generate metadata for all ${filteredImages.value.length} image${filteredImages.value.length !== 1 ? 's' : ''} in this view`
+})
+
+function openAiModal() {
+  if (aiProgress.status === 'done' || aiProgress.status === 'cancelled') resetAiProgress()
+  showAiModal.value = true
+}
+
+function closeAiModal() {
+  showAiModal.value = false
+  if (aiProgress.status === 'done' || aiProgress.status === 'cancelled') resetAiProgress()
+}
+
+// ── Per-view capabilities ────────────────────────────────────────────────────
+// Each route view (Pins / Drafts / Schedules / Posted) only surfaces the
+// actions that make sense for that workflow stage, so the top bars stop
+// showing buttons that are confusing or irrelevant where you are.
+const viewCaps = computed(() => {
+  const v = props.viewLabel
+  const isPosted = v === 'Posted'
+  const isSchedules = v === 'Schedules'
+  return {
+    // AI generation is useful on every view (re-generate posted pins, fix
+    // scheduled ones, draft new ones) — always available.
+    ai: true,
+    // CSV is the Drafts/Pins → ready-to-post step.
+    exportCsv: !isPosted && !isSchedules,
+    // Date assignment is irrelevant once everything is posted.
+    scheduling: !isPosted,
+    timeManager: !isPosted,
+  }
+})
+
 // ── Time Manager ─────────────────────────────────────────────────────────────
 const showTimeManager = ref(false)
 
@@ -993,6 +1057,18 @@ async function handlePinterestScheduleApply(updatedImages) {
 const { validate, downloadCsv } = usePinterestCsvExport()
 const showExport = ref(false)
 const exportSelectedIds = ref(new Set())
+
+// CSV publish dates are written as wall-clock in this zone (set in Settings to
+// match the Pinterest account timezone). The preview shows the same string so
+// what the user sees is exactly what Pinterest receives.
+const exportTimezone = computed(() => aiDefaults.value?.csv_timezone || DEFAULT_METADATA_TIMEZONE)
+const exportZoneLabel = computed(() => {
+  const off = zoneOffsetLabel(exportTimezone.value)
+  return off ? `${exportTimezone.value} (${off})` : exportTimezone.value
+})
+function fmtExportDate(iso) {
+  return iso ? formatWallClockInZone(iso, exportTimezone.value).replace('T', ' ') : '—'
+}
 
 const csvExportImages = computed(() =>
   selectedCount.value > 0
@@ -1059,7 +1135,7 @@ function handleDownloadCsv() {
   // on each pinterest_image is intentionally NOT changed here — flipping that
   // is a deliberate user action via "Set Exported" on the history page or via
   // editing the image directly.
-  const filename = downloadCsv(exportSelectedImages.value)
+  const filename = downloadCsv(exportSelectedImages.value, exportTimezone.value)
   showExport.value = false
   $fetch('/api/pinterest/csv-exports', {
     method: 'POST',
@@ -1068,7 +1144,7 @@ function handleDownloadCsv() {
       row_count: exportSelectedImages.value.length,
       image_ids: exportSelectedImages.value.map(img => img.id),
     },
-  }).then(() => { unexportedHistoryCount.value++ }).catch(() => {})
+  }).then(() => { bumpCsvBadge() }).catch(() => {})
 }
 
 // ── Pagination (client-side, driven by filteredImages so totals reflect filters) ──
@@ -1563,6 +1639,35 @@ function goToPage(page) {
       &:hover:not(:disabled) { background: #fef2f2; border-color: #fca5a5; }
     }
 
+    &--ai {
+      background: color-mix(in srgb, #{$color-accent} 9%, #fff);
+      border-color: color-mix(in srgb, #{$color-accent} 35%, #fff);
+      color: $color-accent;
+      font-weight: 600;
+
+      svg { color: $color-accent; }
+
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, #{$color-accent} 16%, #fff);
+        border-color: $color-accent;
+      }
+    }
+
+  }
+
+  &__ai-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: $color-accent;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
   }
 
   // ── Pagination (always visible, never scrolls) ───────────────────────────────
@@ -1878,6 +1983,39 @@ function goToPage(page) {
   }
 
   &__export-board-empty { color: #d1d5db; font-size: 13px; }
+
+  &__export-col--date { width: 150px; }
+
+  &__export-date {
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    color: #374151;
+    white-space: nowrap;
+  }
+
+  &__export-tz {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: #075985;
+    line-height: 1.5;
+
+    svg { flex-shrink: 0; margin-top: 1px; color: #0284c7; }
+    strong { font-weight: 700; }
+  }
+
+  &__export-tz-link {
+    color: #0284c7;
+    font-weight: 600;
+    text-decoration: underline;
+
+    &:hover { color: #075985; }
+  }
 
   // ── Responsive ───────────────────────────────────────────────────────────────
 

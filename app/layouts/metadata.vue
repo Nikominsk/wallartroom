@@ -21,6 +21,22 @@
         </button>
       </div>
 
+      <!-- ── Upload (workflow entry point) ───────────────────────────── -->
+      <div class="meta-shell__upload">
+        <button
+          class="meta-shell__upload-btn"
+          type="button"
+          :title="collapsed ? 'Upload images' : ''"
+          @click="openUpload"
+        >
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 13v3a1 1 0 001 1h12a1 1 0 001-1v-3" />
+            <path d="M10 3v10M6 7l4-4 4 4" />
+          </svg>
+          <span class="meta-shell__upload-label">Upload images</span>
+        </button>
+      </div>
+
       <!-- ── Primary nav ─────────────────────────────────────────────── -->
       <nav class="meta-shell__nav" aria-label="Metadata sections">
         <template v-for="item in navItems" :key="item.to">
@@ -37,6 +53,11 @@
           >
             <span class="meta-shell__nav-icon" v-html="item.icon" />
             <span class="meta-shell__nav-label">{{ item.label }}</span>
+            <span
+              v-if="item.to === '/metadata/csv-exports' && csvCount > 0"
+              class="meta-shell__nav-badge"
+              :title="`${csvCount} export${csvCount !== 1 ? 's' : ''} not yet marked exported`"
+            >{{ csvCount }}</span>
           </NuxtLink>
 
           <!-- Children (rendered as nested under parent) -->
@@ -98,14 +119,34 @@
         <slot />
       </div>
     </main>
+
+    <!-- Upload modal lives at the layout level so it's reachable from every
+         metadata route, including Settings / CSV history. -->
+    <Teleport to="body">
+      <div v-if="uploadOpen" class="meta-upload-overlay" @click.self="closeUpload">
+        <MetadataUploadModal @close="closeUpload" @uploaded="onUploadedFromModal" />
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 const { collapsed, toggle } = useMetadataSidebar()
+const { open: uploadOpen, openUpload, closeUpload, emitUploaded } = useMetadataUpload()
+const { count: csvCount, refresh: refreshCsvBadge } = useCsvExportBadge()
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const route = useRoute()
+
+async function onUploadedFromModal() {
+  await emitUploaded()
+  closeUpload()
+}
+
+// Keep the sidebar badge fresh: on load and whenever the route changes (e.g.
+// after marking exports on the CSV history page).
+onMounted(refreshCsvBadge)
+watch(() => route.path, refreshCsvBadge)
 
 const galleryMeta = computed(() => route.meta?.gallery ?? null)
 
@@ -114,11 +155,6 @@ const navItems = [
     to: '/metadata/dashboard',
     label: 'Dashboard',
     icon: `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>`,
-  },
-  {
-    to: '/metadata/calendar',
-    label: 'Calendar',
-    icon: `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="16" height="13" rx="1.5"/><path d="M2 8h16M6 2v4M14 2v4"/></svg>`,
   },
   {
     to: '/metadata',
@@ -141,6 +177,16 @@ const navItems = [
         icon: `<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l4 4 10-10"/></svg>`,
       },
     ],
+  },
+  {
+    to: '/metadata/csv-exports',
+    label: 'CSV Exports',
+    icon: `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M10 5v5l3.5 2"/></svg>`,
+  },
+  {
+    to: '/metadata/calendar',
+    label: 'Calendar',
+    icon: `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="16" height="13" rx="1.5"/><path d="M2 8h16M6 2v4M14 2v4"/></svg>`,
   },
   {
     to: '/metadata/settings',
@@ -289,6 +335,40 @@ $sidebar-w-collapsed: 68px;
     &:hover { background: #f3f4f6; color: $color-primary; border-color: #d1d5db; }
   }
 
+  // ── Upload CTA ──────────────────────────────────────────────────────
+  &__upload {
+    padding: 12px 12px 4px;
+  }
+
+  &__upload-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 38px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 9px;
+    background: $color-accent;
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover { background: color-mix(in srgb, #{$color-accent} 90%, #000); }
+    &:focus-visible { outline: 2px solid $color-accent; outline-offset: 2px; }
+
+    svg { flex-shrink: 0; }
+  }
+
+  &--collapsed &__upload-btn {
+    padding: 0;
+    .meta-shell__upload-label { display: none; }
+  }
+
   // ── Nav ─────────────────────────────────────────────────────────────
   &__nav {
     flex: 1;
@@ -374,6 +454,36 @@ $sidebar-w-collapsed: 68px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  &__nav-badge {
+    margin-left: auto;
+    flex-shrink: 0;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: $color-accent;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  // Collapsed: no room for a pill — show a small dot on the icon corner.
+  &--collapsed &__nav-badge {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    min-width: 8px;
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    font-size: 0;
+    margin: 0;
   }
 
   &__nav-children {
@@ -506,15 +616,44 @@ $sidebar-w-collapsed: 68px;
 
     &__brand-text,
     &__nav-label,
+    &__upload-label,
     &__user-meta,
     &__user-action { display: none; }
 
+    &__upload-btn { padding: 0; }
+
     &__nav-item { justify-content: center; padding: 9px 0; }
     &__nav-item--child { padding: 7px 0; gap: 0; }
+
+    &__nav-badge {
+      position: absolute;
+      top: 5px;
+      right: 8px;
+      min-width: 8px;
+      width: 8px;
+      height: 8px;
+      padding: 0;
+      font-size: 0;
+      margin: 0;
+    }
     &__nav-children::before { display: none; }
     &__user { justify-content: center; padding: 6px 0; }
 
     &__collapse { display: none; }
   }
+}
+
+// Teleported to <body>, but still owned by this component so scoped styles
+// apply. Sits above the workspace's own overlays (z-index 100).
+.meta-upload-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+  padding: 20px;
+  box-sizing: border-box;
 }
 </style>
