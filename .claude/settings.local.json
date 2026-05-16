@@ -29,7 +29,22 @@
       "Bash(grep -E \"\\\\.\\(sql|ts|js\\)$\")",
       "Bash(python *)",
       "PowerShell($p = \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\app\\\\components\\\\metadata\\\\SingleImageForm.vue\"; $lines = [System.IO.File]::ReadAllLines\\($p\\); $keep = $lines[0..592]; $out = \\($keep -join \"`n\"\\) + \"`n</style>`n\"; $enc = New-Object System.Text.UTF8Encoding\\($false\\); [System.IO.File]::WriteAllText\\($p, $out, $enc\\); \"lines now: \" + \\([System.IO.File]::ReadAllLines\\($p\\)\\).Count)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npx skills *)",
+      "Bash(curl -s http://localhost:3000/ -o page.html -w \"HTTP %{http_code}\\\\n\")",
+      "Skill(design-taste-frontend)",
+      "Skill(impeccable)",
+      "Bash(node .claude/skills/impeccable/scripts/load-context.mjs)",
+      "Bash(curl -s --max-time 30 http://localhost:3000/ -o page2.html -w \"HTTP %{http_code}  bytes:%{size_download}\\\\n\")",
+      "Bash(curl -s --max-time 30 http://localhost:3000/)",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter 'ProcessId=1316' | Select-Object ProcessId,Name,CommandLine | Format-List; '--- 3001 owner ---'; Get-CimInstance Win32_Process -Filter 'ProcessId=19920' | Select-Object ProcessId,Name,CommandLine | Format-List\")",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "Bash(echo \"started pid $!\")",
+      "Bash(awk 'NR>=952{print NR\": \"$0}' \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\app\\\\pages\\\\index.vue\")",
+      "Bash(grep -n -E \"^\\\\s*[0-9]+: \\\\.\\(lp|nav|hero|container|diff|problem|versus|features|how|proof|pricing|usecases|cta|footer|story\\)[ ._&{,]|@media|@keyframes\")",
+      "Bash(node -e \"const s=require\\('fs'\\).readFileSync\\('app/pages/index.vue','utf8'\\);const c=\\(r\\)=>\\(s.match\\(r\\)||[]\\).length;console.log\\('template',c\\(/<template>/g\\),c\\(/<\\\\/template>/g\\)\\);console.log\\('script',c\\(/<script setup>/g\\),c\\(/<\\\\/script>/g\\)\\);console.log\\('style',c\\(/<style/g\\),c\\(/<\\\\/style>/g\\)\\);console.log\\('section open',c\\(/<section/g\\),'section close',c\\(/<\\\\/section>/g\\)\\);console.log\\('pricing refs',c\\(/pricing/gi\\)\\);console.log\\('LinkHealth refs',c\\(/FeatureLinkHealth/g\\)\\);\")",
+      "Bash(node -e \"const j=require\\('./package.json'\\);console.log\\(JSON.stringify\\(j.scripts,null,1\\)\\)\")"
     ]
   }
 }

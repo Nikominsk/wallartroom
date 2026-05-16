@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
   const titleTargetMin = Math.max(20, Math.floor(titleMax * 0.8))
 
   const descMax = clampInt(options?.maxPinterestDescriptionLength, 50, DESC_DB_MAX, 300)
-  const descTargetMin = Math.max(80, Math.floor(descMax * 0.6))
+  const descTargetMin = Math.max(200, Math.floor(descMax * 0.6))
 
   // Trim and cap to avoid runaway prompt size when the run already has hundreds
   // of titles — the most recent N are the ones most likely to collide.
@@ -51,15 +51,16 @@ Pinterest title rules:
 - Hard maximum: ${titleMax} characters. NEVER exceed this — the title will be saved exactly as you return it, no truncation.
 - Target length: ${titleTargetMin}–${titleMax} characters. Use as much of this range as possible — do NOT default to short titles.
 - The title must end with a complete word and proper punctuation. No mid-word cut-offs.
-- Put the main keyword near the beginning
+- The primary search keyword MUST appear within the first 3 words of the title — this is the single biggest Pinterest SEO factor.
 - Every title in this batch MUST be unique. Do not reuse, paraphrase lightly, or simply re-order words from any of the titles below.
 
 Pinterest description rules:
 - Hard maximum: ${descMax} characters. NEVER exceed this — the description will be saved exactly as you return it, no truncation.
-- Target length: ${descTargetMin}–${descMax} characters
+- Target length: ${descTargetMin}–${descMax} characters. Aim for at least 200 characters — short descriptions rank poorly.
 - The description must end with a complete sentence and proper punctuation. No mid-sentence cut-offs.
-- Put the most important keywords in the first sentence
-- Write naturally, not keyword-stuffed
+- Put the primary keyword and 2–3 related keywords in the first sentence for maximum search weight.
+- Write naturally, not keyword-stuffed — aim for a keyword density of 1–3%.
+- End with a clear call-to-action (e.g. "Shop now", "Save for later", "Click to shop", "Order yours today").
 
 CRITICAL formatting rules (no exceptions):
 - Forbidden characters anywhere in the title or description: hyphen "-", pipe "|", semicolon ";". Treat these as banned — they break the downstream Pinterest CSV import.

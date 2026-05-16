@@ -67,6 +67,8 @@
         @export-csv="openExport"
         @show-invalid="showInvalidImages = true"
         @update:mode="setMode"
+        @check-links="handleCheckLinks"
+        @scan-duplicates="handleScanDuplicates"
       />
     </header>
 
@@ -217,6 +219,7 @@
               @delete="handleDeleteActive"
               @open-ai="openAiModal"
               @manage-boards="showBoardsManager = true"
+              @suggest-board="handleSuggestBoard"
             />
           </template>
 
@@ -449,6 +452,235 @@
       @close="closeAiModal"
       @manage-boards="showBoardsManager = true"
     />
+
+    <!-- ── Board Intelligence result ───────────────────────────────────────── -->
+    <div v-if="showBoardSuggestion" class="meta-page__overlay" @click.self="showBoardSuggestion = false">
+      <div class="bi-modal">
+
+        <!-- Header: icon + title flush left, close right -->
+        <div class="bi-modal__header">
+          <div class="bi-modal__heading">
+            <span class="bi-modal__heading-icon">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+              </svg>
+            </span>
+            <span class="bi-modal__heading-text">Board Suggestion</span>
+          </div>
+          <button class="meta-page__icon-btn" title="Close" @click="showBoardSuggestion = false">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13"/></svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="bi-modal__body">
+          <!-- Loading state -->
+          <div v-if="boardSuggestionLoading" class="bi-modal__loading">
+            <svg class="bi-modal__spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            Analyzing pin against all boards…
+          </div>
+
+          <template v-else-if="boardSuggestionResult">
+
+            <!-- New-board alert: full-width, prominent -->
+            <div v-if="boardSuggestionResult.isNewBoard" class="bi-modal__alert">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M10 1l9 17H1L10 1z"/><path d="M10 8v4M10 15h.01"/>
+              </svg>
+              <div>
+                <strong>Board doesn't exist in your Pinterest account.</strong>
+                You must create it in Pinterest before importing — otherwise the CSV will fail.
+              </div>
+            </div>
+
+            <!-- Primary suggestion card -->
+            <div class="bi-modal__card">
+              <div class="bi-modal__card-eyebrow">Best match</div>
+              <div class="bi-modal__card-row">
+                <span class="bi-modal__board-name">{{ boardSuggestionResult.suggestedBoard }}</span>
+                <span
+                  class="bi-modal__badge"
+                  :class="{
+                    'bi-modal__badge--good': boardSuggestionResult.relevanceScore >= 75,
+                    'bi-modal__badge--ok':   boardSuggestionResult.relevanceScore >= 50 && boardSuggestionResult.relevanceScore < 75,
+                    'bi-modal__badge--poor': boardSuggestionResult.relevanceScore < 50,
+                  }"
+                >{{ boardSuggestionResult.relevanceScore }}% match</span>
+              </div>
+              <p class="bi-modal__reason">{{ boardSuggestionResult.reasoning }}</p>
+            </div>
+
+            <!-- Alternative -->
+            <div v-if="boardSuggestionResult.alternativeBoard" class="bi-modal__alt">
+              <span class="bi-modal__alt-label">Alternative</span>
+              <span class="bi-modal__alt-name">{{ boardSuggestionResult.alternativeBoard }}</span>
+              <span class="bi-modal__alt-score">{{ boardSuggestionResult.alternativeScore }}%</span>
+              <button class="bi-modal__alt-btn" @click="applyBoardSuggestion('alternative')">Use this</button>
+            </div>
+
+            <!-- Actions -->
+            <div class="bi-modal__footer">
+              <button class="meta-page__btn meta-page__btn--primary" @click="applyBoardSuggestion('suggested')">
+                Apply board
+              </button>
+              <button class="meta-page__btn" @click="showBoardSuggestion = false">Cancel</button>
+            </div>
+
+          </template>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Link Health result ──────────────────────────────────────────────── -->
+    <div v-if="showLinkHealth" class="meta-page__overlay" @click.self="showLinkHealth = false">
+      <div class="meta-page__modal">
+        <div class="meta-page__modal-header">
+          <h3>Link Health Check</h3>
+          <button class="meta-page__icon-btn" @click="showLinkHealth = false">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13" /></svg>
+          </button>
+        </div>
+        <div class="meta-page__modal-body">
+          <div v-if="linkHealthLoading" class="meta-page__intelligence-loading">Checking {{ linkHealthTotal }} URLs...</div>
+          <template v-else-if="linkHealthResults">
+            <div class="meta-page__link-summary">
+              <span class="meta-page__link-stat meta-page__link-stat--ok">{{ linkHealthResults.summary.healthy }} healthy</span>
+              <span class="meta-page__link-stat meta-page__link-stat--warn">{{ linkHealthResults.summary.redirects }} redirects</span>
+              <span class="meta-page__link-stat meta-page__link-stat--err">{{ linkHealthResults.summary.broken }} broken</span>
+            </div>
+            <div v-if="linkHealthResults.results.filter(r => r.status !== 'healthy').length" class="meta-page__link-list">
+              <div v-for="r in linkHealthResults.results.filter(r => r.status !== 'healthy')" :key="r.url" class="meta-page__link-item" :class="'meta-page__link-item--' + r.status">
+                <span class="meta-page__link-url">{{ r.url }}</span>
+                <span class="meta-page__link-badge">{{ r.status }}{{ r.statusCode ? ` (${r.statusCode})` : '' }}</span>
+              </div>
+            </div>
+            <p v-else class="meta-page__link-allgood">All links are healthy!</p>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Duplicate Guard result ──────────────────────────────────────────── -->
+    <div v-if="showDuplicates" class="meta-page__overlay" @click.self="showDuplicates = false">
+      <div class="meta-page__modal meta-page__modal--dup">
+        <div class="meta-page__modal-header">
+          <div class="meta-page__dup-header-left">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <rect x="3" y="3" width="8" height="8" rx="1.5" />
+              <rect x="9" y="9" width="8" height="8" rx="1.5" />
+            </svg>
+            <h3>Duplicate &amp; Freshness Scan</h3>
+          </div>
+          <button class="meta-page__icon-btn" @click="showDuplicates = false">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13" /></svg>
+          </button>
+        </div>
+
+        <div class="meta-page__modal-body">
+          <div v-if="duplicateLoading" class="meta-page__intelligence-loading">Scanning...</div>
+          <template v-else-if="duplicateResult">
+
+            <!-- Summary pills -->
+            <div class="meta-page__dup-summary">
+              <div class="meta-page__dup-pill" :class="duplicateResult.duplicates.length ? 'meta-page__dup-pill--warn' : 'meta-page__dup-pill--ok'">
+                <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="9" y="9" width="8" height="8" rx="1.5" />
+                </svg>
+                {{ duplicateResult.duplicates.length }} duplicate{{ duplicateResult.duplicates.length !== 1 ? 's' : '' }}
+              </div>
+              <div class="meta-page__dup-pill" :class="duplicateResult.freshnessWarnings.length ? 'meta-page__dup-pill--stale' : 'meta-page__dup-pill--ok'">
+                <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="10" cy="10" r="8"/><path d="M10 6v4l2.5 1.5"/>
+                </svg>
+                {{ duplicateResult.freshnessWarnings.length }} stale{{ duplicateResult.freshnessWarnings.length !== 1 ? ' pins' : ' pin' }}
+              </div>
+            </div>
+
+            <!-- Duplicates section -->
+            <div class="meta-page__dup-block">
+              <div class="meta-page__dup-block-title">
+                <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="9" y="9" width="8" height="8" rx="1.5" />
+                </svg>
+                Near-duplicate titles
+                <span class="meta-page__dup-block-count">{{ duplicateResult.duplicates.length }}</span>
+              </div>
+
+              <div v-if="duplicateResult.duplicates.length" class="meta-page__dup-list">
+                <div
+                  v-for="(pair, i) in sortedDuplicates"
+                  :key="i"
+                  class="meta-page__dup-row"
+                >
+                  <div class="meta-page__dup-sim-bar">
+                    <div class="meta-page__dup-sim-fill" :style="{ width: pair.similarity + '%' }" :class="pair.similarity === 100 ? 'meta-page__dup-sim-fill--exact' : 'meta-page__dup-sim-fill--near'" />
+                  </div>
+                  <div class="meta-page__dup-row-body">
+                    <div class="meta-page__dup-titles">
+                      <span class="meta-page__dup-title">{{ pair.imageA.title || '(no title)' }}</span>
+                      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="meta-page__dup-arrow">
+                        <path d="M2 7h10M8 3l4 4-4 4"/>
+                      </svg>
+                      <span class="meta-page__dup-title">{{ pair.imageB.title || '(no title)' }}</span>
+                    </div>
+                    <div class="meta-page__dup-meta">
+                      <span class="meta-page__dup-type" :class="pair.type === 'exact' ? 'meta-page__dup-type--exact' : 'meta-page__dup-type--near'">
+                        {{ pair.type === 'exact' ? 'Exact match' : 'Near match' }}
+                      </span>
+                      <span class="meta-page__dup-pct">{{ pair.similarity }}% similar</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="meta-page__dup-empty">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round">
+                  <path d="M5 10l4 4 6-8"/>
+                </svg>
+                No duplicate titles found
+              </div>
+            </div>
+
+            <!-- Freshness section -->
+            <div class="meta-page__dup-block">
+              <div class="meta-page__dup-block-title">
+                <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="10" cy="10" r="8"/><path d="M10 6v4l2.5 1.5"/>
+                </svg>
+                Stale pins (90+ days)
+                <span class="meta-page__dup-block-count">{{ duplicateResult.freshnessWarnings.length }}</span>
+              </div>
+
+              <div v-if="duplicateResult.freshnessWarnings.length" class="meta-page__dup-list">
+                <div
+                  v-for="w in sortedFreshness"
+                  :key="w.id"
+                  class="meta-page__stale-row"
+                >
+                  <div class="meta-page__stale-age">
+                    <span class="meta-page__stale-days">{{ w.daysSince }}d</span>
+                    <span class="meta-page__stale-label">old</span>
+                  </div>
+                  <div class="meta-page__stale-body">
+                    <div class="meta-page__stale-title">{{ w.title || '(no title)' }}</div>
+                    <div class="meta-page__stale-hint">{{ w.suggestion }}</div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="meta-page__dup-empty">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round">
+                  <path d="M5 10l4 4 6-8"/>
+                </svg>
+                All pins are fresh
+              </div>
+            </div>
+
+          </template>
+        </div>
+      </div>
+    </div>
 
     <!-- ── Image lightbox popup ───────────────────────────────────────────── -->
     <Teleport to="body">
@@ -991,6 +1223,88 @@ function closeAiModal() {
   showAiModal.value = false
   if (aiProgress.status === 'done' || aiProgress.status === 'cancelled') resetAiProgress()
 }
+
+// ── Board Intelligence ───────────────────────────────────────────────────────
+const { suggestion: boardSuggestionResult, loading: boardSuggestionLoading, suggestBoard } = useBoardIntelligence()
+const showBoardSuggestion = ref(false)
+
+async function handleSuggestBoard() {
+  if (!activeDraft.value) return
+  showBoardSuggestion.value = true
+  await suggestBoard(
+    {
+      title: activeDraft.value.pinterest?.title || '',
+      description: activeDraft.value.pinterest?.description || '',
+      filename: activeDraft.value.filename || '',
+    },
+    boards.value,
+  )
+}
+
+function applyBoardSuggestion(which = 'suggested') {
+  if (!boardSuggestionResult.value || !activeDraft.value) return
+  const name = which === 'alternative'
+    ? boardSuggestionResult.value.alternativeBoard
+    : boardSuggestionResult.value.suggestedBoard
+  if (!name) return
+  onDraftUpdate({
+    ...activeDraft.value,
+    pinterest: { ...activeDraft.value.pinterest, board: name },
+  })
+  showBoardSuggestion.value = false
+}
+
+
+// ── Link Health ──────────────────────────────────────────────────────────────
+const { checkLinks, results: linkHealthResultsList, summary: linkHealthSummary, loading: linkHealthLoading } = useLinkHealth()
+const showLinkHealth = ref(false)
+const linkHealthTotal = ref(0)
+
+const linkHealthResults = computed(() => {
+  if (!linkHealthSummary.value) return null
+  return { results: linkHealthResultsList.value, summary: linkHealthSummary.value }
+})
+
+async function handleCheckLinks() {
+  const targets = selectedCount.value > 0
+    ? validImages.value.filter(i => selectedIds.value.has(i.id))
+    : filteredImages.value
+  const urls = targets
+    .map(i => i.pinterest?.link)
+    .filter(Boolean)
+  if (urls.length === 0) return
+  linkHealthTotal.value = urls.length
+  showLinkHealth.value = true
+  await checkLinks(urls)
+}
+
+// ── Duplicate Guard ──────────────────────────────────────────────────────────
+const { scan: scanDuplicates, duplicates: duplicatesList, freshnessWarnings } = useDuplicateGuard()
+const showDuplicates = ref(false)
+const duplicateLoading = ref(false)
+
+const duplicateResult = computed(() => ({
+  duplicates: duplicatesList.value,
+  freshnessWarnings: freshnessWarnings.value,
+}))
+
+function handleScanDuplicates() {
+  const targets = selectedCount.value > 0
+    ? validImages.value.filter(i => selectedIds.value.has(i.id))
+    : filteredImages.value
+  showDuplicates.value = true
+  duplicateLoading.value = true
+  scanDuplicates(targets)
+  duplicateLoading.value = false
+}
+
+const sortedDuplicates = computed(() =>
+  [...duplicatesList.value].sort((a, b) => b.similarity - a.similarity)
+)
+
+const sortedFreshness = computed(() =>
+  [...freshnessWarnings.value].sort((a, b) => b.daysSince - a.daysSince)
+)
 
 // ── Per-view capabilities ────────────────────────────────────────────────────
 // Each route view (Pins / Drafts / Schedules / Posted) only surfaces the
@@ -2085,6 +2399,495 @@ function goToPage(page) {
     transition: background 0.15s, border-color 0.15s;
 
     &:hover { background: rgba(0, 0, 0, 0.8); border-color: rgba(255, 255, 255, 0.5); }
+  }
+
+  // ── Feature modals (Board Intelligence, SEO, Link Health, Duplicates) ──────
+
+  &__modal--sm {
+    max-width: 400px;
+  }
+
+  &__intelligence-loading {
+    padding: 32px 24px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 13px;
+  }
+
+  &__link-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  &__link-stat {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 10px;
+
+    &--ok { background: #ecfdf5; color: #047857; }
+    &--warn { background: #fffbeb; color: #92400e; }
+    &--err { background: #fef2f2; color: #dc2626; }
+  }
+
+  &__link-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  &__link-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #f9fafb;
+
+    &--redirect { background: #fffbeb; }
+    &--broken { background: #fef2f2; }
+  }
+
+  &__link-url {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__link-badge {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  &__link-allgood {
+    font-size: 13px;
+    color: #16a34a;
+    text-align: center;
+    padding: 16px;
+  }
+
+  &__modal--dup {
+    max-width: 580px;
+    width: 100%;
+  }
+
+  &__dup-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+  }
+
+  &__dup-summary {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  &__dup-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+
+    &--ok    { background: #f0fdf4; color: #16a34a; }
+    &--warn  { background: #fef2f2; color: #dc2626; }
+    &--stale { background: #fffbeb; color: #92400e; }
+  }
+
+  &__dup-block {
+    margin-bottom: 20px;
+
+    &:last-child { margin-bottom: 0; }
+  }
+
+  &__dup-block-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    margin-bottom: 10px;
+  }
+
+  &__dup-block-count {
+    margin-left: auto;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+  }
+
+  &__dup-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  &__dup-row {
+    border: 1px solid #fee2e2;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  &__dup-sim-bar {
+    height: 3px;
+    background: #f3f4f6;
+  }
+
+  &__dup-sim-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+
+    &--exact { background: #dc2626; }
+    &--near  { background: #f97316; }
+  }
+
+  &__dup-row-body {
+    padding: 10px 12px;
+  }
+
+  &__dup-titles {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: #111827;
+    margin-bottom: 6px;
+  }
+
+  &__dup-title {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.4;
+  }
+
+  &__dup-arrow {
+    flex-shrink: 0;
+    color: #9ca3af;
+    margin-top: 2px;
+  }
+
+  &__dup-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__dup-type {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 10px;
+
+    &--exact { background: #fef2f2; color: #dc2626; }
+    &--near  { background: #fff7ed; color: #c2410c; }
+  }
+
+  &__dup-pct {
+    font-size: 11px;
+    color: #6b7280;
+    margin-left: auto;
+    font-weight: 600;
+  }
+
+  &__dup-empty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #16a34a;
+    padding: 10px 0;
+  }
+
+  &__stale-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    background: #fffbeb;
+  }
+
+  &__stale-age {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    min-width: 36px;
+  }
+
+  &__stale-days {
+    font-size: 16px;
+    font-weight: 700;
+    color: #92400e;
+    line-height: 1;
+  }
+
+  &__stale-label {
+    font-size: 10px;
+    color: #b45309;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &__stale-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__stale-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #111827;
+    margin-bottom: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__stale-hint {
+    font-size: 11px;
+    color: #92400e;
+    line-height: 1.4;
+  }
+}
+
+// ── Board Intelligence modal (self-contained block) ───────────────────────────
+.bi-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.07);
+  width: 100%;
+  max-width: 420px;
+  overflow: hidden;
+
+  // ── Header ──────────────────────────────────────────────────────────────────
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px 16px 18px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  &__heading-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: #fffbeb;
+    color: #f59e0b;
+    flex-shrink: 0;
+  }
+
+  &__heading-text {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.01em;
+  }
+
+  // ── Body ────────────────────────────────────────────────────────────────────
+  &__body {
+    padding: 20px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  // Loading
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px 0;
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  &__spinner {
+    animation: bi-spin 0.9s linear infinite;
+    color: #9ca3af;
+    flex-shrink: 0;
+  }
+
+  @keyframes bi-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  // Alert banner (new board)
+  &__alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 9px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #b91c1c;
+
+    svg { color: #ef4444; flex-shrink: 0; margin-top: 1px; }
+
+    strong {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #991b1b;
+      margin-bottom: 2px;
+    }
+  }
+
+  // Primary suggestion card
+  &__card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  &__card-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #9ca3af;
+    margin-bottom: 8px;
+  }
+
+  &__card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  &__board-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__badge {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    letter-spacing: 0.01em;
+
+    &--good { background: #dcfce7; color: #15803d; }
+    &--ok   { background: #fef9c3; color: #92400e; }
+    &--poor { background: #fee2e2; color: #b91c1c; }
+  }
+
+  &__reason {
+    font-size: 12.5px;
+    color: #6b7280;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  // Alternative row
+  &__alt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 12.5px;
+  }
+
+  &__alt-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+    flex-shrink: 0;
+  }
+
+  &__alt-name {
+    font-weight: 600;
+    color: #374151;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__alt-score {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  &__alt-btn {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #374151;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { background: #e5e7eb; color: #111827; }
+  }
+
+  // Footer buttons
+  &__footer {
+    display: flex;
+    gap: 8px;
+    padding-top: 2px;
   }
 }
 </style>

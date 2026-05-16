@@ -86,6 +86,28 @@
             Pinterest Scheduling
           </button>
           <button
+            v-if="mode === 'pinterest'"
+            class="gallery-toolbar__menu-item"
+            @click="emit('check-links'); moreOpen = false"
+          >
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M8 11a4 4 0 006 0l3-3a4 4 0 00-6-6l-1 1" />
+              <path d="M12 9a4 4 0 00-6 0l-3 3a4 4 0 006 6l1-1" />
+            </svg>
+            Check Links
+          </button>
+          <button
+            v-if="mode === 'pinterest'"
+            class="gallery-toolbar__menu-item"
+            @click="emit('scan-duplicates'); moreOpen = false"
+          >
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <rect x="3" y="3" width="8" height="8" rx="1" />
+              <rect x="9" y="9" width="8" height="8" rx="1" />
+            </svg>
+            Scan Duplicates
+          </button>
+          <button
             v-if="invalidCount > 0"
             class="gallery-toolbar__menu-item gallery-toolbar__menu-item--warn"
             @click="emit('show-invalid'); moreOpen = false"
@@ -261,6 +283,8 @@ const emit = defineEmits([
   'export-csv',
   'show-invalid',
   'update:mode',
+  'check-links',
+  'scan-duplicates',
 ])
 
 const showFilters = ref(false)
@@ -268,7 +292,7 @@ const moreOpen = ref(false)
 const moreEl = ref(null)
 
 const hasAnyMenuItem = computed(() =>
-  (props.mode === 'pinterest' && (props.caps.timeManager || props.caps.scheduling)) ||
+  props.mode === 'pinterest' ||
   props.invalidCount > 0
 )
 

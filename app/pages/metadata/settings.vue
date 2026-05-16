@@ -33,6 +33,17 @@
             <span class="settings-card__count">{{ boards.length }} board{{ boards.length === 1 ? '' : 's' }}</span>
           </header>
 
+          <!-- Pinterest board name warning -->
+          <div class="settings-card__board-warning">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M10 1l9 17H1L10 1z"/><path d="M10 8v4M10 15h.01"/>
+            </svg>
+            <div>
+              <strong>Board names must match your Pinterest account exactly.</strong>
+              Pinterest CSV imports will fail if a board name doesn't already exist in your account. Use the exact same spelling, spaces, and capitalisation as shown in your Pinterest profile — including boards the AI may suggest.
+            </div>
+          </div>
+
           <div class="settings-card__body">
             <!-- New board row -->
             <form class="board-row board-row--new" @submit.prevent="handleAddBoard">
@@ -478,6 +489,122 @@
           </div>
         </section>
 
+        <!-- ── Pinterest Import ─────────────────────────────────────────────── -->
+        <section v-show="activeSection === 'pinterest-import'" class="settings-card">
+          <header class="settings-card__head">
+            <div>
+              <h2 class="settings-card__title">Pinterest Analytics Import</h2>
+              <p class="settings-card__hint">Import your Pinterest analytics CSV to automatically populate board names and other data for new projects.</p>
+            </div>
+          </header>
+
+          <div class="settings-card__body settings-card__body--form">
+
+            <!-- Info callout -->
+            <div class="csv-import__info">
+              <div class="csv-import__info-icon">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 7h.01"/>
+                </svg>
+              </div>
+              <div class="csv-import__info-body">
+                <strong class="csv-import__info-title">What is this CSV?</strong>
+                <p class="csv-import__info-text">
+                  Pinterest Business accounts can export analytics data as a CSV file. This file contains your board names, pin counts, and engagement stats — exactly what we need to pre-fill board lists in new projects.
+                </p>
+                <ol class="csv-import__info-steps">
+                  <li>Go to <strong>Pinterest Business Hub → Analytics → Overview</strong></li>
+                  <li>Set the date range you want (last 30 days is usually enough)</li>
+                  <li>Click <strong>Export</strong> (top-right corner) → <strong>Download .csv</strong></li>
+                  <li>Drag the downloaded file into the upload zone below</li>
+                </ol>
+                <p class="csv-import__info-note">
+                  Only <code>.csv</code> files exported from Pinterest Analytics are supported. The file is processed locally — nothing is uploaded to external servers.
+                </p>
+              </div>
+            </div>
+
+            <!-- Drop zone -->
+            <div class="csv-import__dropzone" role="button" tabindex="0" aria-label="Upload Pinterest analytics CSV">
+              <div class="csv-import__dropzone-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 15V3M8 7l4-4 4 4"/>
+                  <path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/>
+                </svg>
+              </div>
+              <p class="csv-import__dropzone-headline">Drag &amp; drop your CSV here</p>
+              <p class="csv-import__dropzone-sub">or <span class="csv-import__dropzone-browse">browse files</span></p>
+              <p class="csv-import__dropzone-constraint">Accepts <code>.csv</code> files only · Max 5 MB</p>
+            </div>
+
+            <!-- File validation feedback (shown after file is selected) -->
+            <div class="csv-import__feedback csv-import__feedback--success">
+              <div class="csv-import__feedback-icon csv-import__feedback-icon--success">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 8l3.5 3.5L13 4.5"/>
+                </svg>
+              </div>
+              <div class="csv-import__feedback-body">
+                <span class="csv-import__feedback-name">pinterest_analytics_may2025.csv</span>
+                <span class="csv-import__feedback-size">84 KB · Valid Pinterest export</span>
+              </div>
+              <button class="csv-import__feedback-remove" type="button" aria-label="Remove file">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M2 2l8 8M10 2L2 10"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Board names preview -->
+            <div class="csv-import__preview">
+              <div class="csv-import__preview-head">
+                <span class="csv-import__preview-label">Boards detected</span>
+                <span class="csv-import__preview-badge">12 boards</span>
+              </div>
+              <ul class="csv-import__board-list">
+                <li class="csv-import__board-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
+                  Boho Home Decor
+                </li>
+                <li class="csv-import__board-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
+                  Minimalist Living Room
+                </li>
+                <li class="csv-import__board-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
+                  Landscape Art Prints
+                </li>
+                <li class="csv-import__board-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
+                  Fantasy Wall Art
+                </li>
+                <li class="csv-import__board-item">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
+                  Coastal &amp; Ocean Vibes
+                </li>
+                <li class="csv-import__board-item csv-import__board-item--more">
+                  +7 more boards
+                </li>
+              </ul>
+              <p class="csv-import__preview-note">
+                These board names will be imported into this workspace. Make sure they match your Pinterest account exactly — see the warning in the <strong>Boards</strong> section.
+              </p>
+            </div>
+
+            <!-- Action footer -->
+            <div class="settings-card__footer">
+              <button type="button" class="settings-btn settings-btn--primary" disabled>
+                Import boards
+              </button>
+              <button type="button" class="settings-btn" disabled>
+                Clear
+              </button>
+              <span class="csv-import__coming-soon">Functionality coming soon</span>
+            </div>
+
+          </div>
+        </section>
+
       </div>
     </div>
   </div>
@@ -532,6 +659,11 @@ const sections = [
     id: 'templates',
     label: 'AI Templates',
     icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="5" rx="1.5"/><rect x="2" y="9" width="5" height="5" rx="1.5"/><rect x="9" y="9" width="5" height="5" rx="1.5"/></svg>`,
+  },
+  {
+    id: 'pinterest-import',
+    label: 'Pinterest Import',
+    icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11V3M5 6l3-3 3 3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>`,
   },
 ]
 
@@ -980,6 +1112,33 @@ onMounted(() => {
     font-size: 12.5px;
     color: #6b7280;
     line-height: 1.5;
+  }
+
+  &__board-warning {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: #fffbeb;
+    border: 1.5px solid #fcd34d;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 0 20px 16px;
+
+    svg { color: #d97706; flex-shrink: 0; margin-top: 2px; }
+
+    strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #92400e;
+      margin-bottom: 4px;
+    }
+
+    div {
+      font-size: 12.5px;
+      color: #78350f;
+      line-height: 1.55;
+    }
   }
 
   &__count {
@@ -1469,6 +1628,315 @@ onMounted(() => {
       resize: vertical;
       line-height: 1.45;
     }
+  }
+}
+
+// ── Pinterest CSV Import ───────────────────────────────────────────────────────
+.csv-import {
+
+  // Info callout
+  &__info {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: #f0f9ff;
+    border: 1.5px solid #bae6fd;
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+
+  &__info-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #0ea5e9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    margin-top: 1px;
+  }
+
+  &__info-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__info-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0c4a6e;
+    margin-bottom: 6px;
+  }
+
+  &__info-text {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    color: #075985;
+    line-height: 1.55;
+  }
+
+  &__info-steps {
+    margin: 0 0 10px;
+    padding-left: 18px;
+    font-size: 12.5px;
+    color: #075985;
+    line-height: 1.65;
+
+    li + li { margin-top: 3px; }
+    strong { color: #0c4a6e; }
+  }
+
+  &__info-note {
+    margin: 0;
+    font-size: 11.5px;
+    color: #0369a1;
+    line-height: 1.5;
+
+    code {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      background: #e0f2fe;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 11px;
+    }
+  }
+
+  // Drop zone
+  &__dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 40px 24px;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    background: #fafafa;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+    outline: none;
+
+    &:hover,
+    &:focus-visible {
+      border-color: $color-accent;
+      background: color-mix(in srgb, #{$color-accent} 4%, #fff);
+    }
+  }
+
+  &__dropzone-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    margin-bottom: 4px;
+    transition: background 0.2s, color 0.2s;
+
+    .csv-import__dropzone:hover &,
+    .csv-import__dropzone:focus-visible & {
+      background: color-mix(in srgb, #{$color-accent} 12%, #fff);
+      color: $color-accent;
+    }
+  }
+
+  &__dropzone-headline {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: $color-primary;
+  }
+
+  &__dropzone-sub {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  &__dropzone-browse {
+    color: $color-accent;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 2px;
+    transition: text-decoration-color 0.15s;
+
+    .csv-import__dropzone:hover & { text-decoration-color: $color-accent; }
+  }
+
+  &__dropzone-constraint {
+    margin: 4px 0 0;
+    font-size: 11.5px;
+    color: #9ca3af;
+
+    code {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      background: #f3f4f6;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 11px;
+    }
+  }
+
+  // File validation feedback
+  &__feedback {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid #d1d5db;
+    background: #fff;
+
+    &--success {
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+    }
+
+    &--error {
+      border-color: #fecaca;
+      background: #fef2f2;
+    }
+  }
+
+  &__feedback-icon {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--success { background: #22c55e; color: #fff; }
+    &--error   { background: #ef4444; color: #fff; }
+  }
+
+  &__feedback-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__feedback-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__feedback-size {
+    font-size: 11.5px;
+    color: #6b7280;
+  }
+
+  &__feedback-remove {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+  }
+
+  // Board names preview
+  &__preview {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  &__preview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  &__preview-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #374151;
+  }
+
+  &__preview-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: $color-accent;
+    background: color-mix(in srgb, #{$color-accent} 10%, #fff);
+    border-radius: 999px;
+    padding: 2px 9px;
+    letter-spacing: 0.02em;
+  }
+
+  &__board-list {
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+  }
+
+  &__board-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 16px;
+    font-size: 13px;
+    color: $color-primary;
+    transition: background 0.12s;
+
+    svg { color: #9ca3af; flex-shrink: 0; }
+
+    &:hover { background: #f9fafb; }
+
+    &--more {
+      font-size: 12px;
+      color: #9ca3af;
+      font-style: italic;
+      padding-left: 38px;
+    }
+  }
+
+  &__preview-note {
+    margin: 0;
+    padding: 10px 16px 12px;
+    font-size: 11.5px;
+    color: #6b7280;
+    line-height: 1.5;
+    border-top: 1px solid #f3f4f6;
+
+    strong { color: $color-primary; }
+  }
+
+  // Coming soon label
+  &__coming-soon {
+    font-size: 11.5px;
+    color: #9ca3af;
+    font-style: italic;
+    margin-left: 4px;
   }
 }
 </style>

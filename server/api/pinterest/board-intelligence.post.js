@@ -18,13 +18,20 @@ Analyze the pin's topic, keywords, and visual theme to match it with the most re
 - Keyword alignment (do the pin's keywords match what users would search in that board context?)
 - Audience intent (would a user browsing that board expect to find this pin?)
 
+IMPORTANT RULES:
+- "suggestedBoard" MUST be an exact name from the "Available boards" list if any board scores 50 or higher.
+- Only when NO existing board scores above 50 should you suggest a brand-new board name in "suggestedBoard" AND set "isNewBoard" to true.
+- "alternativeBoard" must always be an exact name from the "Available boards" list, or null.
+- relevanceScore and alternativeScore are integers 0–100.
+
 Respond with JSON:
 {
-  "suggestedBoard": "board name",
+  "suggestedBoard": "exact board name from list, OR a new board name if isNewBoard is true",
   "relevanceScore": 85,
   "reasoning": "Brief explanation why this board is the best fit",
-  "alternativeBoard": "second best board name or null",
-  "alternativeScore": 70
+  "alternativeBoard": "second best board name from the list, or null",
+  "alternativeScore": 70,
+  "isNewBoard": false
 }`
 
   const userPrompt = [
@@ -65,11 +72,14 @@ Respond with JSON:
     throw createError({ statusCode: 502, statusMessage: 'Could not parse AI response' })
   }
 
+  const isNewBoard = !!parsed.isNewBoard && !boards.includes(parsed.suggestedBoard)
+
   return {
     suggestedBoard: parsed.suggestedBoard || null,
     relevanceScore: Math.min(100, Math.max(0, Number(parsed.relevanceScore) || 0)),
     reasoning: parsed.reasoning || '',
-    alternativeBoard: parsed.alternativeBoard || null,
+    alternativeBoard: parsed.alternativeBoard && boards.includes(parsed.alternativeBoard) ? parsed.alternativeBoard : null,
     alternativeScore: Math.min(100, Math.max(0, Number(parsed.alternativeScore) || 0)),
+    isNewBoard,
   }
 })

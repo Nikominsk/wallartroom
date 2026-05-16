@@ -128,21 +128,34 @@
         </div>
         <div class="single-form__field">
           <label class="single-form__label single-form__label--req">Pinterest board</label>
-          <select
-            v-if="boards.length"
-            class="single-form__select"
-            :value="draft.pinterest.board ?? ''"
-            @change="updatePinterest('board', $event.target.value)"
-          >
-            <option value="">— select board —</option>
-            <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
-          </select>
-          <input
-            v-else
-            class="single-form__input"
-            :value="draft.pinterest.board ?? ''"
-            @input="updatePinterest('board', $event.target.value)"
-          />
+          <div class="single-form__board-row">
+            <select
+              v-if="boards.length"
+              class="single-form__select"
+              :value="draft.pinterest.board ?? ''"
+              @change="updatePinterest('board', $event.target.value)"
+            >
+              <option value="">— select board —</option>
+              <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
+            </select>
+            <input
+              v-else
+              class="single-form__input"
+              :value="draft.pinterest.board ?? ''"
+              @input="updatePinterest('board', $event.target.value)"
+            />
+            <button
+              v-if="boards.length"
+              class="single-form__suggest-btn"
+              type="button"
+              title="AI Board Suggestion"
+              @click="emit('suggest-board')"
+            >
+              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="single-form__field">
           <label class="single-form__label single-form__label--req">Redirect URL</label>
@@ -189,6 +202,7 @@
           <label class="single-form__label">Published at</label>
           <input class="single-form__input" :value="fmtDate(draft.pinterest.publishedAt)" readonly />
         </div>
+
       </template>
 
       <!-- Adobe Stock tab -->
@@ -274,7 +288,7 @@ const props = defineProps({
   saving: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['update', 'save', 'discard', 'delete', 'open-ai', 'manage-boards'])
+const emit = defineEmits(['update', 'save', 'discard', 'delete', 'open-ai', 'manage-boards', 'suggest-board'])
 
 const activeTab = ref(props.mode === 'adobe' ? 'adobe' : 'pinterest')
 
@@ -445,6 +459,33 @@ function fmtDate(iso) {
   &__body { display: flex; flex-direction: column; gap: 14px; }
 
   &__field { display: flex; flex-direction: column; gap: 5px; }
+
+  &__board-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+
+    .single-form__select,
+    .single-form__input { flex: 1; min-width: 0; }
+  }
+
+  &__suggest-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: #fffbeb;
+    color: #f59e0b;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.12s, border-color 0.12s;
+
+    &:hover { background: #fef3c7; border-color: #fbbf24; }
+  }
+
 
   &__label {
     display: flex;

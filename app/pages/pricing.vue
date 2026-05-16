@@ -163,7 +163,6 @@ const plans: Plan[] = [
     limits: ['3 Pinterest accounts', '3 domains / shops', '5,000 pins / month'],
     features: [
       'Board Intelligence (AI)',
-      'Pinterest SEO Copilot',
       'Duplicate & Freshness Guard',
       'Seasonal content calendar',
       'Advanced analytics',
@@ -197,7 +196,6 @@ const comparisonRows = [
   { feature: 'Link Health checks', solo: '✓', growth: '✓', agency: '✓' },
   { feature: 'UTM presets', solo: '✓', growth: '✓', agency: '✓' },
   { feature: 'Board Intelligence (AI)', solo: '—', growth: '✓', agency: '✓' },
-  { feature: 'Pinterest SEO Copilot', solo: '—', growth: '✓', agency: '✓' },
   { feature: 'Duplicate & Freshness Guard', solo: '—', growth: '✓', agency: '✓' },
   { feature: 'Seasonal calendar', solo: '—', growth: '✓', agency: '✓' },
   { feature: 'Approval workflows', solo: '—', growth: '—', agency: '✓' },

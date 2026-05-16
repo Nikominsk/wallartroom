@@ -10,13 +10,17 @@
     <!-- ── Nav ─────────────────────────────────────────────────────────────── -->
     <header class="nav">
       <div class="nav__inner">
-        <a class="nav__brand" href="#top">Wall<span>Art</span>Room</a>
+        <a class="nav__brand" href="#top">
+          <span class="nav__mark" aria-hidden="true">P</span>
+          <span class="nav__word">Wall<i>Art</i>Room</span>
+        </a>
         <nav class="nav__links">
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
-          <a href="#pricing-section">Pricing</a>
-          <a href="#waitlist" class="nav__cta">Start free trial</a>
+          <a href="#story">My story</a>
+          <a href="#usecases">Use cases</a>
         </nav>
+        <a href="#waitlist" class="nav__cta">Join the waitlist</a>
       </div>
     </header>
 
@@ -24,31 +28,38 @@
 
       <!-- ══ HERO ═════════════════════════════════════════════════════════════ -->
       <section class="hero">
-        <div class="hero__orb hero__orb--1" aria-hidden="true" />
-        <div class="hero__orb hero__orb--2" aria-hidden="true" />
-        <div class="hero__grain" aria-hidden="true" />
+        <div class="hero__glow" aria-hidden="true" />
+        <div class="hero__rays" aria-hidden="true" />
 
         <div class="hero__inner">
 
           <div class="hero__copy">
-            <span class="hero__eyebrow hero-enter">
-              <span class="hero__eyebrow-dot" />
-              Not another scheduler. A Pinterest Revenue OS.
-            </span>
+            <!-- Eyebrow badge -->
+            <div class="hero__eyebrow hero-enter" style="--enter-delay:0ms">
+              <svg class="hero__eyebrow-pin" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+              Built for Pinterest. Designed for scale.
+            </div>
 
-            <h1 class="hero__title hero-enter">
-              Turn Pinterest into<br>
-              <em>your traffic machine.</em>
+            <!-- Headline -->
+            <h1 class="hero__title hero-enter" style="--enter-delay:80ms">
+              From raw images<br>
+              to <em>published pins</em><br>
+              in minutes.
             </h1>
 
-            <p class="hero__lead hero-enter">
-              <strong>WallArtRoom</strong> doesn't just schedule pins. It tells you which board
-              to pick, checks your SEO score, validates every link, guards against duplicates,
-              and exports a Pinterest-ready CSV — all in one workspace built for revenue, not vanity metrics.
+            <!-- Lead -->
+            <p class="hero__lead hero-enter" style="--enter-delay:160ms">
+              Bulk uploads, AI optimization, board intelligence,
+              validation checks, and automated Pinterest workflows —
+              without the manual chaos.
             </p>
 
+            <!-- Email form -->
             <form
               class="hero__form hero-enter"
+              style="--enter-delay:240ms"
               @submit.prevent="handleSubmit"
             >
               <input
@@ -65,7 +76,7 @@
                   v-model="email"
                   type="email"
                   required
-                  placeholder="you@studio.com"
+                  placeholder="Enter your email"
                   class="hero__input"
                   :disabled="submitting || submitted"
                   aria-label="Email address"
@@ -79,7 +90,7 @@
                   <template v-else-if="submitted">You're in ✓</template>
                   <template v-else-if="submitting">Saving…</template>
                   <template v-else>
-                    Start 14-day free trial
+                    Join the waitlist
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M3 7h8m-3-3l3 3-3 3" />
                     </svg>
@@ -90,46 +101,106 @@
                 <template v-if="formError">{{ formError }}</template>
                 <template v-else-if="submitted && alreadyJoined">Welcome back — we'll let you know.</template>
                 <template v-else-if="submitted">We'll send one email when we open the doors.</template>
-                <template v-else>No credit card required. Full access for 14 days.</template>
+                <template v-else>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="color:#e56b3a;vertical-align:-1px;margin-right:5px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                  Be first to access the Pinterest Revenue OS.
+                </template>
               </p>
             </form>
 
-            <div class="hero__feat-cards hero-enter">
+            <!-- Feature pills -->
+            <div class="hero__feat-cards hero-enter" style="--enter-delay:320ms">
               <div class="hero__feat-card">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                  <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.636 5.636l2.121 2.121M16.243 16.243l2.121 2.121M5.636 18.364l2.121-2.121M16.243 7.757l2.121-2.121"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                </svg>
+                <span>Bulk Uploads</span>
+              </div>
+              <div class="hero__feat-card">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l1.6 3.4 3.4 1.6-3.4 1.6L12 13l-1.6-3.4L7 8l3.4-1.6z"/><path d="M19 17l.7 1.5 1.3.5-1.3.5-.7 1.5-.7-1.5-1.3-.5 1.3-.5z"/>
+                </svg>
+                <span>AI Pin Optimization</span>
+              </div>
+              <div class="hero__feat-card">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M2 9h20M8 3v6"/>
                 </svg>
                 <span>Board Intelligence</span>
               </div>
               <div class="hero__feat-card">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>
                 </svg>
-                <span>Pinterest SEO Copilot</span>
-              </div>
-              <div class="hero__feat-card">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 11l3 3L22 4"/>
-                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-                </svg>
-                <span>Link Health & UTM</span>
+                <span>Pinterest Validation</span>
               </div>
             </div>
           </div>
 
-          <div class="hero__preview hero-enter">
+        </div>
+
+        <!-- Laptop + floating cards: full hero height, pinned top-right,
+             behind the copy so the headline stays fully readable. -->
+        <div class="hero__preview hero-enter" style="--enter-delay:100ms">
+            <!-- Floating card: pins ready (top-left of image) -->
+            <div class="hero__float hero__float--tl hero__float--stat">
+              <div class="hero__float-icon hero__float-icon--orange">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              </div>
+              <div class="hero__float-body">
+                <strong>96</strong>
+                <span>Pins Ready</span>
+                <p>Ready to publish</p>
+              </div>
+            </div>
+
+            <!-- Floating card: validation passed (top-right) -->
+            <div class="hero__float hero__float--tr">
+              <div class="hero__float-icon hero__float-icon--green">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              </div>
+              <div class="hero__float-body">
+                <strong>Pinterest</strong>
+                <span>validation passed</span>
+                <p>All good to go!</p>
+              </div>
+            </div>
+
+            <!-- Laptop image -->
             <img
-              :src="heroImg"
-              alt="WallArtRoom Pinterest workspace with board intelligence and SEO scores"
+              :src="heroLaptopImg"
+              alt="WallArtRoom Pinterest workspace showing bulk pin management"
               class="hero__img"
               loading="eager"
               decoding="async"
               draggable="false"
             />
+
+            <!-- Floating card: AI titles (bottom-right) -->
+            <div class="hero__float hero__float--br1">
+              <div class="hero__float-icon hero__float-icon--orange">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 3.4 3.4 1.6-3.4 1.6L12 13l-1.6-3.4L7 8l3.4-1.6z"/></svg>
+              </div>
+              <div class="hero__float-body">
+                <strong>AI titles</strong>
+                <span>generated</span>
+                <p>96 optimized</p>
+              </div>
+            </div>
+
+            <!-- Floating card: CSV export (bottom-right-lower) -->
+            <div class="hero__float hero__float--br2">
+              <div class="hero__float-icon hero__float-icon--blue">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              </div>
+              <div class="hero__float-body">
+                <strong>CSV export</strong>
+                <span>ready</span>
+                <p>Download now</p>
+              </div>
+            </div>
           </div>
 
-        </div>
       </section>
 
 
@@ -199,7 +270,7 @@
         <div class="container">
           <div class="features__head">
             <span class="kicker">The Pinterest Revenue OS</span>
-            <h2>Six layers that turn pins into <em>revenue.</em></h2>
+            <h2>Four layers that turn pins into <em>revenue.</em></h2>
             <p>Not just posting — from upload to ROI, every step is Pinterest-first.</p>
           </div>
 
@@ -333,42 +404,60 @@
       </section>
 
 
-      <!-- ══ PRICING ═════════════════════════════════════════════════════════ -->
-      <section class="pricing" id="pricing-section">
-        <div class="container">
-          <div class="pricing__head">
-            <span class="kicker">Pricing</span>
-            <h2>Simple plans. Real Pinterest value.</h2>
-            <p>No per-channel tricks. No surprise limits. Cancel anytime.</p>
+      <!-- ══ MY STORY ════════════════════════════════════════════════════════ -->
+      <section class="story" id="story">
+        <div class="container story__inner">
+          <div class="story__head">
+            <span class="kicker">My story</span>
+            <h2>From a personal hack to a tool <em>anyone can use.</em></h2>
+            <p class="story__lead">
+              WallArtRoom didn't start as a product — it started as my own
+              workflow, built to save myself hours every week.
+            </p>
           </div>
 
-          <div class="pricing__grid">
-            <div
-              v-for="plan in pricingPlans"
-              :key="plan.name"
-              class="pricing__card"
-              :class="{ 'pricing__card--featured': plan.featured }"
-            >
-              <span v-if="plan.featured" class="pricing__badge">Most popular</span>
-              <h3 class="pricing__plan-name">{{ plan.name }}</h3>
-              <p class="pricing__plan-for">{{ plan.audience }}</p>
-              <div class="pricing__price">
-                <span class="pricing__price-amount">{{ plan.price === 0 ? 'Free' : `€${plan.price}` }}</span>
-                <span v-if="plan.price > 0" class="pricing__price-per">/mo</span>
+          <ol class="story__points">
+            <li>
+              <span class="story__num">1</span>
+              <div>
+                <strong>It began with MidJourney.</strong>
+                I generated a large set of images and needed a faster way to
+                turn them into publish-ready pins.
               </div>
-              <ul class="pricing__features">
-                <li v-for="f in plan.features" :key="f">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 7l3.5 3.5L12 4" />
-                  </svg>
-                  {{ f }}
-                </li>
-              </ul>
-              <a href="#waitlist" class="pricing__cta" :class="{ 'pricing__cta--primary': plan.featured }">
-                {{ plan.price === 0 ? 'Start free' : 'Start 14-day trial' }}
-              </a>
-            </div>
-          </div>
+            </li>
+            <li>
+              <span class="story__num">2</span>
+              <div>
+                <strong>Then I wrote my own Python program.</strong>
+                It already automated around 75% of the workflow — the tedious,
+                repetitive parts I never wanted to do by hand.
+              </div>
+            </li>
+            <li>
+              <span class="story__num">3</span>
+              <div>
+                <strong>Even then, it already felt amazing.</strong>
+                It saved so much time that I knew the idea was worth pushing
+                much further.
+              </div>
+            </li>
+            <li>
+              <span class="story__num">4</span>
+              <div>
+                <strong>Over the years, I turned it into a service.</strong>
+                What worked for me should work for everyone facing the same
+                Pinterest grind.
+              </div>
+            </li>
+            <li>
+              <span class="story__num">5</span>
+              <div>
+                <strong>The goal: a platform anyone can use.</strong>
+                Easy to use, with a clean and intuitive interface — no scripts,
+                no setup, no technical background required.
+              </div>
+            </li>
+          </ol>
         </div>
       </section>
 
@@ -441,7 +530,6 @@
           <a class="footer__brand" href="#top">Wall<span>Art</span>Room</a>
           <p class="footer__copy">© {{ year }} · The Pinterest Revenue OS · API-compliant, no risky scraping.</p>
           <div class="footer__links">
-            <NuxtLink to="/pricing">Pricing</NuxtLink>
             <NuxtLink to="/privacy">Privacy</NuxtLink>
             <a href="mailto:hello@wallartroom.com">Contact</a>
           </div>
@@ -455,7 +543,7 @@
 
 <script setup>
 import { defineComponent, h } from 'vue'
-import heroImg from '@@/assets/images/hero.png'
+import heroLaptopImg from '@@/assets/images/herolaptop.png'
 import exampleStatsImg from '@@/assets/images/examplestatistic.png'
 
 // ── Feature visuals ───────────────────────────────────────────────────────────
@@ -492,67 +580,6 @@ const FeatureBoardIntel = defineComponent({
   ]),
 })
 
-const FeatureSeo = defineComponent({
-  setup: () => () => h('div', { class: 'vis vis--ai' }, [
-    h('div', { class: 'vis__panel' }, [
-      h('div', { class: 'vis__panel-head' }, [h('span', 'SEO Copilot'), h('span', { class: 'vis__pill vis__pill--accent' }, 'Score: 82')]),
-      h('div', { class: 'vis__seo-bar' }, [
-        h('div', { class: 'vis__seo-fill', style: 'width: 82%;' }),
-      ]),
-      h('div', { class: 'vis__seo-items' }, [
-        h('div', { class: 'vis__seo-item vis__seo-item--good' }, [
-          h('span', { class: 'vis__seo-dot vis__seo-dot--green' }),
-          h('span', 'Primary keyword in first 3 words'),
-        ]),
-        h('div', { class: 'vis__seo-item vis__seo-item--warn' }, [
-          h('span', { class: 'vis__seo-dot vis__seo-dot--yellow' }),
-          h('span', 'Description only 120 chars — use 200+ for reach'),
-        ]),
-        h('div', { class: 'vis__seo-item vis__seo-item--good' }, [
-          h('span', { class: 'vis__seo-dot vis__seo-dot--green' }),
-          h('span', 'Board name aligns with pin topic'),
-        ]),
-      ]),
-      h('div', { class: 'vis__seo-keywords' }, [
-        h('span', { class: 'vis__seo-kw' }, 'aesthetic room decor'),
-        h('span', { class: 'vis__seo-kw' }, 'home office art'),
-        h('span', { class: 'vis__seo-kw' }, 'modern prints'),
-      ]),
-    ]),
-  ]),
-})
-
-const FeatureLinkHealth = defineComponent({
-  setup: () => () => h('div', { class: 'vis vis--ai' }, [
-    h('div', { class: 'vis__panel' }, [
-      h('div', { class: 'vis__panel-head' }, [h('span', 'Link Health'), h('span', { class: 'vis__pill' }, '47 checked')]),
-      h('div', { class: 'vis__row' }, [
-        h('span', { class: 'vis__link-status vis__link-status--ok' }, '200'),
-        h('div', { class: 'vis__row-body' }, [
-          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'shop.studio.com/coastal-print'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'UTM: pinterest / social / summer_sale_2026'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--ok' }, 'Healthy'),
-      ]),
-      h('div', { class: 'vis__row' }, [
-        h('span', { class: 'vis__link-status vis__link-status--redirect' }, '301'),
-        h('div', { class: 'vis__row-body' }, [
-          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'old-blog.com/post-archive'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Redirects to: new-blog.com/archive'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--gen' }, 'Redirect'),
-      ]),
-      h('div', { class: 'vis__row' }, [
-        h('span', { class: 'vis__link-status vis__link-status--broken' }, '404'),
-        h('div', { class: 'vis__row-body' }, [
-          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'etsy.com/listing/deleted-item'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Broken link — will waste pin traffic'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--broken' }, 'Broken'),
-      ]),
-    ]),
-  ]),
-})
 
 const FeatureDuplicateGuard = defineComponent({
   setup: () => () => h('div', { class: 'vis vis--ai' }, [
@@ -610,7 +637,7 @@ const FeatureCsv = defineComponent({
         h('div', { class: 'vis__csv-icon' }, '✓'),
         h('div', { class: 'vis__csv-body' }, [
           h('div', { class: 'vis__csv-name' }, '120 pins validated · 0 errors'),
-          h('div', { class: 'vis__csv-meta' }, 'All links healthy · no duplicates · SEO avg 84'),
+          h('div', { class: 'vis__csv-meta' }, 'All links healthy · no duplicates · 0 errors'),
         ]),
         h('span', { class: 'vis__chip vis__chip--ok' }, 'Ready'),
       ]),
@@ -637,7 +664,7 @@ const FeatureCsv = defineComponent({
 useHead({
   title: 'WallArtRoom — The Pinterest Revenue OS for Creators & Shops',
   meta: [
-    { name: 'description', content: 'Not another scheduler. WallArtRoom is a Pinterest Revenue OS with Board Intelligence, SEO Copilot, Link Health, Duplicate Guard, and validated CSV exports. Built for creators who want traffic and sales, not vanity metrics.' },
+    { name: 'description', content: 'Not another scheduler. WallArtRoom is a Pinterest Revenue OS with Board Intelligence, Duplicate Guard, Pinterest-specific AI, and validated CSV exports. Built for creators who want traffic and sales, not vanity metrics.' },
     { name: 'theme-color', content: '#1a1714' },
   ],
   link: [
@@ -745,9 +772,8 @@ onBeforeUnmount(() => {
 
 // ── Differentiator strip ──────────────────────────────────────────────────────
 const differentiators = [
-  { number: '6', label: 'intelligent layers beyond scheduling' },
-  { number: '0', label: 'broken links shipped to Pinterest' },
-  { number: '92%', label: 'avg SEO score after optimization' },
+  { number: '4', label: 'intelligent layers beyond scheduling' },
+  { number: '100%', label: 'Pinterest-native workflow' },
   { number: '3x', label: 'faster than spreadsheet workflows' },
 ]
 
@@ -760,19 +786,14 @@ const painPoints = [
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>`,
   },
   {
-    title: 'Broken links waste your traffic',
-    body: 'You get the click, but the page 404s. Generic schedulers never check. By the time you notice, hundreds of clicks are gone.',
-    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/><line x1="4" y1="4" x2="20" y2="20"/></svg>`,
-  },
-  {
     title: 'Duplicate pins trigger spam flags',
     body: 'Posting the same title twice tanks your reach. Pinterest penalizes repeat content, but no scheduler flags it before you publish.',
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><rect x="4" y="6" width="12" height="16" rx="2"/></svg>`,
   },
   {
-    title: 'No SEO feedback before publish',
-    body: "You hit schedule, hope the keywords work, and never learn why some pins get 100x more reach than others.",
-    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>`,
+    title: 'No duplicate or freshness detection',
+    body: "Pinterest penalizes repetitive content. Other tools let you pin the same image twice and never warn you when pins go stale and lose reach.",
+    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M13 7h4v4"/></svg>`,
   },
 ]
 
@@ -780,12 +801,8 @@ const painPoints = [
 // ── Vs comparison ──────────────────────────────────────────────────────��───
 const vsRows = [
   { feature: 'Board Intelligence (AI)', them: 'No', us: 'Per-pin suggestions with relevance %' },
-  { feature: 'Pinterest SEO Score', them: 'No', us: 'Real-time analysis before publish' },
-  { feature: 'Link Health Check', them: 'No', us: 'Batch validation of all destination URLs' },
-  { feature: 'Duplicate/Freshness Guard', them: 'No', us: 'Warns before you damage reach' },
-  { feature: 'UTM Governance', them: 'Basic', us: 'Presets, auto-apply, per-campaign tracking' },
-  { feature: 'CSV Studio with validation', them: 'Basic export', us: 'Schema check + dual publish mode' },
-  { feature: 'Pinterest-specific AI', them: 'Generic copy', us: 'SEO-optimized, board-aware, unique' },
+  { feature: 'Duplicate Guard', them: 'No', us: 'Warns before you damage reach' },
+  { feature: 'Pinterest-specific AI', them: 'Generic copy', us: 'Board-aware, keyword-optimized, unique' },
 ]
 
 
@@ -796,18 +813,6 @@ const featureList = [
     body: 'AI analyzes your pin content against your boards and tells you exactly which one will get the best distribution. Board health scores flag dead boards before they hurt you.',
     bullets: ['Relevance score per board', 'Board health monitoring', 'Dead-board warnings', 'Auto-suggest for bulk uploads'],
     visual: FeatureBoardIntel,
-  },
-  {
-    title: 'Pinterest SEO Copilot — optimize before you publish',
-    body: "Real-time SEO scoring for every pin. Not generic 'add more keywords' — specific, Pinterest-algorithm-aware feedback with keyword opportunities you're missing.",
-    bullets: ['0-100 SEO score', 'Keyword placement analysis', 'Description length optimization', 'Trending keyword suggestions'],
-    visual: FeatureSeo,
-  },
-  {
-    title: 'Link Health & UTM Governance — never waste a click',
-    body: 'Batch-check every destination URL before publish. Catch 404s, redirects, and expired links. Auto-apply UTM presets so every click is tracked back to the pin that earned it.',
-    bullets: ['Batch URL validation', 'Redirect detection', 'UTM preset library', 'Per-campaign attribution'],
-    visual: FeatureLinkHealth,
   },
   {
     title: 'Duplicate & Freshness Guard — protect your reach',
@@ -823,7 +828,7 @@ const featureList = [
   },
   {
     title: 'CSV Studio — validated export, dual publish',
-    body: "Not just export. Full validation before download: SEO scores, link health, duplicate checks. Then choose: publish directly via API or export a Pinterest-ready CSV that imports cleanly the first time.",
+    body: "Not just export. Full validation before download: link health, duplicate checks. Then choose: publish directly via API or export a Pinterest-ready CSV that imports cleanly the first time.",
     bullets: ['Pre-export validation', 'Dual mode: API direct or CSV', 'Pinterest-exact format', 'Export history with audit trail'],
     visual: FeatureCsv,
   },
@@ -833,58 +838,9 @@ const featureList = [
 // ── Step-by-step ────────────────────────────────────────────────────────────
 const steps = [
   { title: 'Upload & generate', body: 'Drop your images. AI writes Pinterest-optimized titles, descriptions, and keyword sets. Board Intelligence picks the best board.' },
-  { title: 'Validate & optimize', body: 'SEO Copilot scores every pin. Link Health checks destinations. Duplicate Guard flags conflicts. Fix issues before they go live.' },
+  { title: 'Validate & optimize', body: 'Duplicate Guard flags near-identical titles and stale pins. Board Intelligence confirms the best placement. Fix issues before they go live.' },
   { title: 'Publish with confidence', body: 'Schedule directly via API or export a validated CSV. UTM presets auto-attach so every click is attributed.' },
   { title: 'Track & refresh', body: 'See which boards perform. Get freshness alerts on aging pins. Create variants to keep reach growing — not decaying.' },
-]
-
-
-// ── Pricing plans ──────────────────────────────────────────────────────────
-const pricingPlans = [
-  {
-    name: 'Solo Traffic',
-    audience: 'Bloggers, small shops, side hustles',
-    price: 19,
-    featured: false,
-    features: [
-      '1 Pinterest account',
-      '500 active pins / month',
-      'CSV Studio + validation',
-      'Link Health checks',
-      'UTM preset library',
-      'AI metadata generation',
-    ],
-  },
-  {
-    name: 'Growth Commerce',
-    audience: 'Growing shops, creator brands',
-    price: 49,
-    featured: true,
-    features: [
-      '3 Pinterest accounts',
-      '5,000 pins / month',
-      'Board Intelligence (AI)',
-      'Pinterest SEO Copilot',
-      'Duplicate & Freshness Guard',
-      'Seasonal content calendar',
-      'Everything in Solo',
-    ],
-  },
-  {
-    name: 'Agency',
-    audience: 'VAs, agencies, multi-client teams',
-    price: 99,
-    featured: false,
-    features: [
-      '10 Pinterest accounts',
-      '10 workspaces',
-      'Approval workflows',
-      'White-label CSV exports',
-      'Priority support',
-      'API access',
-      'Everything in Growth',
-    ],
-  },
 ]
 
 
@@ -892,7 +848,7 @@ const pricingPlans = [
 const useCases = [
   {
     title: 'Bloggers & Publishers',
-    body: 'Turn every post into a pin automatically. Board Intelligence picks placement. SEO Copilot writes discovery-optimized metadata.',
+    body: 'Turn every post into a pin automatically. Board Intelligence picks placement. AI writes discovery-optimized metadata.',
     icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg>`,
   },
   {
@@ -949,6 +905,7 @@ $gold:  #c5a059;
 
 @media (prefers-reduced-motion: reduce) {
   .hero-enter { opacity: 1; animation: none; }
+  .hero__float { opacity: 1; animation: none; transform: none; }
 }
 
 .hp-field {
@@ -1001,6 +958,9 @@ $gold:  #c5a059;
   padding: 0 32px;
 }
 
+// Anchored sections clear the now-fixed header when jumped to via nav links.
+.lp section[id] { scroll-margin-top: 92px; }
+
 .kicker {
   display: inline-block;
   font-size: 12px;
@@ -1030,10 +990,15 @@ h2 {
 
 // ── Nav
 .nav {
-  position: sticky;
+  height: 77px;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
-  background: $cream;
+  background: rgba(250, 247, 242, 0.72);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
   border-bottom: 1px solid rgba(237, 224, 208, 0.6);
 
   &__inner {
@@ -1047,12 +1012,37 @@ h2 {
   }
 
   &__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     font-weight: 800;
     font-size: 18px;
     letter-spacing: -0.04em;
     color: $ink-1;
     text-decoration: none;
-    span { color: $color-accent; }
+  }
+
+  &__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f0814e 0%, #e2603a 100%);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0;
+    box-shadow:
+      0 4px 12px -3px rgba(226, 96, 58, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  &__word i {
+    font-style: normal;
+    color: $color-accent;
   }
 
   &__links {
@@ -1070,40 +1060,146 @@ h2 {
   }
 
   &__cta {
-    padding: 9px 18px;
-    background: $ink-1;
-    color: #fff !important;
+    padding: 10px 22px;
+    background: rgba(255, 255, 255, 0.82);
+    color: $color-accent !important;
+    border: 1px solid rgba(255, 182, 145, 0.65);
     border-radius: 999px;
-    font-weight: 600 !important;
-    transition: background 0.15s, transform 0.15s;
-    &:hover { background: #2d2926; transform: translateY(-1px); }
+    font-weight: 700 !important;
+    backdrop-filter: blur(6px);
+    box-shadow:
+      0 4px 16px -7px rgba(150, 90, 50, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition:
+      background 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    &:hover {
+      background: #fff;
+      transform: translateY(-1px);
+      box-shadow:
+        0 8px 22px -8px rgba(150, 90, 50, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    &:active { transform: translateY(0); }
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(229, 107, 58, 0.32);
+    }
   }
 }
 
 // ── HERO
 .hero {
   position: relative;
-  padding: 80px 32px 200px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 32px;
   overflow: hidden;
+  isolation: isolate;
+  padding-top: 77px;
 
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    height: 240px;
-    background: linear-gradient(to bottom, rgba(250, 247, 242, 0) 0%, rgba(250, 247, 242, 0.85) 55%, $cream 100%);
-    pointer-events: none;
-    z-index: 1;
-  }
+  // Warm editorial backdrop: a peach bloom behind the laptop, a soft
+  // cream lift behind the headline, over a diagonal cream-to-sand base.
+  background:
+    radial-gradient(
+      115% 85% at 80% 36%,
+      rgba(255, 199, 165, 0.55) 0%,
+      rgba(255, 210, 180, 0.16) 42%,
+      rgba(255, 225, 210, 0) 64%
+    ),
+    radial-gradient(
+      70% 70% at 12% 26%,
+      rgba(255, 250, 244, 0.85) 0%,
+      rgba(255, 250, 244, 0) 58%
+    ),
+    linear-gradient(
+      163deg,
+      #fffaf4 0%,
+      #fbf4ec 44%,
+      #f6e7d6 100%
+    );
 
+  // Faint dotted texture — premium paper grain, fading out lower so it
+  // never reads as a hard pattern.
   &::before {
     content: '';
     position: absolute;
-    left: 0; right: 0; top: 0;
-    height: 120px;
-    background: linear-gradient(to top, rgba(250, 247, 242, 0) 0%, rgba(250, 247, 242, 0.6) 100%);
+    inset: 0;
+    z-index: 0;
     pointer-events: none;
+    background-image: radial-gradient(rgba(140, 95, 55, 0.07) 1px, transparent 1.5px);
+    background-size: 26px 26px;
+    opacity: 0.6;
+    -webkit-mask-image: radial-gradient(125% 95% at 50% 4%, #000 0%, transparent 72%);
+    mask-image: radial-gradient(125% 95% at 50% 4%, #000 0%, transparent 72%);
+  }
+
+  // Warm light bloom behind the laptop (echoes the photo's lighting)
+  &__glow {
+    position: absolute;
+    z-index: 0;
+    top: -120px;
+    right: -120px;
+    width: 760px;
+    height: 760px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 170, 115, 0.26) 0%,
+      rgba(255, 152, 95, 0.10) 40%,
+      transparent 70%
+    );
+  }
+
+  // Soft diagonal sun-streaks — echoes the lighting in the desk photo so
+  // the copy side shares the same light source as the laptop scene.
+  // Deliberately faint: atmosphere, never a pattern that pulls the eye.
+  &__rays {
+    position: absolute;
+    z-index: 0;
+    inset: -10% -10% auto -10%;
+    height: 78%;
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+    opacity: 0.55;
+    background:
+      linear-gradient(122deg,
+        transparent 0%,
+        transparent 46%,
+        rgba(255, 244, 230, 0.85) 52%,
+        transparent 56%,
+        transparent 64%,
+        rgba(255, 240, 222, 0.6) 69%,
+        transparent 73%,
+        transparent 82%,
+        rgba(255, 246, 235, 0.5) 86%,
+        transparent 90%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  }
+
+  // Soft immersive fade-out: the textured warm area dissolves into a
+  // clean cream so the hero never ends on a hard edge.
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 280px;
     z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(251, 244, 236, 0) 0%,
+      rgba(251, 244, 236, 0.55) 48%,
+      rgba(250, 247, 242, 0.92) 82%,
+      $cream 100%
+    );
   }
 
   &__inner {
@@ -1112,76 +1208,115 @@ h2 {
     max-width: 1240px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1.05fr 1fr;
-    gap: 64px;
+    grid-template-columns: 0.92fr 1.18fr;
+    gap: 36px;
     align-items: center;
   }
 
-  &__copy { max-width: 600px; }
+  &__copy {
+    position: relative;
+    z-index: 3;
+    max-width: 560px;
+  }
 
+  // Eyebrow badge
   &__eyebrow {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px 6px 12px;
+    gap: 7px;
+    padding: 7px 16px 7px 12px;
     background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(197, 160, 89, 0.3);
+    border: 1px solid rgba(255, 180, 145, 0.6);
     border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    font-size: 13px;
+    font-weight: 500;
     color: $ink-2;
     backdrop-filter: blur(8px);
+    box-shadow:
+      0 3px 14px -5px rgba(150, 95, 55, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    margin-bottom: 28px;
   }
 
-  &__eyebrow-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: $color-accent;
-    box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.18);
-    animation: pulse 2.4s ease-in-out infinite;
+  &__eyebrow-pin {
+    color: $color-accent;
+    flex-shrink: 0;
   }
 
+  // Headline
   &__title {
-    margin: 24px 0 22px;
-    font-size: clamp(40px, 6.4vw, 72px);
-    font-weight: 700;
+    margin: 0 0 22px;
+    font-size: clamp(46px, 6.6vw, 88px);
+    font-weight: 800;
     letter-spacing: -0.045em;
-    line-height: 0.98;
+    line-height: 1.03;
     color: $ink-1;
     em {
-      font-family: 'Instrument Serif', 'Times New Roman', serif;
+      position: relative;
+      font-family: 'Instrument Serif', 'Georgia', serif;
       font-style: italic;
       font-weight: 400;
-      letter-spacing: -0.015em;
+      letter-spacing: -0.02em;
       color: $color-accent;
+      white-space: nowrap;
+
+      // Hand-drawn underline accent — feathered ends, slight rise to the
+      // right so it reads as an ink stroke rather than a CSS rule.
+      &::after {
+        content: '';
+        position: absolute;
+        left: -1.5%;
+        right: -1.5%;
+        bottom: -0.02em;
+        height: 0.16em;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          color-mix(in srgb, #{$color-accent} 90%, transparent) 12%,
+          $color-accent 50%,
+          color-mix(in srgb, #{$color-accent} 90%, transparent) 88%,
+          transparent 100%
+        );
+        opacity: 0.42;
+        border-radius: 999px;
+        transform: rotate(-0.7deg);
+      }
     }
   }
 
+  // Lead text
   &__lead {
-    max-width: 540px;
-    font-size: 17px;
-    line-height: 1.6;
+    max-width: 600px;
+    font-size: clamp(17px, 1.15vw, 20px);
+    line-height: 1.7;
     color: $ink-3;
-    margin: 0 0 32px;
-    strong { color: $ink-1; font-weight: 600; }
+    margin: 0 0 34px;
+    text-wrap: pretty;
   }
 
-  &__form { width: 100%; max-width: 480px; }
+  // Form
+  &__form { width: 100%; max-width: 520px; }
 
   &__form-row {
     display: flex;
-    gap: 8px;
-    padding: 6px;
+    gap: 0;
     background: $paper;
-    border: 1px solid $line;
+    border: 1.5px solid rgba(255, 188, 152, 0.7);
     border-radius: 14px;
-    box-shadow: 0 18px 50px -22px rgba(60, 40, 20, 0.18);
-    transition: border-color 0.15s, box-shadow 0.15s;
+    padding: 5px;
+    box-shadow:
+      0 10px 30px -12px rgba(150, 90, 50, 0.28),
+      0 2px 6px -2px rgba(150, 90, 50, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transition:
+      border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     &:focus-within {
       border-color: $color-accent;
-      box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.12), 0 18px 50px -22px rgba(60, 40, 20, 0.22);
+      box-shadow:
+        0 0 0 3px rgba(229, 107, 58, 0.16),
+        0 12px 30px -12px rgba(150, 90, 50, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
   }
 
@@ -1190,7 +1325,8 @@ h2 {
     min-width: 0;
     border: 0;
     background: transparent;
-    padding: 0 12px;
+    padding: 0 16px;
+    height: 50px;
     font: inherit;
     font-size: 15px;
     color: $ink-1;
@@ -1202,94 +1338,248 @@ h2 {
   &__btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 12px 22px;
+    gap: 7px;
+    padding: 0 22px;
+    height: 50px;
     border: 0;
-    background: $ink-1;
+    background: linear-gradient(135deg, #f5824f 0%, #e7613a 100%);
     color: #fff;
-    border-radius: 9px;
+    border-radius: 10px;
     font: inherit;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 14.5px;
+    font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.15s, transform 0.15s;
-    &:hover:not(:disabled) { background: $color-accent; transform: translateY(-1px); }
+    transition:
+      background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+
+    svg {
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #f78a56 0%, #e0592f 100%);
+      box-shadow: 0 10px 24px -8px rgba(229, 107, 58, 0.6);
+      svg { transform: translateX(3px); }
+    }
+    &:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: 0 3px 10px -6px rgba(229, 107, 58, 0.5);
+    }
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(229, 107, 58, 0.35);
+    }
     &:disabled { opacity: 0.55; cursor: not-allowed; }
   }
 
   &__form-note {
-    margin: 12px 4px 0;
+    margin: 11px 2px 0;
     font-size: 13px;
     color: $ink-4;
+    display: flex;
+    align-items: center;
     transition: color 0.2s;
     &--err { color: #b91c1c; }
   }
 
+  // Feature cards
   &__feat-cards {
-    margin-top: 32px;
+    margin-top: 30px;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
-    max-width: 620px;
+    max-width: 560px;
   }
 
   &__feat-card {
-    padding: 10px 4px;
     display: flex;
     align-items: center;
-    gap: 11px;
-    border: 1px solid rgba(223, 193, 156, 0.9);
-    border-radius: 11px;
+    gap: 9px;
+    padding: 12px 13px;
+    background: rgba(255, 255, 255, 0.66);
+    border: 1px solid rgba(255, 196, 165, 0.65);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    box-shadow:
+      0 4px 14px -8px rgba(150, 95, 55, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
     color: $ink-1;
-    backdrop-filter: blur(10px);
-    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
-    svg { flex: 0 0 auto; width: 22px; height: 22px; color: $color-accent; stroke: currentColor; }
-    span { display: block; font-size: 13px; line-height: 1.18; font-weight: 600; letter-spacing: -0.01em; }
-  }
-
-  &__orb {
-    position: absolute;
-    border-radius: 50%;
-    z-index: 0;
-    pointer-events: none;
-    &--1 {
-      width: 620px; height: 620px; top: -180px; right: -160px;
-      background: radial-gradient(circle at 50% 50%, rgba(255, 107, 53, 0.55) 0%, rgba(255, 107, 53, 0.18) 35%, transparent 70%);
+    cursor: default;
+    transition:
+      background 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    &:hover {
+      background: rgba(255, 255, 255, 0.88);
+      border-color: rgba(229, 107, 58, 0.4);
+      transform: translateY(-3px);
+      box-shadow:
+        0 10px 22px -12px rgba(120, 80, 40, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
     }
-    &--2 {
-      width: 520px; height: 520px; bottom: -200px; left: -140px;
-      background: radial-gradient(circle at 50% 50%, rgba(197, 160, 89, 0.5) 0%, rgba(197, 160, 89, 0.15) 35%, transparent 70%);
+    svg { color: $color-accent; flex-shrink: 0; }
+    span {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
     }
-  }
-
-  &__grain {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    opacity: 0.4;
-    pointer-events: none;
-    background-image: radial-gradient(rgba(26, 23, 20, 0.04) 1px, transparent 1px), radial-gradient(rgba(26, 23, 20, 0.03) 1px, transparent 1px);
-    background-size: 18px 18px, 9px 9px;
-    background-position: 0 0, 9px 9px;
   }
 }
 
+// Preview area — laptop photo + floating cards. Sits slightly lower
+// than the copy and bleeds toward the right edge so the scene feels
+// large and built into the page.
+// Laptop scene: pinned to the top-right of the hero, full height,
+// starting directly under the nav (no hero padding above it). Pulled
+// left so it bleeds toward the centre, and held behind the copy.
 .hero__preview {
-  position: relative;
-  perspective: 1600px;
+  position: absolute;
+  top: 0;
+  // Pin the laptop to the centred 1240px container edge (not the raw
+  // viewport edge) so it stays visually next to the copy on wide screens.
+  // 1304 = 1240 container + 2 × 32px hero padding.
+  right: max(0px, calc((100% - 1304px) / 2));
+  bottom: 0;
+  z-index: 1;
+  margin: 0;
+  pointer-events: none;
 }
 
 .hero__img {
   display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 18px;
-  border: 1px solid rgba(237, 224, 208, 0.6);
-  box-shadow: 0 28px 60px -28px rgba(60, 40, 20, 0.22), 0 12px 22px -16px rgba(60, 40, 20, 0.14);
-  transform: rotateX(2deg) rotateY(-4deg);
+  width: auto;
+  height: 100vh;
+  max-height: 100vh;
   user-select: none;
+  transform: translateX(30px);
   -webkit-user-drag: none;
+  // Horizontal fade: the photo stays solid on the right and dissolves
+  // toward the copy so the headline and form remain fully readable.
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    transparent 38%,
+    rgba(0, 0, 0, 0.55) 52%,
+    #000 68%,
+    #000 100%
+  );
+
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    transparent 38%,
+    rgba(0, 0, 0, 0.75) 52%,
+    #000 68%,
+    #000 100%
+  );
+}
+
+// Floating notification cards
+.hero__float {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(230, 220, 208, 0.85);
+  border-radius: 14px;
+  box-shadow:
+    0 12px 32px -10px rgba(70, 45, 20, 0.20),
+    0 2px 6px rgba(70, 45, 20, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  white-space: nowrap;
+  opacity: 0;
+  --enter-delay: 450ms;
+  // Entrance, then a slow perpetual drift so the scene feels alive.
+  // The idle loop starts exactly when the entrance settles, so the
+  // hand-off is seamless.
+  animation:
+    floatIn 650ms cubic-bezier(0.16, 1, 0.3, 1) var(--enter-delay) forwards,
+    floatIdle 7s ease-in-out calc(var(--enter-delay) + 650ms) infinite;
+
+  // Positions (relative to the laptop photo) + de-synced drift speeds
+  &--tl  { top: 32%;   right: 15%;   --enter-delay: 450ms; }
+  &--tr  { top: 14%;    right: 2%;  --enter-delay: 600ms; }
+  &--br1 { top: 52%;   right: 1%; --enter-delay: 750ms; animation-duration: 650ms, 8.4s; }
+  &--br2 { bottom: 24%; right: 5%; --enter-delay: 880ms; animation-duration: 650ms, 9.6s; }
+}
+
+@keyframes floatIn {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes floatIdle {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -5px, 0); }
+}
+
+.hero__float-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+
+  &--orange { background: $color-accent; }
+  &--green  { background: #22c55e; }
+  &--purple { background: #8b5cf6; }
+  &--blue   { background: #3b82f6; }
+}
+
+.hero__float-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+
+  // strong + span together form the two-line title; p is the muted sub.
+  strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: $ink-1;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+  }
+
+  span {
+    font-size: 12px;
+    font-weight: 700;
+    color: $ink-1;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 11px;
+    font-weight: 500;
+    color: $ink-4;
+    line-height: 1.3;
+  }
+}
+
+// Stat variant — the "96" reads as a number, not a label.
+.hero__float--stat .hero__float-body {
+  strong {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  span { font-size: 12px; }
 }
 
 @keyframes pulse {
@@ -1304,7 +1594,7 @@ h2 {
 
   &__inner {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 32px;
     text-align: center;
   }
@@ -1344,7 +1634,7 @@ h2 {
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 18px;
   }
 }
@@ -1520,31 +1810,6 @@ h2 {
 :deep(.vis__chip--pending) { background: #f3f4f6; color: $ink-3; }
 :deep(.vis__chip--broken) { background: #fef2f2; color: #dc2626; }
 
-:deep(.vis__link-status) {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 800;
-  flex-shrink: 0;
-  &--ok { background: #dcfce7; color: #16a34a; }
-  &--redirect { background: #fef3c7; color: #d97706; }
-  &--broken { background: #fef2f2; color: #dc2626; }
-}
-
-// SEO visual
-:deep(.vis__seo-bar) { height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; }
-:deep(.vis__seo-fill) { height: 100%; background: linear-gradient(90deg, $color-accent, #22c55e); border-radius: 3px; }
-:deep(.vis__seo-items) { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
-:deep(.vis__seo-item) { display: flex; align-items: center; gap: 8px; font-size: 11px; color: $ink-2; }
-:deep(.vis__seo-dot) { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-:deep(.vis__seo-dot--green) { background: #22c55e; }
-:deep(.vis__seo-dot--yellow) { background: #f59e0b; }
-:deep(.vis__seo-keywords) { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-:deep(.vis__seo-kw) { font-size: 10px; padding: 3px 8px; background: #ede9fe; color: #7c3aed; border-radius: 999px; font-weight: 600; }
 
 // Bulk visual
 :deep(.vis__field) { display: flex; flex-direction: column; gap: 6px; label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: $ink-2; } }
@@ -1680,81 +1945,66 @@ h2 {
   }
 }
 
-// ── PRICING
-.pricing {
-  padding: 120px 0;
+// ── MY STORY
+.story {
+  padding: 110px 0;
   background: $paper;
   border-top: 1px solid #f3eadc;
 
+  &__inner { max-width: 760px; }
+
   &__head {
     text-align: center;
-    margin-bottom: 60px;
-    p { margin: 18px auto 0; font-size: 18px; color: $ink-3; max-width: 500px; }
+    margin-bottom: 48px;
   }
 
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 22px;
-    max-width: 1000px;
-    margin: 0 auto;
+  &__lead {
+    margin: 18px auto 0;
+    max-width: 560px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: $ink-3;
   }
 
-  &__card {
-    position: relative;
-    background: $cream;
-    border: 1px solid $line;
-    border-radius: 18px;
-    padding: 32px 28px 28px;
+  &__points {
+    list-style: none;
+    padding: 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    transition: border-color 0.15s, transform 0.15s;
-    &:hover { border-color: $gold; transform: translateY(-2px); }
-    &--featured { border-color: $ink-1; background: #fff; box-shadow: 0 12px 40px rgba(60, 40, 20, 0.10); }
-  }
+    gap: 22px;
 
-  &__badge {
-    position: absolute;
-    top: -11px; left: 50%; transform: translateX(-50%);
-    font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
-    background: $ink-1; color: #fff; padding: 5px 12px; border-radius: 999px;
-  }
-
-  &__plan-name { margin: 0 0 4px; font-size: 22px; font-weight: 700; color: $ink-1; }
-  &__plan-for { margin: 0 0 16px; font-size: 13px; color: $ink-4; }
-
-  &__price {
-    display: flex; align-items: baseline; gap: 2px; margin-bottom: 22px;
-    &-amount { font-size: 42px; font-weight: 700; color: $ink-1; letter-spacing: -0.03em; line-height: 1; }
-    &-per { font-size: 14px; color: $ink-3; }
-  }
-
-  &__features {
-    list-style: none; padding: 0; margin: 0 0 24px;
-    display: flex; flex-direction: column; gap: 9px; flex: 1;
     li {
-      display: flex; align-items: flex-start; gap: 8px;
-      font-size: 13px; color: $ink-2; line-height: 1.5;
-      svg { flex-shrink: 0; margin-top: 3px; color: $gold; }
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      font-size: 16px;
+      line-height: 1.62;
+      color: $ink-3;
+      strong {
+        display: block;
+        color: $ink-1;
+        font-weight: 700;
+        margin-bottom: 3px;
+        letter-spacing: -0.01em;
+      }
     }
   }
 
-  &__cta {
-    display: block;
-    width: 100%;
-    padding: 14px;
-    border: 1px solid $ink-1;
-    background: #fff;
-    color: $ink-1;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    text-decoration: none;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    &:hover { background: $ink-1; color: #fff; }
-    &--primary { background: $ink-1; color: #fff; &:hover { background: #2d2926; } }
+  &__num {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 107, 53, 0.12);
+    color: $color-accent;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-top: 1px;
   }
 }
 
@@ -1857,37 +2107,102 @@ h2 {
 
 // ── Responsive
 @media (max-width: 1240px) {
-  .hero__inner { gap: 48px; }
+  .hero__inner { gap: 28px; }
   .feature, .feature--reverse { gap: 56px; }
 }
 
-@media (max-width: 920px) {
-  .hero__inner { grid-template-columns: 1fr; gap: 56px; }
-  .hero__preview { max-width: 560px; margin: 0 auto; }
+@media (max-width: 1024px) {
+  // Tablet (incl. iPad portrait & landscape): clean stacked hero, copy
+  // first then laptop. Extra top padding clears the now-fixed header.
+  .hero {
+    min-height: auto;
+    display: block;
+    padding: 104px 32px 120px;
+  }
+  .hero__inner { grid-template-columns: 1fr; gap: 44px; }
+  .hero__copy { max-width: 640px; }
+  // Back to a normal stacked image below the copy on tablet/phone.
+  .hero__preview {
+    position: static;
+    inset: auto;
+    max-width: 640px;
+    margin: 16px auto 0;
+    pointer-events: auto;
+  }
+  .hero__img {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    transform: none;
+    -webkit-mask-image:
+      linear-gradient(to right, transparent 0%, #000 11%, #000 100%),
+      linear-gradient(to bottom, #000 0%, #000 74%, transparent 99%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, transparent 0%, #000 11%, #000 100%),
+      linear-gradient(to bottom, #000 0%, #000 74%, transparent 99%);
+    mask-composite: intersect;
+  }
+  .hero__feat-cards { max-width: 600px; }
 
   .feature, .feature--reverse { grid-template-columns: 1fr; direction: ltr; gap: 40px; }
   .proof__grid { grid-template-columns: 1fr; gap: 48px; }
   .proof__copy { max-width: 100%; }
-  .pricing__grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
   .versus__table { font-size: 12px; }
   .versus__cell { padding: 12px 12px; }
-  .diff__inner { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .diff__inner { grid-template-columns: repeat(3, 1fr); gap: 20px; }
   .usecases__grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 760px) {
   .container { padding: 0 20px; }
-  .nav__inner { padding: 14px 20px; gap: 16px; }
-  .nav__links { gap: 16px; a:not(.nav__cta) { display: none; } }
+  .nav__inner { padding: 14px 20px; gap: 14px; }
+  .nav__links { display: none; }
+  .nav__cta { padding: 9px 18px; font-size: 13px; }
 
-  .hero { padding: 56px 20px 80px; }
-  .hero__title { font-size: clamp(36px, 9vw, 56px); }
+  // Phone hero: clean single column — copy first, laptop below. The
+  // hero grows with its content instead of clipping.
+  .hero {
+    min-height: auto;
+    padding: 92px 22px 80px;
+    display: block;
+  }
+  .hero__inner { grid-template-columns: 1fr; gap: 40px; }
+  .hero__copy { max-width: 100%; }
+
+  .hero__title { font-size: clamp(40px, 11vw, 56px); }
+  .hero__title em { white-space: normal; }
   .hero__lead { font-size: 16px; }
-  .hero__form-row { flex-direction: column; gap: 8px; }
-  .hero__btn { width: 100%; justify-content: center; }
-  .hero__feat-cards { grid-template-columns: 1fr; }
 
-  .problem, .features, .how, .cta, .pricing, .usecases { padding: 80px 0 70px; }
+  // Form stacks vertically on phones.
+  .hero__form-row {
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 16px;
+  }
+  .hero__input { width: 100%; height: 50px; padding: 0 14px; }
+  .hero__btn {
+    width: 100%;
+    justify-content: center;
+    height: 50px;
+    border-radius: 11px;
+  }
+  .hero__feat-cards { grid-template-columns: repeat(2, 1fr); }
+
+  // Laptop sits below the copy; trim the desktop right-bleed and lift
+  // the over-busy floating cards down to just the two key ones.
+  .hero__preview {
+    margin: 8px auto 0;
+    max-width: 540px;
+  }
+  .hero__float { padding: 8px 11px; gap: 8px; border-radius: 12px; }
+  .hero__float-icon { width: 26px; height: 26px; }
+  .hero__float--stat .hero__float-body strong { font-size: 18px; }
+  .hero__float--br1,
+  .hero__float--br2 { display: none; }
+
+  .problem, .features, .how, .story, .cta, .usecases { padding: 80px 0 70px; }
   .problem__grid { grid-template-columns: 1fr; }
   .features__list { gap: 70px; }
   .feature__num { font-size: 38px; }
