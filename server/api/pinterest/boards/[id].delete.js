@@ -1,13 +1,13 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 export default defineEventHandler(async (event) => {
-  const client = serverSupabaseServiceRole(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
   const id = getRouterParam(event, 'id')
 
   const { data: board, error: fetchErr } = await client
     .from('pinterest_board')
     .select('name')
     .eq('id', id)
+    .eq('project_id', projectId)
     .single()
 
   if (fetchErr || !board) throw createError({ statusCode: 404, statusMessage: 'Board not found' })
@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
   const { count, error: countErr } = await client
     .from('pinterest_image')
     .select('image_id', { count: 'exact', head: true })
+    .eq('project_id', projectId)
     .eq('board', board.name)
 
   if (countErr) throw createError({ statusCode: 500, statusMessage: countErr.message })
@@ -24,6 +25,7 @@ export default defineEventHandler(async (event) => {
     .from('pinterest_board')
     .delete()
     .eq('id', id)
+    .eq('project_id', projectId)
 
   if (deleteErr) throw createError({ statusCode: 500, statusMessage: deleteErr.message })
 

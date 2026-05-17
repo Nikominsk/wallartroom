@@ -81,13 +81,29 @@
         </template>
       </nav>
 
-      <!-- ── Footer: user + project ──────────────────────────────────── -->
+      <!-- ── Profile (pinned to the bottom, separated from the section nav) ── -->
+      <div class="meta-shell__profile">
+        <NuxtLink
+          to="/metadata/profile"
+          class="meta-shell__nav-item"
+          active-class="meta-shell__nav-item--active"
+          :title="collapsed ? 'Profile' : ''"
+        >
+          <span class="meta-shell__nav-icon">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 17c0-3.31 3.13-6 7-6s7 2.69 7 6"/></svg>
+          </span>
+          <span class="meta-shell__nav-label">Profile</span>
+        </NuxtLink>
+      </div>
+
+      <!-- ── Footer: project switcher + user ─────────────────────────── -->
       <div class="meta-shell__footer">
-        <div class="meta-shell__user" :title="collapsed ? `${displayName} · My Project` : ''">
-          <div class="meta-shell__avatar">{{ initials }}</div>
+        <MetadataProjectSwitcher :collapsed="collapsed" />
+        <div class="meta-shell__user" :title="collapsed ? displayName : ''">
+          <div class="meta-shell__avatar">{{ signingOut ? '·' : initials }}</div>
           <div class="meta-shell__user-meta">
-            <div class="meta-shell__user-name">{{ displayName }}</div>
-            <div class="meta-shell__user-project">My Project</div>
+            <div class="meta-shell__user-name">{{ signingOut ? 'Signing out…' : displayName }}</div>
+            <div v-if="!signingOut" class="meta-shell__user-email">{{ user?.email }}</div>
           </div>
           <button
             class="meta-shell__user-action"
@@ -210,7 +226,7 @@ function isInChildTrail(item) {
 const displayName = computed(() => {
   const email = user.value?.email ?? ''
   const meta = user.value?.user_metadata ?? {}
-  return meta.full_name || meta.name || email.split('@')[0] || 'Admin'
+  return meta.full_name || meta.name || email.split('@')[0] || ''
 })
 
 const initials = computed(() => {
@@ -219,7 +235,10 @@ const initials = computed(() => {
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || name[0]?.toUpperCase() || '·'
 })
 
+const signingOut = ref(false)
+
 async function handleSignOut() {
+  signingOut.value = true
   await supabase.auth.signOut()
   await navigateTo('/login')
 }
@@ -524,6 +543,23 @@ $sidebar-w-collapsed: 68px;
   &__nav-children--collapsed::before { display: none; }
   &--collapsed &__nav-item--child &__nav-icon { width: 18px; height: 18px; }
 
+  // ── Profile (separated, pinned above the footer) ────────────────────
+  &__profile {
+    padding: 8px 10px;
+    border-top: 1px solid #f3f3f3;
+  }
+
+  &--collapsed &__profile .meta-shell__nav-item {
+    justify-content: center;
+    padding: 9px 0;
+
+    .meta-shell__nav-label { display: none; }
+  }
+
+  @media (max-width: 768px) {
+    &__profile .meta-shell__nav-item { justify-content: center; padding: 9px 0; }
+  }
+
   // ── Footer ──────────────────────────────────────────────────────────
   &__footer {
     border-top: 1px solid #f3f3f3;
@@ -568,7 +604,7 @@ $sidebar-w-collapsed: 68px;
     text-overflow: ellipsis;
   }
 
-  &__user-project {
+  &__user-email {
     font-size: 11.5px;
     color: #8a8a8a;
     white-space: nowrap;

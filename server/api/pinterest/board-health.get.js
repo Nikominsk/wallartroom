@@ -1,24 +1,30 @@
-import { serverSupabaseClient } from '#supabase/server'
-
+// Board distribution / health for the caller's active project.
+// Pin→board association lives on pinterest_image.board, joined off image.
 export default defineEventHandler(async (event) => {
-  const client = await serverSupabaseClient(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
 
-  // Get all images with their board assignments
   const { data: images, error } = await client
     .from('image')
-    .select('id, pinterest_board')
+    .select('id, pinterest_image(board)')
+    .eq('project_id', projectId)
 
   if (error) {
     throw createError({ statusCode: 500, statusMessage: 'Failed to load images' })
   }
 
-  // Get all boards
   const { data: boards, error: boardsErr } = await client
     .from('pinterest_board')
     .select('id, name')
+    .eq('project_id', projectId)
 
   if (boardsErr) {
     throw createError({ statusCode: 500, statusMessage: 'Failed to load boards' })
+  }
+
+  const boardOf = (img) => {
+    const p = Array.isArray(img.pinterest_image) ? img.pinterest_image[0] : img.pinterest_image
+    return p?.board || null
   }
 
   // Calculate distribution
@@ -26,10 +32,11 @@ export default defineEventHandler(async (event) => {
   let unassigned = 0
 
   for (const img of images || []) {
-    if (!img.pinterest_board) {
+    const b = boardOf(img)
+    if (!b) {
       unassigned++
     } else {
-      boardCounts[img.pinterest_board] = (boardCounts[img.pinterest_board] || 0) + 1
+      boardCounts[b] = (boardCounts[b] || 0) + 1
     }
   }
 

@@ -1,15 +1,14 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 export default defineEventHandler(async (event) => {
+  const { projectId } = await requireMetadataProject(event)
   const { name, options } = await readBody(event) ?? {}
 
   if (!name?.trim())
     throw createError({ statusCode: 400, statusMessage: 'Template name is required' })
 
-  const client = serverSupabaseServiceRole(event)
+  const client = serverSupabaseAdmin(event)
   const { data, error } = await client
     .from('ai_generation_templates')
-    .insert({ name: name.trim(), options: options ?? {} })
+    .insert({ name: name.trim(), options: options ?? {}, project_id: projectId })
     .select('id, name, options, created_at')
     .single()
 

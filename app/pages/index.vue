@@ -204,126 +204,60 @@
       </section>
 
 
-      <!-- ══ DIFFERENTIATOR STRIP ════════════════════════════════════════════ -->
-      <section class="diff">
-        <div class="container">
-          <div class="diff__inner">
-            <div class="diff__item" v-for="d in differentiators" :key="d.label">
-              <span class="diff__number">{{ d.number }}</span>
-              <span class="diff__label">{{ d.label }}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ══ PROBLEM ══════════════════════════════════════════════════════════ -->
-      <section class="problem">
-        <div class="container">
-          <div class="problem__head">
-            <span class="kicker">The problem</span>
-            <h2>Generic schedulers treat Pinterest like an afterthought.</h2>
-            <p>Buffer, Hootsuite, and Later are built for Twitter-era cross-posting. Pinterest needs board strategy, keyword depth, and link trust — not another queue.</p>
+      <!-- ══ MY STORY ════════════════════════════════════════════════════════ -->
+      <section class="story" id="story">
+        <div class="container story__inner">
+          <div class="story__head">
+            <span class="kicker">My story</span>
+            <h2>From a personal hack to a tool <em>anyone can use.</em></h2>
+            <p class="story__lead">
+              WallArtRoom didn't start as a product — it started as my own
+              workflow, built to save myself hours every week.
+            </p>
           </div>
 
-          <div class="problem__grid">
-            <div
-              v-for="p in painPoints"
-              :key="p.title"
-              class="pain"
-            >
-              <div class="pain__icon" v-html="p.icon" />
-              <h3>{{ p.title }}</h3>
-              <p>{{ p.body }}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ══ VS SECTION ══════════════════════════════════════════════════════ -->
-      <section class="versus">
-        <div class="container">
-          <div class="versus__head">
-            <span class="kicker">Why switch</span>
-            <h2>What they don't do. <em>What we do.</em></h2>
-          </div>
-
-          <div class="versus__table">
-            <div class="versus__row versus__row--header">
-              <div class="versus__cell">Feature</div>
-              <div class="versus__cell">Generic schedulers</div>
-              <div class="versus__cell versus__cell--us">WallArtRoom</div>
-            </div>
-            <div class="versus__row" v-for="v in vsRows" :key="v.feature">
-              <div class="versus__cell versus__cell--feature">{{ v.feature }}</div>
-              <div class="versus__cell versus__cell--them">{{ v.them }}</div>
-              <div class="versus__cell versus__cell--us">{{ v.us }}</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ══ FEATURES ════════════════════════════════════════════════════════ -->
-      <section class="features" id="features">
-        <div class="container">
-          <div class="features__head">
-            <span class="kicker">The Pinterest Revenue OS</span>
-            <h2>Four layers that turn pins into <em>revenue.</em></h2>
-            <p>Not just posting — from upload to ROI, every step is Pinterest-first.</p>
-          </div>
-
-          <div class="features__list">
-            <div
-              v-for="(f, i) in featureList"
-              :key="f.title"
-              class="feature"
-              :class="{ 'feature--reverse': i % 2 === 1 }"
-            >
-              <div class="feature__copy">
-                <span class="feature__num">0{{ i + 1 }}</span>
-                <h3>{{ f.title }}</h3>
-                <p>{{ f.body }}</p>
-                <ul class="feature__bullets">
-                  <li v-for="b in f.bullets" :key="b">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M2 7l3.5 3.5L12 4" />
-                    </svg>
-                    {{ b }}
-                  </li>
-                </ul>
+          <ol class="story__points">
+            <li>
+              <span class="story__num">1</span>
+              <div>
+                <strong>It began with MidJourney.</strong>
+                I generated a large set of images and needed a faster way to
+                turn them into publish-ready pins.
               </div>
-
-              <div class="feature__visual">
-                <component :is="f.visual" />
+            </li>
+            <li>
+              <span class="story__num">2</span>
+              <div>
+                <strong>Then I wrote my own Python program.</strong>
+                It already automated around 75% of the workflow — the tedious,
+                repetitive parts I never wanted to do by hand.
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ══ HOW IT WORKS ═════════════════════════════════════════════════════ -->
-      <section class="how" id="how">
-        <div class="container">
-          <div class="how__head">
-            <span class="kicker">The flow</span>
-            <h2>From upload to tracked revenue in four steps.</h2>
-          </div>
-
-          <div class="how__steps">
-            <div class="how__line" aria-hidden="true" />
-            <div
-              v-for="(s, idx) in steps"
-              :key="s.title"
-              class="step"
-            >
-              <div class="step__num">{{ idx + 1 }}</div>
-              <h3>{{ s.title }}</h3>
-              <p>{{ s.body }}</p>
-            </div>
-          </div>
+            </li>
+            <li>
+              <span class="story__num">3</span>
+              <div>
+                <strong>Even then, it already felt amazing.</strong>
+                It saved so much time that I knew the idea was worth pushing
+                much further.
+              </div>
+            </li>
+            <li>
+              <span class="story__num">4</span>
+              <div>
+                <strong>Over the years, I turned it into a service.</strong>
+                What worked for me should work for everyone facing the same
+                Pinterest grind.
+              </div>
+            </li>
+            <li>
+              <span class="story__num">5</span>
+              <div>
+                <strong>The goal: a platform anyone can use.</strong>
+                Easy to use, with a clean and intuitive interface — no scripts,
+                no setup, no technical background required.
+              </div>
+            </li>
+          </ol>
         </div>
       </section>
 
@@ -404,60 +338,102 @@
       </section>
 
 
-      <!-- ══ MY STORY ════════════════════════════════════════════════════════ -->
-      <section class="story" id="story">
-        <div class="container story__inner">
-          <div class="story__head">
-            <span class="kicker">My story</span>
-            <h2>From a personal hack to a tool <em>anyone can use.</em></h2>
-            <p class="story__lead">
-              WallArtRoom didn't start as a product — it started as my own
-              workflow, built to save myself hours every week.
-            </p>
+      <!-- ══ DIFFERENTIATOR STRIP ════════════════════════════════════════════ -->
+      <section class="diff">
+        <div class="container">
+          <div class="diff__inner">
+            <div class="diff__item" v-for="d in differentiators" :key="d.label">
+              <span class="diff__number">{{ d.number }}</span>
+              <span class="diff__label">{{ d.label }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ══ PROBLEM ══════════════════════════════════════════════════════════ -->
+      <section class="problem">
+        <div class="container">
+          <div class="problem__head">
+            <span class="kicker">The problem</span>
+            <h2>Generic schedulers treat Pinterest like an afterthought.</h2>
+            <p>Buffer, Hootsuite, and Later are built for Twitter-era cross-posting. Pinterest needs board strategy, keyword depth, and link trust — not another queue.</p>
           </div>
 
-          <ol class="story__points">
-            <li>
-              <span class="story__num">1</span>
-              <div>
-                <strong>It began with MidJourney.</strong>
-                I generated a large set of images and needed a faster way to
-                turn them into publish-ready pins.
+          <div class="problem__grid">
+            <div
+              v-for="p in painPoints"
+              :key="p.title"
+              class="pain"
+            >
+              <div class="pain__icon" v-html="p.icon" />
+              <h3>{{ p.title }}</h3>
+              <p>{{ p.body }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ══ FEATURES ════════════════════════════════════════════════════════ -->
+      <section class="features" id="features">
+        <div class="container">
+          <div class="features__head">
+            <span class="kicker">The Pinterest Revenue OS</span>
+            <h2>Four layers that turn pins into <em>revenue.</em></h2>
+            <p>Not just posting — from upload to ROI, every step is Pinterest-first.</p>
+          </div>
+
+          <div class="features__list">
+            <div
+              v-for="(f, i) in featureList"
+              :key="f.title"
+              class="feature"
+              :class="{ 'feature--reverse': i % 2 === 1 }"
+            >
+              <div class="feature__copy">
+                <span class="feature__num">0{{ i + 1 }}</span>
+                <h3>{{ f.title }}</h3>
+                <p>{{ f.body }}</p>
+                <ul class="feature__bullets">
+                  <li v-for="b in f.bullets" :key="b">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2 7l3.5 3.5L12 4" />
+                    </svg>
+                    {{ b }}
+                  </li>
+                </ul>
               </div>
-            </li>
-            <li>
-              <span class="story__num">2</span>
-              <div>
-                <strong>Then I wrote my own Python program.</strong>
-                It already automated around 75% of the workflow — the tedious,
-                repetitive parts I never wanted to do by hand.
+
+              <div class="feature__visual">
+                <component :is="f.visual" />
               </div>
-            </li>
-            <li>
-              <span class="story__num">3</span>
-              <div>
-                <strong>Even then, it already felt amazing.</strong>
-                It saved so much time that I knew the idea was worth pushing
-                much further.
-              </div>
-            </li>
-            <li>
-              <span class="story__num">4</span>
-              <div>
-                <strong>Over the years, I turned it into a service.</strong>
-                What worked for me should work for everyone facing the same
-                Pinterest grind.
-              </div>
-            </li>
-            <li>
-              <span class="story__num">5</span>
-              <div>
-                <strong>The goal: a platform anyone can use.</strong>
-                Easy to use, with a clean and intuitive interface — no scripts,
-                no setup, no technical background required.
-              </div>
-            </li>
-          </ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ══ HOW IT WORKS ═════════════════════════════════════════════════════ -->
+      <section class="how" id="how">
+        <div class="container">
+          <div class="how__head">
+            <span class="kicker">The flow</span>
+            <h2>From upload to tracked revenue in four steps.</h2>
+          </div>
+
+          <div class="how__steps">
+            <div class="how__line" aria-hidden="true" />
+            <div
+              v-for="(s, idx) in steps"
+              :key="s.title"
+              class="step"
+            >
+              <div class="step__num">{{ idx + 1 }}</div>
+              <h3>{{ s.title }}</h3>
+              <p>{{ s.body }}</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -642,9 +618,6 @@ const FeatureCsv = defineComponent({
         h('span', { class: 'vis__chip vis__chip--ok' }, 'Ready'),
       ]),
       h('div', { class: 'vis__csv-modes' }, [
-        h('div', { class: 'vis__csv-mode vis__csv-mode--active' }, [
-          h('span', '↗'), h('span', 'Direct publish via API'),
-        ]),
         h('div', { class: 'vis__csv-mode' }, [
           h('span', '↓'), h('span', 'Export Pinterest-ready CSV'),
         ]),
@@ -792,7 +765,7 @@ const painPoints = [
   },
   {
     title: 'No duplicate or freshness detection',
-    body: "Pinterest penalizes repetitive content. Other tools let you pin the same image twice and never warn you when pins go stale and lose reach.",
+    body: "Pinterest penalizes repetitive content. Other tools let you repost duplicate pin titles without a warning — and never tell you when pins go stale and lose reach.",
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M13 7h4v4"/></svg>`,
   },
 ]
@@ -817,7 +790,7 @@ const featureList = [
   {
     title: 'Duplicate & Freshness Guard — protect your reach',
     body: "Pinterest penalizes duplicate content. Our guard scans your entire workspace for near-duplicate titles and flags stale pins that should be refreshed with new variants.",
-    bullets: ['92% similarity detection', 'Freshness warnings (90+ days)', 'Variant suggestions', 'Spam-flag prevention'],
+    bullets: ['Title similarity detection (92% match)', 'Freshness warnings (90+ days)', 'Variant suggestions', 'Spam-flag prevention'],
     visual: FeatureDuplicateGuard,
   },
   {

@@ -1,7 +1,6 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 export default defineEventHandler(async (event) => {
-  const client = serverSupabaseServiceRole(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -15,13 +14,16 @@ export default defineEventHandler(async (event) => {
   ] = await Promise.all([
     client
       .from('pinterest_image')
-      .select('image_id, title, description, board, status, publish_date, updated_at'),
+      .select('image_id, title, description, board, status, publish_date, updated_at')
+      .eq('project_id', projectId),
     client
       .from('pinterest_board')
-      .select('name, color'),
+      .select('name, color')
+      .eq('project_id', projectId),
     client
       .from('pinterest_image')
       .select('image_id, title, board, status, publish_date')
+      .eq('project_id', projectId)
       .gte('publish_date', today.toISOString())
       .lt('publish_date', next7.toISOString())
       .order('publish_date', { ascending: true }),
@@ -88,6 +90,7 @@ export default defineEventHandler(async (event) => {
     const { data: images } = await client
       .from('image')
       .select('id, thumbnail_url, public_url')
+      .eq('project_id', projectId)
       .in('id', ids)
     for (const img of images ?? []) {
       thumbMap[img.id] = img.thumbnail_url ?? img.public_url ?? null

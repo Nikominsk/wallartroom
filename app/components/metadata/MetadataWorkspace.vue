@@ -729,7 +729,7 @@ const {
   deleteImage, deleteImages, updateImageUrl,
 } = useMetadataImages()
 
-onMounted(() => { loadImages(); loadBoards() })
+onMounted(() => { loadImages(); loadBoards(); loadProjectMeta() })
 
 // CSV-history badge now lives in the sidebar; we just bump the shared count
 // after a download here (see handleDownloadCsv).
@@ -737,6 +737,9 @@ const { bump: bumpCsvBadge } = useCsvExportBadge()
 
 // ── Pinterest boards ──────────────────────────────────────────────────────────
 const { boards, loading: boardsLoading, loadBoards, addBoard, deleteBoard, chipStyleForName } = usePinterestBoards()
+// Account-performance brief (from the imported Pinterest analytics CSV) — fed
+// to the AI so generated copy leans into proven, high-traffic themes.
+const { analyticsBrief, load: loadProjectMeta } = useMetadataProject()
 const showBoardsManager = ref(false)
 
 async function handleAddBoard(name) {
@@ -1196,6 +1199,7 @@ async function handleGenerate() {
           prompt: img.prompt,
           colors: img.colors,
           additionalContext: opts.additionalContext,
+          accountContext: analyticsBrief.value || '',
           options: opts,
           boards: opts.generateFor.pinterestBoard ? boards.value.map(b => b.name) : [],
           existingTitles: ctx.existingTitles ?? [],

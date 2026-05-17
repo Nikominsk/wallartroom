@@ -1,10 +1,9 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
-// Returns every image with its joined Pinterest / Adobe metadata. The metadata
-// gallery does its own filtering and pagination client-side so the visible
-// total reflects the active filter set.
+// Returns every image (with joined Pinterest / Adobe metadata) that belongs to
+// the caller's ACTIVE project. The gallery does its own filtering/pagination
+// client-side so the visible total reflects the active filter set.
 export default defineEventHandler(async (event) => {
-  const client = serverSupabaseServiceRole(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
 
   const { data, error, count } = await client
     .from('image')
@@ -16,6 +15,7 @@ export default defineEventHandler(async (event) => {
       pinterest_image(*),
       adobe_image(*)
     `, { count: 'exact' })
+    .eq('project_id', projectId)
     .order('created_at', { ascending: false })
     .range(0, 49999) // covers the practical ceiling without hitting PostgREST's default 1000 cap
 

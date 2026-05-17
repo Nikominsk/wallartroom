@@ -1,12 +1,11 @@
 // Route guard. Three protected zones:
-//   /metadata/*  → only the existing Pinterest admin email (legacy internal tool)
+//   /metadata/*  → any authenticated user (now multi-tenant: each user has
+//                  their own projects — see requireMetadataProject)
 //   /admin/*     → users with role='admin' in app_user
 //   /app/*       → any authenticated user
 //
 // /admin role check happens via /api/me (server-side, role-aware).
 // All other routes (landing, /pricing, /gallery, /signup, /login) are public.
-
-const PINTEREST_ADMIN_EMAIL = 'nniko.geuenich@gmail.com'
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const isMetadata = to.path.startsWith('/metadata')
@@ -21,9 +20,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (isMetadata) {
-    if (user.value.email !== PINTEREST_ADMIN_EMAIL) {
-      return navigateTo('/login?error=unauthorized')
-    }
+    // Any signed-in user may use the Pinterest workspace; their data is
+    // isolated per-user/per-project on the server.
     return
   }
 
@@ -32,7 +30,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (import.meta.server) return
     try {
       const me = await $fetch<{ role?: string }>('/api/me')
-      if (me?.role !== 'admin') return navigateTo('/app/dashboard')
+      if (me?.role !== 'admin') return navigateTo('/metadata')
     } catch {
       return navigateTo('/login?error=auth')
     }

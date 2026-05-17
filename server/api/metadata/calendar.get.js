@@ -1,6 +1,10 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
-export default defineCachedEventHandler(async (event) => {
+// Per-project calendar grid. The previous version used a shared
+// defineCachedEventHandler keyed only by year/month — unsafe once the tool is
+// multi-tenant (one project's cached grid would leak to another). The query is
+// light (one indexed month-range read scoped by project_id), so it now runs
+// per request without a server cache.
+export default defineEventHandler(async (event) => {
+  const { projectId } = await requireMetadataProject(event)
   const { year, month } = getQuery(event)
   const y = parseInt(year)  || new Date().getFullYear()
   const m = parseInt(month) || (new Date().getMonth() + 1)
@@ -15,18 +19,20 @@ export default defineCachedEventHandler(async (event) => {
   const gridEnd = new Date(gridStart)
   gridEnd.setDate(gridStart.getDate() + 42)
 
-  const client = serverSupabaseServiceRole(event)
+  const client = serverSupabaseAdmin(event)
 
   const [{ data: pins, error }, { data: boards }] = await Promise.all([
     client
       .from('pinterest_image')
       .select('image_id, title, board, status, publish_date')
+      .eq('project_id', projectId)
       .gte('publish_date', gridStart.toISOString())
       .lt('publish_date', gridEnd.toISOString())
       .order('publish_date', { ascending: true }),
     client
       .from('pinterest_board')
-      .select('name, color'),
+      .select('name, color')
+      .eq('project_id', projectId),
   ])
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
@@ -46,10 +52,4 @@ export default defineCachedEventHandler(async (event) => {
     })),
     boardColors,
   }
-}, {
-  maxAge: 300, // 5-minute server cache per month
-  getKey: (event) => {
-    const { year, month } = getQuery(event)
-    return `cal-${year ?? 'x'}-${month ?? 'x'}`
-  },
 })

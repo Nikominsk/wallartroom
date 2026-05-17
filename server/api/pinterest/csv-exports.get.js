@@ -1,11 +1,11 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 export default defineEventHandler(async (event) => {
-  const client = serverSupabaseServiceRole(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
 
   const { data, error } = await client
     .from('pinterest_csv_export')
     .select('id, filename, row_count, created_at, marked_exported_at, image_ids')
+    .eq('project_id', projectId)
     .order('created_at', { ascending: false })
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
     const { data: pinRows, error: pinErr } = await client
       .from('pinterest_image')
       .select('image_id, publish_date')
+      .eq('project_id', projectId)
       .in('image_id', [...allIds])
 
     if (pinErr) throw createError({ statusCode: 500, statusMessage: pinErr.message })

@@ -1,7 +1,9 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 // One file per request. The client uploads files sequentially so it can render
 // per-file progress and a single failure doesn't roll back the rest.
+//
+// R2 layout: objects are stored under pinterest/user/{userId}/{projectId}/...
+// so each user owns a directory and each of their projects a sub-directory. The
+// image row is also tagged with project_id for DB-side tenant isolation.
 
 const ALLOWED_MIME = new Set([
   'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/avif',
@@ -9,6 +11,7 @@ const ALLOWED_MIME = new Set([
 const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 
 export default defineEventHandler(async (event) => {
+  const { user, projectId } = await requireMetadataProject(event)
   const parts = await readMultipartFormData(event)
   const filePart = parts?.find(p => p.name === 'file' && p.filename && p.data)
   if (!filePart) {
@@ -35,7 +38,8 @@ export default defineEventHandler(async (event) => {
   }
 
   // Upload to R2 first. If the R2 write fails, no DB row is created.
-  const key = buildPinterestLandscapeKey(ext)
+  // Key is scoped per-user/per-project: pinterest/user/{userId}/{projectId}/...
+  const key = buildPinterestUserKey({ ext, userId: user.id, projectId })
   let publicUrl
   try {
     const result = await uploadToR2({ key, body: filePart.data, contentType: mime })
@@ -52,13 +56,14 @@ export default defineEventHandler(async (event) => {
   const filename = key.split('/').pop()
 
   // Then insert the Supabase row pointing at the R2 object.
-  const client = serverSupabaseServiceRole(event)
+  const client = serverSupabaseAdmin(event)
   const { data: imageRow, error } = await client
     .from('image')
     .insert({
       filename,
       public_url: publicUrl,
       visibility: 'open',
+      project_id: projectId,
     })
     .select(`
       *,

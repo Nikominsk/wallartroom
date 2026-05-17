@@ -44,7 +44,10 @@
       "Bash(awk 'NR>=952{print NR\": \"$0}' \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\app\\\\pages\\\\index.vue\")",
       "Bash(grep -n -E \"^\\\\s*[0-9]+: \\\\.\\(lp|nav|hero|container|diff|problem|versus|features|how|proof|pricing|usecases|cta|footer|story\\)[ ._&{,]|@media|@keyframes\")",
       "Bash(node -e \"const s=require\\('fs'\\).readFileSync\\('app/pages/index.vue','utf8'\\);const c=\\(r\\)=>\\(s.match\\(r\\)||[]\\).length;console.log\\('template',c\\(/<template>/g\\),c\\(/<\\\\/template>/g\\)\\);console.log\\('script',c\\(/<script setup>/g\\),c\\(/<\\\\/script>/g\\)\\);console.log\\('style',c\\(/<style/g\\),c\\(/<\\\\/style>/g\\)\\);console.log\\('section open',c\\(/<section/g\\),'section close',c\\(/<\\\\/section>/g\\)\\);console.log\\('pricing refs',c\\(/pricing/gi\\)\\);console.log\\('LinkHealth refs',c\\(/FeatureLinkHealth/g\\)\\);\")",
-      "Bash(node -e \"const j=require\\('./package.json'\\);console.log\\(JSON.stringify\\(j.scripts,null,1\\)\\)\")"
+      "Bash(node -e \"const j=require\\('./package.json'\\);console.log\\(JSON.stringify\\(j.scripts,null,1\\)\\)\")",
+      "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\app\\\\pages\\\\app\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Force \"C:\\\\Users\\\\gniko\\\\OneDrive\\\\Documents\\\\Programmieren\\\\Nuxt 3\\\\wallartroom\\\\app\\\\layouts\\\\app.vue\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Output \"Done\")"
     ]
   }
 }

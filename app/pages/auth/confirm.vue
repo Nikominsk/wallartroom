@@ -30,7 +30,7 @@ onMounted(async () => {
 
   // Honour ?next= passed through OAuth state if present
   const next = typeof route.query.next === 'string' ? route.query.next : null
-  window.location.href = next && next.startsWith('/') ? next : '/app/dashboard'
+  window.location.href = next && next.startsWith('/') ? next : '/metadata'
 })
 </script>
 

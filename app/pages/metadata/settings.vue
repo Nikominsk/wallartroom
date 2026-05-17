@@ -33,6 +33,17 @@
             <span class="settings-card__count">{{ boards.length }} board{{ boards.length === 1 ? '' : 's' }}</span>
           </header>
 
+          <!-- Auto-import hint -->
+          <div class="settings-card__board-tip">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13V3M6 7l4-4 4 4"/><path d="M3 13v3a1 1 0 001 1h12a1 1 0 001-1v-3"/>
+            </svg>
+            <div>
+              You don't have to add boards by hand — <button type="button" class="settings-card__link-btn" @click="activeSection = 'pinterest-import'">import them automatically</button>
+              from the CSV that Pinterest Business exports under <strong>Analytics → Overview → Export</strong>. It also pulls in each board's real impressions, saves and engagement so the AI can favour your proven boards.
+            </div>
+          </div>
+
           <!-- Pinterest board name warning -->
           <div class="settings-card__board-warning">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -524,8 +535,30 @@
               </div>
             </div>
 
-            <!-- Drop zone -->
-            <div class="csv-import__dropzone" role="button" tabindex="0" aria-label="Upload Pinterest analytics CSV">
+            <!-- Hidden native file input (driven by the dropzone) -->
+            <input
+              ref="csvFileInput"
+              type="file"
+              accept=".csv,text/csv,text/plain"
+              class="csv-import__file-input"
+              @change="onFilePicked"
+            />
+
+            <!-- Drop zone (hidden once we have content) -->
+            <div
+              v-if="!csvText"
+              class="csv-import__dropzone"
+              :class="{ 'csv-import__dropzone--drag': dragOver }"
+              role="button"
+              tabindex="0"
+              aria-label="Upload Pinterest analytics CSV"
+              @click="csvFileInput?.click()"
+              @keydown.enter.prevent="csvFileInput?.click()"
+              @keydown.space.prevent="csvFileInput?.click()"
+              @dragover.prevent="dragOver = true"
+              @dragleave.prevent="dragOver = false"
+              @drop.prevent="onDrop"
+            >
               <div class="csv-import__dropzone-icon">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 15V3M8 7l4-4 4 4"/>
@@ -535,73 +568,230 @@
               <p class="csv-import__dropzone-headline">Drag &amp; drop your CSV here</p>
               <p class="csv-import__dropzone-sub">or <span class="csv-import__dropzone-browse">browse files</span></p>
               <p class="csv-import__dropzone-constraint">Accepts <code>.csv</code> files only · Max 5 MB</p>
-            </div>
-
-            <!-- File validation feedback (shown after file is selected) -->
-            <div class="csv-import__feedback csv-import__feedback--success">
-              <div class="csv-import__feedback-icon csv-import__feedback-icon--success">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 8l3.5 3.5L13 4.5"/>
-                </svg>
-              </div>
-              <div class="csv-import__feedback-body">
-                <span class="csv-import__feedback-name">pinterest_analytics_may2025.csv</span>
-                <span class="csv-import__feedback-size">84 KB · Valid Pinterest export</span>
-              </div>
-              <button class="csv-import__feedback-remove" type="button" aria-label="Remove file">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                  <path d="M2 2l8 8M10 2L2 10"/>
-                </svg>
+              <button type="button" class="csv-import__paste-toggle" @click.stop="pasteMode = !pasteMode">
+                {{ pasteMode ? 'Hide text box' : 'or paste the CSV text instead' }}
               </button>
             </div>
 
-            <!-- Board names preview -->
-            <div class="csv-import__preview">
+            <!-- Paste-as-text fallback -->
+            <div v-if="!csvText && pasteMode" class="settings-field settings-field--full">
+              <label class="settings-field__label">Paste Pinterest analytics CSV</label>
+              <textarea
+                v-model="pasteBuffer"
+                class="settings-field__input settings-field__input--textarea"
+                rows="6"
+                placeholder="Analytics overview&#10;2026-04-16 - 2026-05-16&#10;…"
+              />
+              <button
+                type="button"
+                class="settings-btn settings-btn--primary"
+                style="align-self:flex-start;margin-top:8px"
+                :disabled="pasteBuffer.trim().length < 20"
+                @click="usePastedText"
+              >
+                Use this text
+              </button>
+            </div>
+
+            <!-- File feedback -->
+            <div
+              v-if="csvText"
+              class="csv-import__feedback"
+              :class="analyzeError ? 'csv-import__feedback--error' : 'csv-import__feedback--success'"
+            >
+              <div
+                class="csv-import__feedback-icon"
+                :class="analyzeError ? 'csv-import__feedback-icon--error' : 'csv-import__feedback-icon--success'"
+              >
+                <svg v-if="!analyzeError" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 4.5"/></svg>
+                <svg v-else width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l8 8M10 2L2 10"/></svg>
+              </div>
+              <div class="csv-import__feedback-body">
+                <span class="csv-import__feedback-name">{{ fileName || 'Pasted CSV text' }}</span>
+                <span class="csv-import__feedback-size">
+                  {{ sizeLabel }}<template v-if="analyzing"> · Analyzing…</template><template v-else-if="analyzeError"> · {{ analyzeError }}</template><template v-else-if="analysis"> · Valid Pinterest export</template>
+                </span>
+              </div>
+              <button class="csv-import__feedback-remove" type="button" aria-label="Remove file" @click="resetImport">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l8 8M10 2L2 10"/></svg>
+              </button>
+            </div>
+
+            <!-- Parsed preview -->
+            <div v-if="analysis" class="csv-import__preview">
               <div class="csv-import__preview-head">
                 <span class="csv-import__preview-label">Boards detected</span>
-                <span class="csv-import__preview-badge">12 boards</span>
+                <span class="csv-import__preview-badge">{{ analysis.boards.detected }} boards</span>
               </div>
+
+              <div class="csv-import__summary">
+                <span v-if="analysis.handle"><strong>@{{ analysis.handle }}</strong></span>
+                <span v-if="analysis.period?.start">{{ analysis.period.start }} → {{ analysis.period.end }}</span>
+                <span v-if="analysis.boards.willCreate?.length">{{ analysis.boards.willCreate.length }} new</span>
+                <span v-if="analysis.boards.willUpdate?.length">{{ analysis.boards.willUpdate.length }} updated</span>
+                <span v-if="analysis.boards.systemSkipped">{{ analysis.boards.systemSkipped }} system skipped</span>
+              </div>
+
               <ul class="csv-import__board-list">
-                <li class="csv-import__board-item">
+                <li
+                  v-for="name in (analysis.boards.allNames || []).slice(0, showAllBoards ? 999 : 6)"
+                  :key="name"
+                  class="csv-import__board-item"
+                >
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
-                  Boho Home Decor
+                  {{ name }}
+                  <span v-if="analysis.boards.willCreate?.includes(name)" class="csv-import__board-tag">new</span>
                 </li>
-                <li class="csv-import__board-item">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
-                  Minimalist Living Room
-                </li>
-                <li class="csv-import__board-item">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
-                  Landscape Art Prints
-                </li>
-                <li class="csv-import__board-item">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
-                  Fantasy Wall Art
-                </li>
-                <li class="csv-import__board-item">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>
-                  Coastal &amp; Ocean Vibes
-                </li>
-                <li class="csv-import__board-item csv-import__board-item--more">
-                  +7 more boards
+                <li
+                  v-if="!showAllBoards && (analysis.boards.allNames || []).length > 6"
+                  class="csv-import__board-item csv-import__board-item--more"
+                  @click="showAllBoards = true"
+                >
+                  +{{ analysis.boards.allNames.length - 6 }} more boards — show all
                 </li>
               </ul>
+
+              <p v-if="analysis.topThemes?.length" class="csv-import__preview-note">
+                <strong>AI signal:</strong> strongest themes by real impressions —
+                {{ analysis.topThemes.join(', ') }}. These (plus each board's
+                impressions / saves) are saved so the AI favours your proven boards.
+              </p>
               <p class="csv-import__preview-note">
-                These board names will be imported into this workspace. Make sure they match your Pinterest account exactly — see the warning in the <strong>Boards</strong> section.
+                Board names are derived from your Pinterest board URLs. Confirm they
+                match your account exactly — see the warning in the <strong>Boards</strong> section.
               </p>
             </div>
 
-            <!-- Action footer -->
-            <div class="settings-card__footer">
-              <button type="button" class="settings-btn settings-btn--primary" disabled>
-                Import boards
-              </button>
-              <button type="button" class="settings-btn" disabled>
-                Clear
-              </button>
-              <span class="csv-import__coming-soon">Functionality coming soon</span>
+            <!-- Success result -->
+            <div v-if="importResult" class="csv-import__feedback csv-import__feedback--success">
+              <div class="csv-import__feedback-icon csv-import__feedback-icon--success">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 4.5"/></svg>
+              </div>
+              <div class="csv-import__feedback-body">
+                <span class="csv-import__feedback-name">Import complete</span>
+                <span class="csv-import__feedback-size">
+                  {{ importResult.boards.created }} created · {{ importResult.boards.updated }} updated · performance saved for AI
+                </span>
+              </div>
             </div>
 
+            <!-- Options + Action footer -->
+            <label v-if="analysis && !importResult" class="csv-import__opt">
+              <input type="checkbox" v-model="includeSystem" @change="analyze" />
+              Include Pinterest system boards (e.g. “Quick creates”)
+            </label>
+
+            <div class="settings-card__footer">
+              <button
+                v-if="!importResult"
+                type="button"
+                class="settings-btn settings-btn--primary"
+                :disabled="!analysis || analyzing || importing"
+                @click="runImport"
+              >
+                {{ importing ? 'Importing…' : 'Import boards' }}
+              </button>
+              <button type="button" class="settings-btn" :disabled="importing" @click="resetImport">
+                {{ importResult ? 'Import another' : 'Clear' }}
+              </button>
+              <span v-if="importError" class="settings-card__status settings-card__status--err">{{ importError }}</span>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ── Project ───────────────────────────────────────────────────── -->
+        <section v-show="activeSection === 'project'" class="settings-card">
+          <header class="settings-card__head">
+            <div>
+              <h2 class="settings-card__title">Project</h2>
+              <p class="settings-card__hint">Rename the project you're currently working in. The new name applies everywhere, including the sidebar switcher.</p>
+            </div>
+          </header>
+
+          <div class="settings-card__body">
+            <div class="settings-field settings-field--full">
+              <label class="settings-field__label" for="project-name">Project name</label>
+              <div class="project-rename">
+                <input
+                  id="project-name"
+                  v-model.trim="projectNameDraft"
+                  class="settings-field__input"
+                  type="text"
+                  maxlength="120"
+                  spellcheck="false"
+                  placeholder="Project name"
+                  :disabled="projectSaving || !activeProject"
+                  @keydown.enter.prevent="handleRenameProject"
+                />
+                <button
+                  type="button"
+                  class="settings-btn settings-btn--primary"
+                  :disabled="!canSaveProjectName"
+                  @click="handleRenameProject"
+                >
+                  {{ projectSaving ? 'Saving…' : 'Save' }}
+                </button>
+              </div>
+              <p v-if="projectRenameError" class="settings-card__error">{{ projectRenameError }}</p>
+              <span v-else-if="projectRenameSaved" class="settings-field__hint">Saved.</span>
+            </div>
+
+            <!-- Delete project (danger zone, consequences spelled out) -->
+            <div class="danger-zone" style="margin-top:28px">
+              <div class="danger-zone__head">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 2L1 18h18L10 2z"/><path d="M10 8v4M10 15h.01"/>
+                </svg>
+                <div>
+                  <h3 class="danger-zone__title">Delete this project</h3>
+                  <p class="danger-zone__text">
+                    Permanently deletes
+                    <strong>{{ activeProject?.name || 'this project' }}</strong>
+                    and <strong>everything inside it</strong>: all uploaded images
+                    (including the actual files in storage), every pin, draft,
+                    schedule and posted item, all boards, the entire CSV-export
+                    history, AI templates and this project's settings.
+                    <strong>This cannot be undone.</strong>
+                    Your account and any other projects are not affected.
+                  </p>
+                </div>
+              </div>
+
+              <div v-if="onlyOneProject" class="danger-zone__locked">
+                You can't delete your only project. Create another project from the
+                sidebar switcher first.
+              </div>
+
+              <div v-else class="danger-zone__confirm">
+                <label class="danger-zone__label" for="project-delete-confirm">
+                  Type the project name
+                  <strong>{{ activeProject?.name }}</strong> to confirm
+                </label>
+                <input
+                  id="project-delete-confirm"
+                  v-model="projectDeleteConfirm"
+                  class="settings-field__input"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  :placeholder="activeProject?.name"
+                  :disabled="projectDeleting"
+                />
+                <button
+                  type="button"
+                  class="settings-btn settings-btn--danger"
+                  :disabled="!canDeleteProject"
+                  @click="handleDeleteProject"
+                >
+                  <svg v-if="projectDeleting" class="danger-zone__spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                  <span>{{ projectDeleting ? 'Deleting…' : 'Delete project' }}</span>
+                </button>
+                <p v-if="projectDeleteError" class="settings-card__error">{{ projectDeleteError }}</p>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -665,6 +855,11 @@ const sections = [
     label: 'Pinterest Import',
     icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11V3M5 6l3-3 3 3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>`,
   },
+  {
+    id: 'project',
+    label: 'Project',
+    icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5A1.5 1.5 0 013.5 4h3l1.5 1.5h4.5A1.5 1.5 0 0114 7v4.5A1.5 1.5 0 0112.5 13h-9A1.5 1.5 0 012 11.5z"/></svg>`,
+  },
 ]
 
 const activeSection = ref('boards')
@@ -679,6 +874,9 @@ const {
   deleteBoard,
   chipStyleForName,
 } = usePinterestBoards()
+
+// Reloaded after an analytics import so the AI account brief stays in sync.
+const { load: loadProjectMeta } = useMetadataProject()
 
 const newName = ref('')
 const newColor = ref(null)
@@ -973,9 +1171,195 @@ async function createNewTpl() {
   }
 }
 
+// ── Pinterest analytics import ────────────────────────────────────────────────
+const MAX_CSV_BYTES = 5 * 1024 * 1024
+
+const csvFileInput = ref(null)
+const dragOver     = ref(false)
+const pasteMode    = ref(false)
+const pasteBuffer  = ref('')
+
+const csvText      = ref('')
+const fileName     = ref('')
+const fileBytes    = ref(0)
+
+const analyzing    = ref(false)
+const analysis     = ref(null)
+const analyzeError = ref('')
+const showAllBoards = ref(false)
+const includeSystem = ref(false)
+
+const importing    = ref(false)
+const importResult = ref(null)
+const importError  = ref('')
+
+const sizeLabel = computed(() => {
+  if (!fileBytes.value) return `${csvText.value.length.toLocaleString()} chars`
+  const kb = fileBytes.value / 1024
+  return kb < 1024 ? `${Math.round(kb)} KB` : `${(kb / 1024).toFixed(1)} MB`
+})
+
+function readFile(file) {
+  analyzeError.value = ''
+  if (!file) return
+  const nameOk = /\.(csv|txt)$/i.test(file.name) || /text\/(csv|plain)/.test(file.type)
+  if (!nameOk) { analyzeError.value = 'Please choose a .csv file exported from Pinterest.'; csvText.value = ''; return }
+  if (file.size > MAX_CSV_BYTES) { analyzeError.value = 'File is larger than 5 MB.'; csvText.value = ''; return }
+  const reader = new FileReader()
+  reader.onload = () => {
+    csvText.value = String(reader.result ?? '')
+    fileName.value = file.name
+    fileBytes.value = file.size
+    analyze()
+  }
+  reader.onerror = () => { analyzeError.value = 'Could not read the file.' }
+  reader.readAsText(file)
+}
+
+function onFilePicked(e) {
+  readFile(e.target.files?.[0])
+  e.target.value = '' // allow re-selecting the same file
+}
+
+function onDrop(e) {
+  dragOver.value = false
+  readFile(e.dataTransfer?.files?.[0])
+}
+
+function usePastedText() {
+  csvText.value = pasteBuffer.value
+  fileName.value = ''
+  fileBytes.value = 0
+  analyze()
+}
+
+async function analyze() {
+  if (!csvText.value.trim()) return
+  analyzing.value = true
+  analyzeError.value = ''
+  analysis.value = null
+  importResult.value = null
+  importError.value = ''
+  showAllBoards.value = false
+  try {
+    analysis.value = await $fetch('/api/pinterest/import-analytics', {
+      method: 'POST',
+      body: { csv: csvText.value, dryRun: true, includeSystemBoards: includeSystem.value },
+    })
+  } catch (e) {
+    analyzeError.value = e?.data?.statusMessage ?? e?.message ?? 'Could not read this CSV'
+  } finally {
+    analyzing.value = false
+  }
+}
+
+async function runImport() {
+  if (!analysis.value) return
+  importing.value = true
+  importError.value = ''
+  try {
+    importResult.value = await $fetch('/api/pinterest/import-analytics', {
+      method: 'POST',
+      body: { csv: csvText.value, includeSystemBoards: includeSystem.value },
+    })
+    // Refresh the Boards list + the AI account brief so both reflect the import.
+    await Promise.all([loadBoards(true), loadProjectMeta(true)])
+  } catch (e) {
+    importError.value = e?.data?.statusMessage ?? e?.message ?? 'Import failed'
+  } finally {
+    importing.value = false
+  }
+}
+
+function resetImport() {
+  csvText.value = ''
+  fileName.value = ''
+  fileBytes.value = 0
+  pasteBuffer.value = ''
+  pasteMode.value = false
+  analysis.value = null
+  analyzeError.value = ''
+  importResult.value = null
+  importError.value = ''
+  showAllBoards.value = false
+}
+
+// ── Project rename + delete ───────────────────────────────────────────────────
+const {
+  projects,
+  activeProject,
+  load: loadProjects,
+  renameProject,
+  deleteProject,
+} = useMetadataProject()
+const projectNameDraft = ref('')
+const projectSaving = ref(false)
+const projectRenameError = ref('')
+const projectRenameSaved = ref(false)
+
+const projectDeleteConfirm = ref('')
+const projectDeleting = ref(false)
+const projectDeleteError = ref('')
+
+// The server refuses to delete a user's only project; reflect that in the UI.
+const onlyOneProject = computed(() => (projects.value?.length ?? 0) <= 1)
+
+const canDeleteProject = computed(() =>
+  !!activeProject.value
+  && !onlyOneProject.value
+  && projectDeleteConfirm.value === activeProject.value.name
+  && !projectDeleting.value,
+)
+
+async function handleDeleteProject() {
+  if (!canDeleteProject.value) return
+  projectDeleting.value = true
+  projectDeleteError.value = ''
+  try {
+    // deleteProject() removes it server-side, then full-reloads into the
+    // user's next project (it's always the active one here), so there's
+    // nothing to clean up on success.
+    await deleteProject(activeProject.value.id)
+  } catch (e) {
+    projectDeleteError.value = e?.data?.statusMessage ?? e?.message ?? 'Could not delete the project.'
+    projectDeleting.value = false
+  }
+}
+
+// Seed the field from the active project once it's known. The `!draft` guard
+// keeps anything the user has already typed from being clobbered by a refresh.
+watch(activeProject, (p) => {
+  if (p && !projectNameDraft.value) projectNameDraft.value = p.name
+}, { immediate: true })
+
+// Any edit clears the prior result/error so feedback always matches the field.
+watch(projectNameDraft, () => {
+  projectRenameSaved.value = false
+  projectRenameError.value = ''
+})
+
+const canSaveProjectName = computed(() => {
+  const n = projectNameDraft.value.trim()
+  return !!activeProject.value && !!n && n !== activeProject.value.name && !projectSaving.value
+})
+
+async function handleRenameProject() {
+  if (!canSaveProjectName.value) return
+  projectSaving.value = true
+  projectRenameError.value = ''
+  try {
+    await renameProject(activeProject.value.id, projectNameDraft.value.trim())
+    projectRenameSaved.value = true
+  } catch (e) {
+    projectRenameError.value = e?.data?.statusMessage ?? e?.message ?? 'Could not rename the project.'
+  } finally {
+    projectSaving.value = false
+  }
+}
+
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(async () => {
-  await Promise.all([loadBoards(), loadSettings(), loadTemplates()])
+  await Promise.all([loadBoards(), loadSettings(), loadTemplates(), loadProjects()])
   syncDraftFromSettings()
 })
 
@@ -1141,6 +1525,36 @@ onMounted(() => {
     }
   }
 
+  &__board-tip {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: color-mix(in srgb, #{$color-accent} 6%, #fff);
+    border: 1px solid color-mix(in srgb, #{$color-accent} 22%, #fff);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 0 20px 12px;
+    font-size: 12.5px;
+    color: #374151;
+    line-height: 1.55;
+
+    svg { color: $color-accent; flex-shrink: 0; margin-top: 2px; }
+    strong { color: $color-primary; }
+  }
+
+  &__link-btn {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    color: $color-accent;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
   &__count {
     flex-shrink: 0;
     font-size: 11px;
@@ -1266,7 +1680,7 @@ onMounted(() => {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 
-  &:hover { background: #f3f4f6; }
+  &:hover:not(:disabled) { background: #f3f4f6; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 
   &--primary {
@@ -1292,7 +1706,108 @@ onMounted(() => {
       color: #b91c1c;
     }
   }
+
+  &--danger {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+    font-weight: 600;
+    align-self: flex-start;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+
+    // Hover: pop to a brighter, more saturated red with a red focus ring so
+    // the destructive action is clearly highlighted. Text stays white.
+    &:hover:not(:disabled) {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: #fff;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.28);
+    }
+
+    &:active:not(:disabled) { transform: translateY(1px); }
+
+    // Disabled: muted red on light red — clearly inactive but still readable
+    // (no white-on-grey). Overrides the base 0.5 opacity.
+    &:disabled {
+      background: #fae3e3;
+      border-color: #f3c9c9;
+      color: #c2554f;
+      opacity: 1;
+    }
+  }
 }
+
+// ── Project rename row ─────────────────────────────────────────────────────────
+.project-rename {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  max-width: 460px;
+
+  .settings-field__input { flex: 1; }
+  .settings-btn { flex-shrink: 0; height: 36px; }
+}
+
+// ── Danger zone ────────────────────────────────────────────────────────────────
+.danger-zone {
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef6f6;
+  padding: 18px;
+
+  &__head {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+
+    svg { color: #dc2626; flex-shrink: 0; margin-top: 1px; }
+  }
+
+  &__title {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #991b1b;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #7f1d1d;
+    max-width: 60ch;
+  }
+
+  &__confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #fecaca;
+    max-width: 320px;
+  }
+
+  &__label {
+    font-size: 12px;
+    color: #7f1d1d;
+
+    strong { font-weight: 700; letter-spacing: 0.04em; }
+  }
+
+  &__locked {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #fecaca;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #7f1d1d;
+  }
+
+  &__spin { animation: danger-zone-spin 0.8s linear infinite; }
+}
+
+@keyframes danger-zone-spin { to { transform: rotate(360deg); } }
 
 // ── Board rows ─────────────────────────────────────────────────────────────────
 .board-list {
@@ -1937,6 +2452,79 @@ onMounted(() => {
     color: #9ca3af;
     font-style: italic;
     margin-left: 4px;
+  }
+
+  // ── Functional bits ──────────────────────────────────────────────────────
+  &__file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &__dropzone--drag {
+    border-color: $color-accent;
+    background: color-mix(in srgb, #{$color-accent} 7%, #fff);
+  }
+
+  &__paste-toggle {
+    margin-top: 10px;
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-size: 12px;
+    color: #6b7280;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover { color: $color-accent; }
+  }
+
+  &__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f3f4f6;
+
+    span {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 3px 10px;
+
+      strong { color: $color-primary; }
+    }
+  }
+
+  &__board-tag {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #15803d;
+    background: #dcfce7;
+    border-radius: 999px;
+    padding: 2px 7px;
+  }
+
+  &__board-item--more { cursor: pointer; }
+
+  &__opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: #4b5563;
+    cursor: pointer;
+
+    input { accent-color: $color-accent; }
   }
 }
 </style>

@@ -1,6 +1,6 @@
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { filename, prompt, colors, additionalContext, options, boards, existingTitles } = body
+  const { filename, prompt, colors, additionalContext, accountContext, options, boards, existingTitles } = body
 
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
 
   const systemPrompt = `You are an SEO expert specializing in Pinterest marketing for digital wall art prints sold on platforms like Etsy or a personal shop.
 
-Your task: generate highly optimized Pinterest metadata (title + description) that maximizes search discoverability, click-through rate, and conversion.
+Your task: generate highly optimized Pinterest metadata (title + description) that maximizes search discoverability, click-through rate, and conversion.${accountContext?.trim() ? `\n\nACCOUNT PERFORMANCE CONTEXT (real data from this Pinterest account — use it to pick proven, high-traffic angles and keywords; do not contradict the image itself): ${accountContext.trim()}` : ''}
 
 Pinterest title rules:
 - Hard maximum: ${titleMax} characters. NEVER exceed this — the title will be saved exactly as you return it, no truncation.

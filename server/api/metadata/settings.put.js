@@ -1,5 +1,3 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 const ALLOWED = [
   'ai_max_title_length',
   'ai_max_description_length',
@@ -20,7 +18,9 @@ function isValidTimeZone(tz) {
 }
 
 export default defineEventHandler(async (event) => {
-  const client = serverSupabaseServiceRole(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
+  await ensureProjectSettings(event, projectId)
   const body = await readBody(event)
 
   const patch = {}
@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
   const { data, error } = await client
     .from('metadata_settings')
     .update(patch)
-    .eq('id', 1)
+    .eq('project_id', projectId)
     .select('ai_max_title_length, ai_max_description_length, ai_default_tone, ai_additional_instructions, ai_default_language, csv_timezone')
     .single()
 

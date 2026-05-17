@@ -1,7 +1,6 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 export default defineEventHandler(async (event) => {
-  const client = serverSupabaseServiceRole(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
   const { from, to } = getQuery(event)
 
   if (!from || !to) {
@@ -18,6 +17,7 @@ export default defineEventHandler(async (event) => {
       status,
       image!image_id(filename, thumbnail_url)
     `)
+    .eq('project_id', projectId)
     .gte('publish_date', `${from}T00:00:00`)
     .lte('publish_date', `${to}T23:59:59`)
     .order('publish_date', { ascending: true })

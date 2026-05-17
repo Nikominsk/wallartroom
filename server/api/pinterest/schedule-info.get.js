@@ -1,11 +1,11 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 export default defineEventHandler(async (event) => {
-  const client = serverSupabaseServiceRole(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
 
   const { data: maxRow, error: maxErr } = await client
     .from('pinterest_image')
     .select('publish_date')
+    .eq('project_id', projectId)
     .not('publish_date', 'is', null)
     .order('publish_date', { ascending: false })
     .limit(1)
@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
   const { data: dayRows, error: dayErr } = await client
     .from('pinterest_image')
     .select('publish_date')
+    .eq('project_id', projectId)
     .gte('publish_date', dayStart)
     .lte('publish_date', dayEnd)
     .order('publish_date', { ascending: true })

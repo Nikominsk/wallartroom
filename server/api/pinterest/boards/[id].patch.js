@@ -1,9 +1,8 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 const HEX = /^#[0-9a-fA-F]{6}$/
 
 export default defineEventHandler(async (event) => {
-  const client = serverSupabaseServiceRole(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
 
@@ -23,14 +22,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'No fields to update' })
   }
 
-  // If the name is changing, mirror it onto every pinterest_image.board reference
-  // so existing pins keep their board association.
+  // If the name is changing, mirror it onto every pinterest_image.board
+  // reference IN THIS PROJECT so existing pins keep their board association.
   let oldName
   if (patch.name !== undefined) {
     const { data: current, error: fetchErr } = await client
       .from('pinterest_board')
       .select('name')
       .eq('id', id)
+      .eq('project_id', projectId)
       .single()
     if (fetchErr || !current) throw createError({ statusCode: 404, statusMessage: 'Board not found' })
     oldName = current.name
@@ -40,11 +40,13 @@ export default defineEventHandler(async (event) => {
     .from('pinterest_board')
     .update(patch)
     .eq('id', id)
+    .eq('project_id', projectId)
     .select('id, name, color')
     .single()
 
   if (error) {
-    if (error.code === '23505') throw createError({ statusCode: 409, statusMessage: 'Board name already exists' })
+    if (error.code === '23505') throw createError({ statusCode: 409, statusMessage: 'Board name already exists in this project' })
+    if (error.code === 'PGRST116') throw createError({ statusCode: 404, statusMessage: 'Board not found' })
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
@@ -52,6 +54,7 @@ export default defineEventHandler(async (event) => {
     const { error: rebindErr } = await client
       .from('pinterest_image')
       .update({ board: patch.name })
+      .eq('project_id', projectId)
       .eq('board', oldName)
     if (rebindErr) throw createError({ statusCode: 500, statusMessage: rebindErr.message })
   }

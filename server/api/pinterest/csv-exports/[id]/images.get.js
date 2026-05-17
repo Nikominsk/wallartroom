@@ -1,14 +1,14 @@
-import { serverSupabaseServiceRole } from '#supabase/server'
-
 export default defineEventHandler(async (event) => {
-  const client = serverSupabaseServiceRole(event)
+  const { projectId } = await requireMetadataProject(event)
+  const client = serverSupabaseAdmin(event)
   const id = getRouterParam(event, 'id')
 
-  // Fetch export record to get image_ids
+  // Fetch export record (scoped to project) to get image_ids
   const { data: exportRow, error: exportErr } = await client
     .from('pinterest_csv_export')
     .select('image_ids')
     .eq('id', id)
+    .eq('project_id', projectId)
     .single()
 
   if (exportErr) throw createError({ statusCode: 404, statusMessage: 'Export not found' })
@@ -26,6 +26,7 @@ export default defineEventHandler(async (event) => {
       pinterest_image(*),
       adobe_image(*)
     `)
+    .eq('project_id', projectId)
     .in('id', imageIds)
     .order('created_at', { ascending: false })
 
