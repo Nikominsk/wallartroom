@@ -44,7 +44,8 @@
 
             <!-- Headline -->
             <h1 class="hero__title hero-enter" style="--enter-delay:80ms">
-              From raw images<br>
+              From raw<br>
+              images<br>
               to <em>published pins</em><br>
               in minutes.
             </h1>
@@ -52,7 +53,7 @@
             <!-- Lead -->
             <p class="hero__lead hero-enter" style="--enter-delay:160ms">
               Bulk uploads, AI optimization, board intelligence,
-              validation checks, and automated Pinterest workflows —
+              validation checks, and automated Pinterest workflows,
               without the manual chaos.
             </p>
 
@@ -99,7 +100,7 @@
               </div>
               <p class="hero__form-note" :class="{ 'hero__form-note--err': formError }">
                 <template v-if="formError">{{ formError }}</template>
-                <template v-else-if="submitted && alreadyJoined">Welcome back — we'll let you know.</template>
+                <template v-else-if="submitted && alreadyJoined">Welcome back. We'll let you know.</template>
                 <template v-else-if="submitted">We'll send one email when we open the doors.</template>
                 <template v-else>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="color:#e56b3a;vertical-align:-1px;margin-right:5px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
@@ -211,7 +212,7 @@
             <span class="kicker">My story</span>
             <h2>From a personal hack to a tool <em>anyone can use.</em></h2>
             <p class="story__lead">
-              WallArtRoom didn't start as a product — it started as my own
+              WallArtRoom didn't start as a product. It started as my own
               workflow, built to save myself hours every week.
             </p>
           </div>
@@ -229,7 +230,7 @@
               <span class="story__num">2</span>
               <div>
                 <strong>Then I wrote my own Python program.</strong>
-                It already automated around 75% of the workflow — the tedious,
+                It already automated around 75% of the workflow. The tedious,
                 repetitive parts I never wanted to do by hand.
               </div>
             </li>
@@ -253,7 +254,7 @@
               <span class="story__num">5</span>
               <div>
                 <strong>The goal: a platform anyone can use.</strong>
-                Easy to use, with a clean and intuitive interface — no scripts,
+                Easy to use, with a clean and intuitive interface. No scripts,
                 no setup, no technical background required.
               </div>
             </li>
@@ -357,7 +358,7 @@
           <div class="problem__head">
             <span class="kicker">The problem</span>
             <h2>Generic schedulers treat Pinterest like an afterthought.</h2>
-            <p>Buffer, Hootsuite, and Later are built for Twitter-era cross-posting. Pinterest needs board strategy, keyword depth, and link trust — not another queue.</p>
+            <p>Buffer, Hootsuite, and Later are built for Twitter-era cross-posting. Pinterest needs board strategy, keyword depth, and link trust. Not another queue.</p>
           </div>
 
           <div class="problem__grid">
@@ -381,7 +382,7 @@
           <div class="features__head">
             <span class="kicker">The Pinterest Revenue OS</span>
             <h2>Four layers that turn pins into <em>revenue.</em></h2>
-            <p>Not just posting — from upload to ROI, every step is Pinterest-first.</p>
+            <p>Not just posting. From upload to ROI, every step is Pinterest-first.</p>
           </div>
 
           <div class="features__list">
@@ -532,7 +533,7 @@ const FeatureBoardIntel = defineComponent({
         h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#fde68a,#f59e0b);' }),
         h('div', { class: 'vis__row-body' }, [
           h('div', { class: 'vis__type-line vis__type-line--strong' }, 'Coastal Prints'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Relevance: 94% — topical match + keyword overlap'),
+          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Relevance: 94%. Topical match + keyword overlap'),
         ]),
         h('span', { class: 'vis__chip vis__chip--ai' }, '94%'),
       ]),
@@ -540,7 +541,7 @@ const FeatureBoardIntel = defineComponent({
         h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#bbf7d0,#22c55e);' }),
         h('div', { class: 'vis__row-body' }, [
           h('div', { class: 'vis__type-line vis__type-line--strong' }, 'Minimalist Home'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Relevance: 71% — partial keyword match'),
+          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Relevance: 71%. Partial keyword match'),
         ]),
         h('span', { class: 'vis__chip vis__chip--gen' }, '71%'),
       ]),
@@ -548,7 +549,7 @@ const FeatureBoardIntel = defineComponent({
         h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#fecaca,#ef4444);' }),
         h('div', { class: 'vis__row-body' }, [
           h('div', { class: 'vis__type-line vis__type-line--strong' }, 'DIY Projects'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Low relevance — board health: critical (3 pins)'),
+          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Low relevance. Board health: critical (3 pins)'),
         ]),
         h('span', { class: 'vis__chip vis__chip--pending' }, '22%'),
       ]),
@@ -635,7 +636,7 @@ const FeatureCsv = defineComponent({
 })
 
 useHead({
-  title: 'WallArtRoom — The Pinterest Revenue OS for Creators & Shops',
+  title: 'WallArtRoom. The Pinterest Revenue OS for Creators & Shops',
   meta: [
     { name: 'description', content: 'Not another scheduler. WallArtRoom is a Pinterest Revenue OS with Board Intelligence, Duplicate Guard, Pinterest-specific AI, and validated CSV exports. Built for creators who want traffic and sales, not vanity metrics.' },
     { name: 'theme-color', content: '#1a1714' },
@@ -755,7 +756,7 @@ const differentiators = [
 const painPoints = [
   {
     title: 'Wrong board = invisible pin',
-    body: 'Pinterest ranks pins by board relevance. A misplaced pin gets zero distribution — and generic tools never warn you.',
+    body: 'Pinterest ranks pins by board relevance. A misplaced pin gets zero distribution, and generic tools never warn you.',
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>`,
   },
   {
@@ -765,7 +766,7 @@ const painPoints = [
   },
   {
     title: 'No duplicate or freshness detection',
-    body: "Pinterest penalizes repetitive content. Other tools let you repost duplicate pin titles without a warning — and never tell you when pins go stale and lose reach.",
+    body: "Pinterest penalizes repetitive content. Other tools let you repost duplicate pin titles without a warning, and never tell you when pins go stale and lose reach.",
     icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M13 7h4v4"/></svg>`,
   },
 ]
@@ -782,25 +783,25 @@ const vsRows = [
 // ── Features ──────────────────────────────────────────────────────────────
 const featureList = [
   {
-    title: 'Board Intelligence — know where every pin belongs',
+    title: 'Board Intelligence. Know where every pin belongs',
     body: 'AI analyzes your pin content against your boards and tells you exactly which one will get the best distribution. Board health scores flag dead boards before they hurt you.',
     bullets: ['Relevance score per board', 'Board health monitoring', 'Dead-board warnings', 'Auto-suggest for bulk uploads'],
     visual: FeatureBoardIntel,
   },
   {
-    title: 'Duplicate & Freshness Guard — protect your reach',
+    title: 'Duplicate & Freshness Guard. Protect your reach',
     body: "Pinterest penalizes duplicate content. Our guard scans your entire workspace for near-duplicate titles and flags stale pins that should be refreshed with new variants.",
     bullets: ['Title similarity detection (92% match)', 'Freshness warnings (90+ days)', 'Variant suggestions', 'Spam-flag prevention'],
     visual: FeatureDuplicateGuard,
   },
   {
     title: 'Bulk operations with safety rails',
-    body: "Change boards, URLs, UTM presets, and publish dates across hundreds of pins. With validation that catches errors before they go live — not after.",
+    body: "Change boards, URLs, UTM presets, and publish dates across hundreds of pins. With validation that catches errors before they go live, not after.",
     bullets: ['Selective field updates', 'UTM preset bulk-apply', 'Board Intelligence in bulk', 'Undo until you save'],
     visual: FeatureBulk,
   },
   {
-    title: 'CSV Studio — validated export, dual publish',
+    title: 'CSV Studio. Validated export, dual publish',
     body: "Not just export. Full validation before download: link health, duplicate checks. Then choose: publish directly via API or export a Pinterest-ready CSV that imports cleanly the first time.",
     bullets: ['Pre-export validation', 'Dual mode: API direct or CSV', 'Pinterest-exact format', 'Export history with audit trail'],
     visual: FeatureCsv,
@@ -813,7 +814,7 @@ const steps = [
   { title: 'Upload & generate', body: 'Drop your images. AI writes Pinterest-optimized titles, descriptions, and keyword sets. Board Intelligence picks the best board.' },
   { title: 'Validate & optimize', body: 'Duplicate Guard flags near-identical titles and stale pins. Board Intelligence confirms the best placement. Fix issues before they go live.' },
   { title: 'Publish with confidence', body: 'Schedule directly via API or export a validated CSV. UTM presets auto-attach so every click is attributed.' },
-  { title: 'Track & refresh', body: 'See which boards perform. Get freshness alerts on aging pins. Create variants to keep reach growing — not decaying.' },
+  { title: 'Track & refresh', body: 'See which boards perform. Get freshness alerts on aging pins. Create variants to keep reach growing, not decaying.' },
 ]
 
 
@@ -863,6 +864,12 @@ $gold:  #c5a059;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  // Belt-and-braces against horizontal scroll on phones: child SVG/figure
+  // panels are wider than 320px viewports and can leak past their grids
+  // when box-sizing is content-box. This stops it at the page boundary.
+  overflow-x: clip;
+
+  *, *::before, *::after { box-sizing: border-box; }
 }
 
 @keyframes heroEnter {
@@ -1069,10 +1076,13 @@ h2 {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 32px;
+  // Vertical padding guarantees clearance: the eyebrow can't touch
+  // the fixed nav on short viewports (laptops, dev-tools open) and
+  // the feature pills can't sit flush with the section bottom edge
+  // when justify-content: center has nothing to push against.
+  padding: 132px 32px 96px;
   overflow: hidden;
   isolation: isolate;
-  padding-top: 77px;
 
   // Warm editorial backdrop: a peach bloom behind the laptop, a soft
   // cream lift behind the headline, over a diagonal cream-to-sand base.
@@ -1219,10 +1229,13 @@ h2 {
   // Headline
   &__title {
     margin: 0 0 22px;
-    font-size: clamp(46px, 6.6vw, 88px);
+    // 4-line break pattern is taller than the old 3-line, so the
+    // clamp ceiling drops a notch — keeps the feature pills visible
+    // above the fold on standard laptop viewports.
+    font-size: clamp(42px, 5.6vw, 72px);
     font-weight: 800;
     letter-spacing: -0.045em;
-    line-height: 1.03;
+    line-height: 1.04;
     color: $ink-1;
     em {
       position: relative;
@@ -1751,6 +1764,8 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 :deep(.vis__panel) {
@@ -2047,12 +2062,12 @@ h2 {
 
   &__input {
     flex: 1; min-width: 0; border: 0; background: transparent;
-    padding: 0 14px; font: inherit; font-size: 15px; color: #fff; outline: 0;
+    padding: 0 14px; height: 48px; font: inherit; font-size: 15px; color: #fff; outline: 0;
     &::placeholder { color: rgba(255, 255, 255, 0.45); }
   }
 
   &__btn {
-    padding: 12px 22px; border: 0; background: $color-accent; color: #fff;
+    padding: 0 22px; height: 48px; border: 0; background: $color-accent; color: #fff;
     border-radius: 9px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
     transition: background 0.15s, transform 0.15s;
     &:hover:not(:disabled) { background: #ff8451; transform: translateY(-1px); }
@@ -2085,37 +2100,72 @@ h2 {
 }
 
 @media (max-width: 1024px) {
-  // Tablet (incl. iPad portrait & landscape): clean stacked hero, copy
-  // first then laptop. Extra top padding clears the now-fixed header.
+  // Tablet (incl. iPad portrait & landscape): the laptop becomes a
+  // soft right-bleed backdrop instead of a stacked image. The copy
+  // sits in the left half with breathing room top and bottom; the
+  // floating notification cards are hidden so the scene reads as a
+  // calm editorial photo, not a busy mockup.
   .hero {
+    position: relative;
     min-height: auto;
     display: block;
-    padding: 104px 32px 120px;
+    padding: 148px 36px 140px;
+    overflow: hidden;
   }
-  .hero__inner { grid-template-columns: 1fr; gap: 44px; }
-  .hero__copy { max-width: 640px; }
-  // Back to a normal stacked image below the copy on tablet/phone.
+  .hero__inner {
+    grid-template-columns: 1fr;
+    gap: 44px;
+    position: relative;
+    z-index: 3;
+    max-width: 760px;
+  }
+  .hero__copy { max-width: 600px; }
+
+  // Backdrop laptop — fills the right side of the hero as a tall
+  // vertical column, anchored top-to-bottom, bleeding off the right
+  // edge. A horizontal mask fades it to transparent on the left so
+  // the copy has clean space to breathe in.
   .hero__preview {
-    position: static;
-    inset: auto;
-    max-width: 640px;
-    margin: 16px auto 0;
-    pointer-events: auto;
+    position: absolute;
+    inset: 0;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    z-index: 1;
+    pointer-events: none;
   }
   .hero__img {
-    width: 100%;
-    height: auto;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: auto;
+    height: 100%;
+    width: auto;
+    max-width: none;
     max-height: none;
-    transform: none;
-    -webkit-mask-image:
-      linear-gradient(to right, transparent 0%, #000 11%, #000 100%),
-      linear-gradient(to bottom, #000 0%, #000 74%, transparent 99%);
-    -webkit-mask-composite: source-in;
-    mask-image:
-      linear-gradient(to right, transparent 0%, #000 11%, #000 100%),
-      linear-gradient(to bottom, #000 0%, #000 74%, transparent 99%);
-    mask-composite: intersect;
+    transform: translateX(18%);
+    opacity: 0.32;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      transparent 18%,
+      rgba(0, 0, 0, 0.55) 42%,
+      #000 75%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      transparent 18%,
+      rgba(0, 0, 0, 0.55) 42%,
+      #000 75%
+    );
   }
+  .hero__float { display: none; }
+  // Less aggressive cream fade so the laptop backdrop doesn't get
+  // chopped by the section transition.
+  .hero::after { height: 200px; }
+
   .hero__feat-cards { max-width: 600px; }
 
   .feature, .feature--reverse { grid-template-columns: 1fr; direction: ltr; gap: 40px; }
@@ -2133,47 +2183,145 @@ h2 {
   .nav__links { display: none; }
   .nav__cta { padding: 9px 18px; font-size: 13px; }
 
-  // Phone hero: clean single column — copy first, laptop below. The
-  // hero grows with its content instead of clipping.
+  // Phone hero: the laptop becomes a soft backdrop bleeding from the
+  // bottom-right edge, not a stacked image with floating cards. Copy
+  // and CTA stay the focal element; the photo is atmosphere.
   .hero {
+    position: relative;
     min-height: auto;
-    padding: 92px 22px 80px;
+    padding: 96px 22px 88px;
     display: block;
+    overflow: hidden;
   }
-  .hero__inner { grid-template-columns: 1fr; gap: 40px; }
+  .hero__inner { grid-template-columns: 1fr; gap: 32px; position: relative; z-index: 3; }
   .hero__copy { max-width: 100%; }
 
   .hero__title { font-size: clamp(40px, 11vw, 56px); }
   .hero__title em { white-space: normal; }
   .hero__lead { font-size: 16px; }
 
-  // Form stacks vertically on phones.
+  // On phones the input is detached from the button: the input owns
+  // its own bordered "card" so it reads as a real field, and the
+  // button sits as a clearly separate CTA underneath. The shared pill
+  // works on desktop but feels cramped on a 360px screen.
   .hero__form-row {
     flex-direction: column;
-    gap: 8px;
-    padding: 8px;
-    border-radius: 16px;
+    gap: 12px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    &:focus-within { border: 0; box-shadow: none; }
   }
-  .hero__input { width: 100%; height: 50px; padding: 0 14px; }
+  // Input matches the warm paper card aesthetic used in eyebrows and
+  // feature pills: warm off-white, peach border, soft warm shadow,
+  // generous vertical padding (no fixed height) for a breathable feel.
+  .hero__input {
+    width: 100%;
+    height: auto;
+    padding: 22px 20px;
+    background: #fffaf3;
+    border: 1.5px solid rgba(255, 182, 145, 0.6);
+    border-radius: 16px;
+    font-size: 16.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: $ink-1;
+    box-shadow:
+      0 14px 36px -18px rgba(150, 90, 50, 0.28),
+      0 2px 6px -3px rgba(150, 90, 50, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    &::placeholder { color: $ink-4; font-weight: 400; }
+    &:focus {
+      border-color: $color-accent;
+      box-shadow:
+        0 0 0 3px rgba(229, 107, 58, 0.16),
+        0 14px 36px -18px rgba(150, 90, 50, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+  }
   .hero__btn {
     width: 100%;
     justify-content: center;
     height: 50px;
-    border-radius: 11px;
+    border-radius: 14px;
+    font-size: 14.5px;
   }
   .hero__feat-cards { grid-template-columns: repeat(2, 1fr); }
 
-  // Laptop sits below the copy; trim the desktop right-bleed and lift
-  // the over-busy floating cards down to just the two key ones.
+  // Laptop becomes a soft backdrop spanning the whole hero. The image
+  // itself is the only thing faded; the floating notification cards
+  // sit at full opacity in their natural positions so the "scene"
+  // feeling carries over from desktop.
   .hero__preview {
-    margin: 8px auto 0;
-    max-width: 540px;
+    position: absolute;
+    inset: 0;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    z-index: 1;
+    pointer-events: none;
   }
-  .hero__float { padding: 8px 11px; gap: 8px; border-radius: 12px; }
+  .hero__img {
+    position: absolute;
+    right: -32%;
+    bottom: -6%;
+    width: 132%;
+    height: auto;
+    max-height: none;
+    transform: none;
+    opacity: 0.38;
+    -webkit-mask-image: radial-gradient(
+      120% 100% at 100% 100%,
+      #000 0%,
+      rgba(0, 0, 0, 0.65) 45%,
+      transparent 78%
+    );
+    mask-image: radial-gradient(
+      120% 100% at 100% 100%,
+      #000 0%,
+      rgba(0, 0, 0, 0.65) 45%,
+      transparent 78%
+    );
+  }
+  // Keep two floating cards visible — one near the top (over the
+  // headline area), one near the bottom (over the laptop fade). They
+  // sit ABOVE the copy (z:4) so they aren't lost behind the headline,
+  // scaled down to feel proportional to the phone viewport.
+  .hero__float {
+    position: absolute;
+    z-index: 4;
+    transform: scale(0.78);
+    transform-origin: top right;
+    padding: 9px 12px;
+    gap: 8px;
+    border-radius: 12px;
+    animation: none;
+    opacity: 1;
+  }
   .hero__float-icon { width: 26px; height: 26px; }
   .hero__float--stat .hero__float-body strong { font-size: 18px; }
+  // "96 Pins Ready" — top-right, near the eyebrow line
+  .hero__float--tl {
+    top: 92px;
+    right: 14px;
+    left: auto;
+    bottom: auto;
+  }
+  // "Pinterest validation passed" — over the laptop's faded zone
+  .hero__float--tr {
+    top: auto;
+    right: auto;
+    bottom: 56px;
+    left: 14px;
+    transform-origin: bottom left;
+  }
   .hero__float--br1,
   .hero__float--br2 { display: none; }
+  // Soften the hero fade-out so the laptop backdrop blends with the
+  // section below it (the cream wash was clipping the image edge).
+  .hero::after { height: 160px; }
 
   .problem, .features, .how, .story, .cta, .usecases { padding: 80px 0 70px; }
   .problem__grid { grid-template-columns: 1fr; }
@@ -2189,11 +2337,64 @@ h2 {
   .versus__cell--them::before { content: 'Others: '; font-weight: 600; }
   .versus__cell--us::before { content: 'WallArtRoom: '; font-weight: 600; }
 
-  .diff__inner { grid-template-columns: repeat(2, 1fr); }
+  // Dark differentiator strip: stack vertically with each number/label
+  // pair centered so the three items align equally instead of one
+  // dangling on a second row.
+  .diff { padding: 32px 0; }
+  .diff__inner {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .diff__item { text-align: center; }
+  .diff__number { font-size: 30px; line-height: 1; }
+  .diff__label { font-size: 13px; line-height: 1.4; }
+
   .usecases__grid { grid-template-columns: 1fr; }
 
-  .cta__form { flex-direction: column; }
-  .cta__btn { width: 100%; }
+  // Mirror the hero treatment: detach the input from the button so
+  // each gets its own surface and the input reads as a real field.
+  .cta__form {
+    flex-direction: column;
+    gap: 12px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    &:focus-within { border: 0; box-shadow: none; }
+  }
+  .cta__input {
+    width: 100%;
+    height: auto;
+    padding: 22px 20px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    font-size: 16.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #fff;
+    &:focus {
+      border-color: $color-accent;
+      box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18);
+    }
+  }
+  .cta__btn { width: 100%; height: 50px; border-radius: 12px; font-size: 14.5px; }
   .footer__inner { flex-direction: column; text-align: center; }
+
+  // Stop figure panels (Board Intelligence, CSV Studio, etc.) from
+  // forcing a horizontal scroll. The inner mock is laid out around a
+  // 380px panel; on a 360px screen its padding pushes past the viewport.
+  :deep(.vis) {
+    padding: 20px;
+    min-height: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  :deep(.vis__panel) {
+    max-width: 100%;
+    width: 100%;
+  }
 }
 </style>

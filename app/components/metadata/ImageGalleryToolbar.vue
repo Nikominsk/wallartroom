@@ -108,6 +108,17 @@
             Scan Duplicates
           </button>
           <button
+            v-if="selectedCount > 0"
+            class="gallery-toolbar__menu-item"
+            @click="emit('transfer'); moreOpen = false"
+          >
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 6a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6Z" />
+              <path d="M9 11h6M12 8l3 3-3 3" />
+            </svg>
+            Move / Copy {{ selectedCount }} to project…
+          </button>
+          <button
             v-if="invalidCount > 0"
             class="gallery-toolbar__menu-item gallery-toolbar__menu-item--warn"
             @click="emit('show-invalid'); moreOpen = false"
@@ -285,6 +296,7 @@ const emit = defineEmits([
   'update:mode',
   'check-links',
   'scan-duplicates',
+  'transfer',
 ])
 
 const showFilters = ref(false)
@@ -293,7 +305,8 @@ const moreEl = ref(null)
 
 const hasAnyMenuItem = computed(() =>
   props.mode === 'pinterest' ||
-  props.invalidCount > 0
+  props.invalidCount > 0 ||
+  props.selectedCount > 0
 )
 
 function updateFilter(key, val) {

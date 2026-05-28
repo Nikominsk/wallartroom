@@ -10,6 +10,7 @@ import {
   PutObjectCommand,
   DeleteObjectsCommand,
   ListObjectsV2Command,
+  CopyObjectCommand,
 } from '@aws-sdk/client-s3'
 
 let _client: S3Client | null = null
@@ -106,6 +107,36 @@ export function buildPinterestUserKey(opts: {
   const userSeg = sanitizeKeySegment(opts.userId)
   const projectSeg = sanitizeKeySegment(opts.projectId)
   return `${prefix}/${userSeg}/${projectSeg}/${yyyy}${mm}${dd}-${uuid}.${opts.ext}`
+}
+
+// Server-side copy of an existing object to a new key. Used when an image is
+// "copied" into another project — each project needs its own R2 object so that
+// deleting one project's image doesn't break the other's thumbnail (the delete
+// path derives the key from public_url and removes it from the bucket).
+export async function copyR2Object(opts: {
+  sourceKey: string
+  destKey:   string
+  contentType?: string
+}): Promise<R2UploadResult> {
+  const bucket = process.env.R2_BUCKET
+  const publicBase = process.env.R2_PUBLIC_BASE_URL
+  if (!bucket) throw new Error('R2_BUCKET is not configured')
+  if (!publicBase) throw new Error('R2_PUBLIC_BASE_URL is not configured')
+
+  const client = getR2Client()
+  // CopySource is `bucket/key`, URL-encoded. Our keys are ASCII-safe but we
+  // still encodeURI just in case a future path adds non-ASCII segments.
+  const copySource = encodeURI(`${bucket}/${opts.sourceKey}`)
+  await client.send(new CopyObjectCommand({
+    Bucket: bucket,
+    Key: opts.destKey,
+    CopySource: copySource,
+    ...(opts.contentType ? { ContentType: opts.contentType, MetadataDirective: 'REPLACE' } : {}),
+  }))
+
+  const cleanBase = publicBase.replace(/\/+$/, '')
+  const cleanKey = opts.destKey.replace(/^\/+/, '')
+  return { key: opts.destKey, publicUrl: `${cleanBase}/${cleanKey}` }
 }
 
 // Recover the object key from a stored `image.public_url`. Upload writes the

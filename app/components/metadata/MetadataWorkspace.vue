@@ -69,6 +69,7 @@
         @update:mode="setMode"
         @check-links="handleCheckLinks"
         @scan-duplicates="handleScanDuplicates"
+        @transfer="openTransferModal"
       />
     </header>
 
@@ -682,6 +683,19 @@
       </div>
     </div>
 
+    <!-- ── Move / Copy to another project ─────────────────────────────────── -->
+    <div v-if="showTransferModal" class="meta-page__overlay" @click.self="closeTransferModal">
+      <MetadataTransferModal
+        :count="selectedCount"
+        :projects="allProjects"
+        :active-project-id="activeProjectId"
+        :busy="transferBusy"
+        :err-msg="transferError"
+        @close="closeTransferModal"
+        @confirm="handleTransferConfirm"
+      />
+    </div>
+
     <!-- ── Image lightbox popup ───────────────────────────────────────────── -->
     <Teleport to="body">
       <div
@@ -726,7 +740,7 @@ const {
   images, pending, error,
   saving, saveError,
   loadImages, saveImage, saveImages, invalidateCache,
-  deleteImage, deleteImages, updateImageUrl,
+  deleteImage, deleteImages, updateImageUrl, transferImages,
 } = useMetadataImages()
 
 onMounted(() => { loadImages(); loadBoards(); loadProjectMeta() })
@@ -738,8 +752,14 @@ const { bump: bumpCsvBadge } = useCsvExportBadge()
 // ── Pinterest boards ──────────────────────────────────────────────────────────
 const { boards, loading: boardsLoading, loadBoards, addBoard, deleteBoard, chipStyleForName } = usePinterestBoards()
 // Account-performance brief (from the imported Pinterest analytics CSV) — fed
-// to the AI so generated copy leans into proven, high-traffic themes.
-const { analyticsBrief, load: loadProjectMeta } = useMetadataProject()
+// to the AI so generated copy leans into proven, high-traffic themes. We also
+// pull `projects` / `activeProjectId` so the Move-or-Copy modal can populate
+// its destination dropdown without an extra fetch (the sidebar's
+// ProjectSwitcher already loads them).
+const {
+  analyticsBrief, load: loadProjectMeta,
+  projects: allProjects, activeProjectId,
+} = useMetadataProject()
 const showBoardsManager = ref(false)
 
 async function handleAddBoard(name) {
@@ -885,6 +905,56 @@ async function handleDeleteSelected() {
     pendingChanges.value = m
     if (activeId.value && ids.includes(activeId.value)) activeId.value = null
   } catch { /* error already surfaced via saveError */ }
+}
+
+// ── Move / Copy to another project ───────────────────────────────────────────
+const showTransferModal = ref(false)
+const transferBusy      = ref(false)
+const transferError     = ref('')
+
+async function openTransferModal() {
+  if (selectedCount.value === 0) return
+  transferError.value = ''
+  // Ensure the project list is populated (the switcher loads it on mount, but
+  // be defensive in case the modal is opened before that effect runs).
+  if (!(allProjects.value?.length)) {
+    try { await loadProjectMeta(true) } catch { /* surface via empty list */ }
+  }
+  showTransferModal.value = true
+}
+
+function closeTransferModal() {
+  if (transferBusy.value) return
+  showTransferModal.value = false
+  transferError.value = ''
+}
+
+async function handleTransferConfirm({ mode, targetProjectId }) {
+  const ids = [...selectedIds.value]
+  if (ids.length === 0 || !targetProjectId) return
+
+  transferBusy.value = true
+  transferError.value = ''
+  try {
+    const result = await transferImages(ids, targetProjectId, mode)
+    const movedIds = new Set(result?.movedIds ?? (mode === 'move' ? ids : []))
+
+    if (mode === 'move') {
+      // Drop any in-flight drafts for the rows that just left the project.
+      const m = new Map(pendingChanges.value)
+      for (const id of movedIds) m.delete(id)
+      pendingChanges.value = m
+      if (activeId.value && movedIds.has(activeId.value)) activeId.value = null
+      clearSelection()
+    }
+    // Copy mode: selection + cache stay intact (source rows are unchanged).
+
+    showTransferModal.value = false
+  } catch (e) {
+    transferError.value = e?.data?.statusMessage ?? e?.message ?? 'Transfer failed'
+  } finally {
+    transferBusy.value = false
+  }
 }
 
 function onUpdateFilter(key, val) {

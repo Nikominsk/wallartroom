@@ -1,11 +1,14 @@
 // Route guard. Three protected zones:
 //   /metadata/*  → any authenticated user (now multi-tenant: each user has
 //                  their own projects — see requireMetadataProject)
-//   /admin/*     → users with role='admin' in app_user
+//   /admin/*     → users with role='admin' OR the founder email
 //   /app/*       → any authenticated user
 //
-// /admin role check happens via /api/me (server-side, role-aware).
+// /admin gate is enforced both client-side (this middleware) and server-side
+// (every /api/admin/* endpoint re-checks).
 // All other routes (landing, /pricing, /gallery, /signup, /login) are public.
+
+const ADMIN_EMAIL = 'nniko.geuenich@gmail.com'
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const isMetadata = to.path.startsWith('/metadata')
@@ -26,7 +29,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (isAdmin) {
-    // Lazy server check — fast-fails on the dashboard if role≠admin.
+    // Founder email passes immediately even if app_user.role hasn't been
+    // promoted in the DB. Anyone else needs role='admin'.
+    if (user.value.email?.toLowerCase() === ADMIN_EMAIL) return
     if (import.meta.server) return
     try {
       const me = await $fetch<{ role?: string }>('/api/me')

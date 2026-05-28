@@ -143,6 +143,33 @@ export function useMetadataImages() {
     }
   }
 
+  // Move or copy a batch of images into another project owned by the same
+  // user. On `move`, the rows leave the active project so we strip them from
+  // the local cache; on `copy`, the source rows stay put — the new copies
+  // belong to the target project and only appear there after switching.
+  async function transferImages(ids, targetProjectId, mode = 'move') {
+    if (!ids?.length || !targetProjectId) return null
+    saving.value = true
+    saveError.value = null
+    try {
+      const result = await $fetch('/api/images/transfer', {
+        method: 'POST',
+        body: { ids, targetProjectId, mode },
+      })
+      if (mode === 'move') {
+        const idSet = new Set(result?.movedIds ?? ids)
+        images.value = images.value.filter(i => !idSet.has(i.id))
+        applyToCache(arr => arr.filter(i => !idSet.has(i.id)))
+      }
+      return result
+    } catch (e) {
+      saveError.value = e.data?.statusMessage ?? e.message ?? 'Transfer failed'
+      throw e
+    } finally {
+      saving.value = false
+    }
+  }
+
   async function updateImageUrl(id, { mediaUrl, thumbnailUrl } = {}) {
     saving.value = true
     saveError.value = null
@@ -173,5 +200,6 @@ export function useMetadataImages() {
     saving, saveError,
     loadImages, saveImage, saveImages, invalidateCache,
     deleteImage, deleteImages, updateImageUrl,
+    transferImages,
   }
 }
