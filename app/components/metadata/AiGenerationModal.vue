@@ -48,12 +48,16 @@
               {{ progress.successCount }} updated
             </span>
             <span class="ai-modal__stat ai-modal__stat--skip">{{ progress.skippedCount }} skipped</span>
-            <span v-if="progress.failedCount" class="ai-modal__stat ai-modal__stat--fail">{{ progress.failedCount }} failed</span>
+            <span v-if="progress.failedCount" class="ai-modal__stat ai-modal__stat--fail" :title="progress.lastError ?? ''">{{ progress.failedCount }} failed</span>
             <span
               v-if="progress.duplicateRetryCount"
               class="ai-modal__stat ai-modal__stat--retry"
               title="Titles returned as duplicates and re-generated"
             >{{ progress.duplicateRetryCount }} retried</span>
+          </div>
+
+          <div v-if="progress.lastError && progress.failedCount" class="ai-modal__error-banner">
+            {{ progress.lastError }}
           </div>
 
           <div class="ai-modal__progress-actions">
@@ -968,6 +972,17 @@ function handleClose() {
   &--skip  { color: #9ca3af; }
   &--fail  { color: #ef4444; }
   &--retry { color: #d97706; }
+}
+
+.ai-modal__error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  color: #991b1b;
+  margin-top: 10px;
+  line-height: 1.4;
 }
 
 .ai-modal__progress-actions {

@@ -4,15 +4,15 @@
 // The Checkout endpoint and the webhook both read from here, so we only ever
 // have to update three Stripe IDs in one place when prices change.
 
-import type { PlanTier } from './credits'
 import { PLAN_MONTHLY_CREDITS } from './credits'
 
 export type CreditPackId = 'pack_25' | 'pack_100' | 'pack_300'
+export type BillingPlan  = 'free' | 'pro' | 'starter' | 'plus' | 'studio'
 
 interface PlanRow {
-  plan:        PlanTier
-  priceIdEnv:  string         // env var name (read at request time so dev/prod can differ)
-  monthlyCredits: number      // mirrors PLAN_MONTHLY_CREDITS
+  plan:          BillingPlan
+  priceIdEnv:    string      // env var name (read at request time so dev/prod can differ)
+  monthlyCredits: number
 }
 
 interface PackRow {
@@ -22,9 +22,12 @@ interface PackRow {
   priceEur:    number          // for display only
 }
 
-// Plans — single paid tier
+// Plans
 const PLAN_ROWS: PlanRow[] = [
-  { plan: 'pro', priceIdEnv: 'pricePro', monthlyCredits: PLAN_MONTHLY_CREDITS.pro },
+  { plan: 'pro',     priceIdEnv: 'pricePro',     monthlyCredits: PLAN_MONTHLY_CREDITS.pro },
+  { plan: 'starter', priceIdEnv: 'priceStarter',  monthlyCredits: 0 },
+  { plan: 'plus',    priceIdEnv: 'pricePlus',     monthlyCredits: 0 },
+  { plan: 'studio',  priceIdEnv: 'priceStudio',   monthlyCredits: 0 },
 ]
 
 // Credit packs
@@ -41,7 +44,7 @@ function envPrice(field: keyof ReturnType<typeof useRuntimeConfig>['stripe']): s
   return (useRuntimeConfig().stripe as any)[field] as string
 }
 
-export function priceForPlan(plan: PlanTier): string {
+export function priceForPlan(plan: BillingPlan): string {
   if (plan === 'free') {
     throw createError({ statusCode: 400, statusMessage: 'Free plan has no Stripe price' })
   }
@@ -62,7 +65,7 @@ export function priceForPack(packId: CreditPackId): string {
 
 // Reverse lookup used by the webhook: a Stripe price id arrives, we need to
 // know which plan/pack it corresponds to.
-export function planFromPriceId(priceId: string): PlanTier | null {
+export function planFromPriceId(priceId: string): BillingPlan | null {
   for (const row of PLAN_ROWS) {
     if (envPrice(row.priceIdEnv as any) === priceId) return row.plan
   }

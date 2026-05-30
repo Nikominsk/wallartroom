@@ -104,7 +104,12 @@ Respond with a JSON object containing exactly two keys: "title" (string) and "de
       temperature: 0.8,
     }),
   }).catch((e) => {
-    throw createError({ statusCode: 502, statusMessage: e?.data?.error?.message ?? 'OpenAI API error' })
+    const msg =
+      e?.data?.error?.message ??
+      e?.data?.message ??
+      e?.message ??
+      JSON.stringify(e?.data ?? e ?? 'unknown')
+    throw createError({ statusCode: 502, statusMessage: `OpenAI: ${msg}` })
   })
 
   let parsed

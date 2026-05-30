@@ -12,6 +12,7 @@ import {
   ListObjectsV2Command,
   CopyObjectCommand,
 } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 let _client: S3Client | null = null
 
@@ -35,6 +36,23 @@ function getR2Client(): S3Client {
     credentials: { accessKeyId, secretAccessKey },
   })
   return _client
+}
+
+// Generate a presigned URL the browser can use to PUT a file directly to R2,
+// bypassing the Nuxt server for the actual file transfer.
+export async function generatePresignedPutUrl(opts: {
+  key:         string
+  contentType: string
+  expiresIn?:  number   // seconds, default 1 hour
+}): Promise<string> {
+  const bucket = process.env.R2_BUCKET
+  if (!bucket) throw new Error('R2_BUCKET is not configured')
+  const client = getR2Client()
+  return getSignedUrl(
+    client,
+    new PutObjectCommand({ Bucket: bucket, Key: opts.key, ContentType: opts.contentType }),
+    { expiresIn: opts.expiresIn ?? 3600 },
+  )
 }
 
 export interface R2UploadResult {

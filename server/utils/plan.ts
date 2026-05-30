@@ -1,21 +1,29 @@
 import type { H3Event } from 'h3'
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  FREE PLAN LIMITS  ── change these two numbers to adjust the free (testing)
-//  plan. They are the single source of truth; nothing else needs editing and no
-//  DB migration is required to change them.
+//  PLAN LIMITS — single source of truth for all plans.
 //
-//    imageUploads  — total images a free user may upload (lifetime).
-//    aiGenerations — total AI metadata generations a free user may run (lifetime).
+//  free:    lifetime counters (beta allowance, no reset)
+//  starter: 50 uploads / 200 AI gens per month  — $9.99/mo
+//  plus:    200 uploads / 1 000 AI gens per month — $19.99/mo
+//  studio:  1 500 uploads / 5 000 AI gens per month — $79.99/mo
 //
-//  Counters are per-user and increment-only (deleting images does NOT give quota
-//  back) so the free plan behaves like a trial allowance. Paid plans ("pro") are
-//  unlimited — see limitsForPlan().
+//  Paid-plan counters reset monthly via the Stripe subscription-renewed webhook.
+//  maxProjects controls how many metadata projects a user may create.
 // ═══════════════════════════════════════════════════════════════════════════════
+
 export const FREE_PLAN_LIMITS = {
   imageUploads:  200,
   aiGenerations: 500,
 } as const
+
+// Per-plan caps. Paid plans use monthly counters (reset each billing cycle).
+const PLAN_LIMITS: Record<string, { imageUploads: number; aiGenerations: number; maxProjects: number }> = {
+  free:    { imageUploads:   200, aiGenerations:   500, maxProjects:  1 },
+  starter: { imageUploads:    50, aiGenerations:   200, maxProjects:  1 },
+  plus:    { imageUploads:   200, aiGenerations: 1_000, maxProjects:  3 },
+  studio:  { imageUploads: 1_500, aiGenerations: 5_000, maxProjects: 10 },
+}
 
 export type UsageKind = keyof typeof FREE_PLAN_LIMITS // 'imageUploads' | 'aiGenerations'
 
@@ -26,11 +34,14 @@ export interface PlanUsage {
 
 const UNLIMITED = Number.POSITIVE_INFINITY
 
-// A user's caps depend on their plan. Only 'free' is capped; any paid plan is
-// unlimited. Kept here so per-tier paid caps are trivial to add later.
 export function limitsForPlan(plan: string): { imageUploads: number; aiGenerations: number } {
-  if (plan === 'free') return { ...FREE_PLAN_LIMITS }
-  return { imageUploads: UNLIMITED, aiGenerations: UNLIMITED }
+  const row = PLAN_LIMITS[plan]
+  if (!row) return { imageUploads: UNLIMITED, aiGenerations: UNLIMITED }
+  return { imageUploads: row.imageUploads, aiGenerations: row.aiGenerations }
+}
+
+export function maxProjectsForPlan(plan: string): number {
+  return PLAN_LIMITS[plan]?.maxProjects ?? UNLIMITED
 }
 
 export const isUnlimited = (n: number) => n === UNLIMITED
@@ -98,9 +109,9 @@ export async function assertQuota(event: H3Event, userId: string, kind: UsageKin
 
 export function quotaMessage(kind: UsageKind): string {
   if (kind === 'imageUploads') {
-    return `Free plan limit reached — you can upload up to ${FREE_PLAN_LIMITS.imageUploads} images. Upgrade to Pro for unlimited uploads.`
+    return `Upload limit reached for your current plan. Upgrade to a higher plan for more uploads.`
   }
-  return `Free plan limit reached — you can run up to ${FREE_PLAN_LIMITS.aiGenerations} AI generations. Upgrade to Pro for unlimited AI.`
+  return `AI generation limit reached for your current plan. Upgrade to a higher plan for more AI generations.`
 }
 
 // ─── Atomically add to the usage counters (creates the row on first use) ──────

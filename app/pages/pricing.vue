@@ -19,13 +19,7 @@
         <p>Not per-channel. Not per-seat. Three plans that grow with your Pinterest traffic. Cancel anytime.</p>
       </section>
 
-      <!-- Toggle -->
-      <div class="pp-toggle">
-        <button :class="{ active: !annual }" @click="annual = false">Monthly</button>
-        <button :class="{ active: annual }" @click="annual = true">
-          Annual <span class="pp-toggle-save">Save 20%</span>
-        </button>
-      </div>
+      <p class="pp-billing-note">Monthly billing · Cancel anytime</p>
 
       <!-- Checkout error toast -->
       <div v-if="checkoutErr" class="pp-error">{{ checkoutErr }}</div>
@@ -45,13 +39,10 @@
           </header>
 
           <div class="pp-price">
-            <span v-if="displayPrice(plan) > 0" class="pp-price-cur">€</span>
-            <span class="pp-price-num">{{ displayPrice(plan) === 0 ? 'Free' : displayPrice(plan) }}</span>
-            <span v-if="displayPrice(plan) > 0" class="pp-price-per">/mo</span>
+            <span v-if="plan.price > 0" class="pp-price-cur">$</span>
+            <span class="pp-price-num">{{ plan.price === 0 ? 'Free' : plan.price }}</span>
+            <span v-if="plan.price > 0" class="pp-price-per">/mo</span>
           </div>
-          <p v-if="annual && plan.price > 0" class="pp-billed">
-            Billed €{{ Math.round(plan.price * 0.8 * 12) }} / year
-          </p>
 
           <div class="pp-limits">
             <div v-for="l in plan.limits" :key="l" class="pp-limit">{{ l }}</div>
@@ -83,15 +74,15 @@
         <div class="pp-compare-table">
           <div class="pp-compare-row pp-compare-row--header">
             <div class="pp-compare-cell">Feature</div>
-            <div class="pp-compare-cell">Solo Traffic</div>
-            <div class="pp-compare-cell">Growth Commerce</div>
-            <div class="pp-compare-cell">Agency</div>
+            <div class="pp-compare-cell">Starter</div>
+            <div class="pp-compare-cell">Plus</div>
+            <div class="pp-compare-cell">Studio</div>
           </div>
           <div v-for="row in comparisonRows" :key="row.feature" class="pp-compare-row">
             <div class="pp-compare-cell pp-compare-cell--feature">{{ row.feature }}</div>
-            <div class="pp-compare-cell">{{ row.solo }}</div>
-            <div class="pp-compare-cell">{{ row.growth }}</div>
-            <div class="pp-compare-cell">{{ row.agency }}</div>
+            <div class="pp-compare-cell">{{ row.starter }}</div>
+            <div class="pp-compare-cell">{{ row.plus }}</div>
+            <div class="pp-compare-cell">{{ row.studio }}</div>
           </div>
         </div>
       </section>
@@ -121,7 +112,7 @@
 definePageMeta({ layout: false })
 
 interface Plan {
-  id: 'solo' | 'growth' | 'agency'
+  id: 'starter' | 'plus' | 'studio'
   name: string
   tagline: string
   price: number
@@ -130,86 +121,73 @@ interface Plan {
   features: string[]
 }
 
-const annual = ref(false)
-
-function displayPrice(plan: Plan) {
-  if (plan.price === 0) return 0
-  return annual.value ? Math.round(plan.price * 0.8) : plan.price
-}
-
 const plans: Plan[] = [
   {
-    id: 'solo',
-    name: 'Solo Traffic',
-    tagline: 'For bloggers, small shops, and side hustles.',
-    price: 19,
-    limits: ['1 Pinterest account', '1 domain / shop', '500 active pins / month'],
+    id: 'starter',
+    name: 'Starter',
+    tagline: 'Perfect for getting started with Pinterest.',
+    price: 9.99,
+    limits: ['50 image uploads / month', '200 AI generations / month', '1 project'],
     features: [
-      'CSV Studio with validation',
       'AI metadata generation',
-      'Bulk scheduling & editing',
-      'Link Health checks',
-      'UTM preset library',
-      'Export history & audit trail',
-      '14-day free trial',
-    ],
-  },
-  {
-    id: 'growth',
-    name: 'Growth Commerce',
-    tagline: 'For growing shops and creator brands.',
-    price: 49,
-    featured: true,
-    limits: ['3 Pinterest accounts', '3 domains / shops', '5,000 pins / month'],
-    features: [
       'Board Intelligence (AI)',
-      'Duplicate & Freshness Guard',
-      'Seasonal content calendar',
-      'Advanced analytics',
-      'Everything in Solo Traffic',
-      '14-day free trial',
+      'CSV export',
+      'Bulk editing',
+      'Pinterest scheduling',
+      'URL checker',
     ],
   },
   {
-    id: 'agency',
-    name: 'Agency',
-    tagline: 'For VAs, agencies, and multi-client teams.',
-    price: 99,
-    limits: ['10 Pinterest accounts', '10 client workspaces', 'Unlimited pins'],
+    id: 'plus',
+    name: 'Plus',
+    tagline: 'For creators growing their Pinterest presence.',
+    price: 19.99,
+    featured: true,
+    limits: ['200 image uploads / month', '1,000 AI generations / month', '3 projects'],
     features: [
-      'Approval workflows',
-      'White-label CSV exports',
-      'Client workspace isolation',
-      'Role management',
-      'API access',
-      'Priority support',
-      'Everything in Growth',
+      'AI metadata generation',
+      'Board Intelligence (AI)',
+      'CSV export',
+      'Bulk editing',
+      'Pinterest scheduling',
+      'URL checker',
+    ],
+  },
+  {
+    id: 'studio',
+    name: 'Studio',
+    tagline: 'For power users and professional creators.',
+    price: 79.99,
+    limits: ['1,500 image uploads / month', '5,000 AI generations / month', '10 projects'],
+    features: [
+      'AI metadata generation',
+      'Board Intelligence (AI)',
+      'CSV export',
+      'Bulk editing',
+      'Pinterest scheduling',
+      'URL checker',
     ],
   },
 ]
 
 const comparisonRows = [
-  { feature: 'Pinterest accounts', solo: '1', growth: '3', agency: '10' },
-  { feature: 'Pins / month', solo: '500', growth: '5,000', agency: 'Unlimited' },
-  { feature: 'AI metadata generation', solo: '✓', growth: '✓', agency: '✓' },
-  { feature: 'CSV Studio + validation', solo: '✓', growth: '✓', agency: '✓' },
-  { feature: 'Link Health checks', solo: '✓', growth: '✓', agency: '✓' },
-  { feature: 'UTM presets', solo: '✓', growth: '✓', agency: '✓' },
-  { feature: 'Board Intelligence (AI)', solo: '—', growth: '✓', agency: '✓' },
-  { feature: 'Duplicate & Freshness Guard', solo: '—', growth: '✓', agency: '✓' },
-  { feature: 'Seasonal calendar', solo: '—', growth: '✓', agency: '✓' },
-  { feature: 'Approval workflows', solo: '—', growth: '—', agency: '✓' },
-  { feature: 'White-label exports', solo: '—', growth: '—', agency: '✓' },
-  { feature: 'API access', solo: '—', growth: '—', agency: '✓' },
+  { feature: 'Image uploads / month',    starter: '50',     plus: '200',    studio: '1,500' },
+  { feature: 'AI generations / month',   starter: '200',    plus: '1,000',  studio: '5,000' },
+  { feature: 'Projects',                 starter: '1',      plus: '3',      studio: '10'    },
+  { feature: 'AI metadata generation',   starter: '✓',      plus: '✓',      studio: '✓'     },
+  { feature: 'Board Intelligence (AI)',  starter: '✓',      plus: '✓',      studio: '✓'     },
+  { feature: 'CSV export',               starter: '✓',      plus: '✓',      studio: '✓'     },
+  { feature: 'Bulk editing',             starter: '✓',      plus: '✓',      studio: '✓'     },
+  { feature: 'Pinterest scheduling',     starter: '✓',      plus: '✓',      studio: '✓'     },
+  { feature: 'URL checker',              starter: '✓',      plus: '✓',      studio: '✓'     },
 ]
 
 const faq = [
-  { q: 'Is there a free trial?', a: 'Yes — 14 days, full access, no credit card required. You get the full Growth plan experience during trial.' },
-  { q: 'What counts as an "active pin"?', a: 'Any pin in your workspace with a scheduled or published status. Drafts and archived pins don\'t count toward your limit.' },
-  { q: 'Can I switch plans?', a: 'Anytime. Upgrading is instant. Downgrading takes effect at the end of your billing cycle. No penalties.' },
-  { q: 'Do you store my Pinterest login?', a: 'No. We use Pinterest\'s official OAuth flow. We never see or store your password. API-compliant, no scraping.' },
-  { q: 'What happens when my trial ends?', a: 'Your workspace stays intact. You just can\'t publish or export until you pick a plan. No surprise charges.' },
-  { q: 'Is there an annual discount?', a: 'Yes — save 20% with annual billing. That\'s €15/mo for Solo, €39/mo for Growth, €79/mo for Agency.' },
+  { q: 'Is there a free plan?', a: 'Yes — during beta you can use WallArtRoom for free with a single project, 200 lifetime uploads, and 500 AI generations.' },
+  { q: 'Do upload limits reset monthly?', a: 'Yes. Paid plan upload and AI generation limits reset at the start of each billing cycle.' },
+  { q: 'Can I switch plans?', a: 'Anytime. Upgrading is instant. Downgrading takes effect at the end of your billing cycle.' },
+  { q: 'Is there an annual discount?', a: 'Not currently — monthly billing only. Annual plans may be added in the future.' },
+  { q: 'What happens to my data if I cancel?', a: 'Your workspace stays intact. You\'ll drop back to free plan limits but nothing gets deleted.' },
 ]
 
 const supabaseUser = useSupabaseUser()
@@ -219,19 +197,19 @@ const checkoutBusy = ref<string | null>(null)
 const checkoutErr = ref<string | null>(null)
 
 function ctaLabel(plan: Plan) {
-  if (!isAuthed.value) return 'Start 14-day free trial'
-  return `Subscribe — €${displayPrice(plan)}/mo`
+  if (!isAuthed.value) return `Get started — $${plan.price}/mo`
+  return `Subscribe — $${plan.price}/mo`
 }
 
-function ctaDisabled(plan: Plan) {
+function ctaDisabled(_plan: Plan) {
   return false
 }
 
 async function onPlanCta(plan: Plan) {
   if (!isAuthed.value) {
-    return navigateTo(`/signup?next=${encodeURIComponent('/pricing')}`)
+    return navigateTo(`/login?next=${encodeURIComponent('/pricing')}`)
   }
-  await goToCheckout(`plan-${plan.id}`, { kind: 'subscription', plan: plan.id, annual: annual.value })
+  await goToCheckout(`plan-${plan.id}`, { kind: 'subscription', plan: plan.id })
 }
 
 async function goToCheckout(key: string, body: Record<string, unknown>) {

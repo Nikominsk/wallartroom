@@ -1,7 +1,10 @@
 <template>
   <div class="login-page">
     <div class="login-page__card">
-      <NuxtLink to="/" class="login-page__logo">Wall<span>Art</span>Room</NuxtLink>
+      <NuxtLink to="/" class="login-page__brand">
+        <img src="/favicon.ico" class="login-page__brand-icon" alt="" width="40" height="40" />
+        <span class="login-page__brand-name">Wall<span>Art</span>Room</span>
+      </NuxtLink>
 
       <h1 class="login-page__title">{{ titleText }}</h1>
       <p class="login-page__sub">Sign in or sign up with your Google account to continue.</p>
@@ -73,49 +76,68 @@ async function signIn() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #faf7f2;
+  background: $color-bg;
   padding: 24px;
 
   &__card {
     background: #fff;
-    border: 1px solid #ede0d0;
-    border-radius: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: $radius-lg;
     padding: 48px 44px;
     width: 100%;
     max-width: 380px;
-    box-shadow: 0 8px 32px rgba(60, 40, 20, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0;
   }
 
-  &__logo {
-    font-weight: 800;
-    font-size: 22px;
-    letter-spacing: -0.04em;
-    color: #3f342c;
+  // ── Brand ──────────────────────────────────────────────────────────────────
+  &__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
     margin-bottom: 32px;
-
-    span { color: #9b5f3d; }
   }
 
+  &__brand-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: block;
+    object-fit: contain;
+  }
+
+  &__brand-name {
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.04em;
+    color: $color-primary;
+
+    span { color: $color-accent; }
+  }
+
+  // ── Text ───────────────────────────────────────────────────────────────────
   &__title {
     margin: 0 0 8px;
     font-size: 22px;
     font-weight: 700;
-    color: #3f342c;
+    color: $color-primary;
     letter-spacing: -0.03em;
+    text-align: center;
   }
 
   &__sub {
     margin: 0 0 28px;
     font-size: 14px;
-    color: #8a7a6e;
+    color: #6b7280;
     text-align: center;
     line-height: 1.5;
   }
 
+  // ── Error ──────────────────────────────────────────────────────────────────
   &__error {
     display: flex;
     align-items: center;
@@ -129,31 +151,33 @@ async function signIn() {
     color: #991b1b;
     margin-bottom: 16px;
     line-height: 1.4;
+    box-sizing: border-box;
   }
 
+  // ── Google button ──────────────────────────────────────────────────────────
   &__btn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
     width: 100%;
-    height: 46px;
+    height: 48px;
     padding: 0 20px;
-    border: 1px solid #e0d4c8;
+    border: 1.5px solid #e5e7eb;
     border-radius: 12px;
     background: #fff;
     font-family: inherit;
     font-size: 15px;
     font-weight: 600;
-    color: #3f342c;
+    color: $color-primary;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 
     &:hover:not(:disabled) {
-      background: #faf7f2;
-      border-color: #c8b89f;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+      background: $color-bg;
+      border-color: $color-accent;
+      box-shadow: 0 2px 10px rgba(255, 107, 53, 0.12);
     }
 
     &:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -163,8 +187,9 @@ async function signIn() {
     animation: login-spin 0.8s linear infinite;
   }
 
+  // ── Legal ──────────────────────────────────────────────────────────────────
   &__legal {
-    margin: 16px 0 0;
+    margin: 18px 0 0;
     font-size: 12px;
     color: #9ca3af;
     text-align: center;
@@ -174,7 +199,6 @@ async function signIn() {
   &__legal-link {
     color: #9ca3af;
     text-decoration: underline;
-
     &:hover { color: #6b7280; }
   }
 

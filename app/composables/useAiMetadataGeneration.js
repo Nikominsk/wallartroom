@@ -77,6 +77,7 @@ export function useAiMetadataGeneration() {
     skippedCount: 0,
     duplicateRetryCount: 0,
     failedIds: [],
+    lastError: null,   // last error message seen, shown in the UI
   })
 
   function resetProgress() {
@@ -89,6 +90,7 @@ export function useAiMetadataGeneration() {
     progress.skippedCount = 0
     progress.duplicateRetryCount = 0
     progress.failedIds = []
+    progress.lastError = null
   }
 
   function needsGeneration(img) {
@@ -152,10 +154,16 @@ export function useAiMetadataGeneration() {
         progress.imageStatuses[img.id] = 'done'
         progress.successCount++
         onUpdate(updated)
-      } catch {
+      } catch (e) {
         progress.imageStatuses[img.id] = 'failed'
         progress.failedCount++
         progress.failedIds.push(img.id)
+        progress.lastError = e?.data?.statusMessage ?? e?.message ?? 'Unknown error'
+        // Quota exhausted — no point continuing, every remaining call will fail.
+        if (e?.status === 402 || e?.statusCode === 402) {
+          progress.status = 'cancelled'
+          break
+        }
       }
     }
 

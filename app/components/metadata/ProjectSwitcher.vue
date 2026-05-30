@@ -95,6 +95,76 @@
       <p v-if="errMsg" class="proj__err">{{ errMsg }}</p>
     </div>
 
+    <!-- Project-switching overlay -->
+    <Teleport to="body">
+      <div v-if="switching" class="proj-switching">
+        <div class="proj-switching__box">
+          <span class="proj-switching__spinner" />
+          Switching project…
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Delete confirmation modal -->
+    <Teleport to="body">
+      <div v-if="deleteModal.show" class="proj-upgrade-overlay" @click.self="closeDeleteModal">
+        <div class="proj-upgrade">
+          <button class="proj-upgrade__close" type="button" aria-label="Close" @click="closeDeleteModal">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13"/></svg>
+          </button>
+
+          <div class="proj-upgrade__icon proj-upgrade__icon--danger">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </div>
+
+          <h2 class="proj-upgrade__title">Delete "{{ deleteModal.project?.name }}"?</h2>
+
+          <div v-if="deleteModal.fetching" class="proj-delete__loading">Counting images…</div>
+
+          <template v-else>
+            <p class="proj-upgrade__body">
+              <template v-if="deleteModal.imageCount === 0">
+                This project has no images.
+              </template>
+              <template v-else>
+                This project contains <strong>{{ deleteModal.imageCount }} {{ deleteModal.imageCount === 1 ? 'image' : 'images' }}</strong>.
+              </template>
+            </p>
+
+            <!-- Move option — only when images exist and there are other projects -->
+            <div v-if="deleteModal.imageCount > 0 && otherProjects.length > 0" class="proj-delete__move">
+              <label class="proj-delete__move-label">
+                <input v-model="deleteModal.doMove" type="checkbox" class="proj-delete__move-check" />
+                Move images to another project before deleting
+              </label>
+              <select
+                v-if="deleteModal.doMove"
+                v-model="deleteModal.targetId"
+                class="proj-delete__select"
+              >
+                <option value="">— select project —</option>
+                <option v-for="p in otherProjects" :key="p.id" :value="p.id">{{ p.name }}</option>
+              </select>
+            </div>
+
+            <div class="proj-upgrade__actions">
+              <button
+                type="button"
+                class="proj-upgrade__cta proj-upgrade__cta--danger"
+                :disabled="deleteModal.busy || (deleteModal.doMove && !deleteModal.targetId)"
+                @click="executeDelete"
+              >
+                <template v-if="deleteModal.busy">Working…</template>
+                <template v-else-if="deleteModal.doMove && deleteModal.targetId">Move images &amp; delete project</template>
+                <template v-else>Delete project{{ deleteModal.imageCount > 0 ? ' and all images' : '' }}</template>
+              </button>
+              <button type="button" class="proj-upgrade__cancel" @click="closeDeleteModal">Cancel</button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Upgrade modal -->
     <Teleport to="body">
       <div v-if="showUpgradeModal" class="proj-upgrade-overlay" @click.self="showUpgradeModal = false">
@@ -105,9 +175,10 @@
           <div class="proj-upgrade__icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-7 10 7v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V9Z"/><path d="M9 22V12h6v10"/></svg>
           </div>
-          <h2 class="proj-upgrade__title">Multiple projects require a paid plan</h2>
+          <h2 class="proj-upgrade__title">Project limit reached</h2>
           <p class="proj-upgrade__body">
-            The free beta plan includes one project. Paid plans with unlimited projects are coming soon — stay tuned!
+            Your current plan allows {{ MAX_PROJECTS[me?.plan ?? 'free'] ?? 1 }} project{{ (MAX_PROJECTS[me?.plan ?? 'free'] ?? 1) > 1 ? 's' : '' }}.
+            Paid plans with more projects are coming soon — stay tuned!
           </p>
           <div class="proj-upgrade__actions">
             <button type="button" class="proj-upgrade__cta" @click="showUpgradeModal = false">Got it</button>
@@ -166,20 +237,34 @@ function resetEditing() {
   errMsg.value = ''
 }
 
+const switching = ref(false)
+
 async function choose(p) {
   if (p.id === activeProjectId.value) { open.value = false; return }
   busy.value = true
+  switching.value = true
+  open.value = false
   try {
-    await switchTo(p.id) // triggers a full reload on success
+    await switchTo(p.id) // triggers a full page reload — switching overlay stays until reload
   } catch (e) {
     errMsg.value = e?.data?.statusMessage ?? 'Could not switch project'
     busy.value = false
+    switching.value = false
+    open.value = true
   }
+}
+
+const MAX_PROJECTS = {
+  free:    1,
+  starter: 1,
+  plus:    3,
+  studio:  10,
 }
 
 function startCreate() {
   const plan = me.value?.plan ?? 'free'
-  if (plan === 'free' && projects.value.length >= 1) {
+  const max  = MAX_PROJECTS[plan] ?? Infinity
+  if (projects.value.length >= max) {
     open.value = false
     showUpgradeModal.value = true
     return
@@ -229,17 +314,63 @@ async function confirmRename(p) {
   }
 }
 
+const deleteModal = reactive({
+  show:       false,
+  project:    null,
+  fetching:   false,
+  imageCount: 0,
+  doMove:     false,
+  targetId:   '',
+  busy:       false,
+})
+
+const otherProjects = computed(() =>
+  projects.value.filter(p => p.id !== deleteModal.project?.id),
+)
+
 async function confirmDelete(p) {
   if (projects.value.length <= 1) return
-  if (!await confirm(`Delete “${p.name}” and everything in it (pins, boards, exports)? This cannot be undone.`)) return
-  busy.value = true
+  open.value = false
+
+  deleteModal.show       = true
+  deleteModal.project    = p
+  deleteModal.fetching   = true
+  deleteModal.imageCount = 0
+  deleteModal.doMove     = false
+  deleteModal.targetId   = ''
+  deleteModal.busy       = false
+
+  try {
+    const { count } = await $fetch(`/api/metadata/projects/${p.id}/image-count`)
+    deleteModal.imageCount = count
+  } catch {
+    deleteModal.imageCount = 0
+  } finally {
+    deleteModal.fetching = false
+  }
+}
+
+function closeDeleteModal() {
+  if (deleteModal.busy) return
+  deleteModal.show = false
+}
+
+async function executeDelete() {
+  if (!deleteModal.project) return
+  deleteModal.busy = true
   errMsg.value = ''
   try {
-    await deleteProject(p.id) // reloads if the active project was deleted
-    busy.value = false
+    if (deleteModal.doMove && deleteModal.targetId) {
+      await $fetch(`/api/metadata/projects/${deleteModal.project.id}/move-images`, {
+        method: 'POST',
+        body: { targetProjectId: deleteModal.targetId },
+      })
+    }
+    await deleteProject(deleteModal.project.id)
+    deleteModal.show = false
   } catch (e) {
     errMsg.value = e?.data?.statusMessage ?? 'Could not delete project'
-    busy.value = false
+    deleteModal.busy = false
   }
 }
 </script>
@@ -486,6 +617,96 @@ async function confirmDelete(p) {
   box-sizing: border-box;
 }
 
+.proj-switching {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+
+  &__box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  &__spinner {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2.5px solid #e5e7eb;
+    border-top-color: $color-accent;
+    animation: proj-spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+}
+
+@keyframes proj-spin { to { transform: rotate(360deg); } }
+
+.proj-delete {
+  &__loading {
+    font-size: 13px;
+    color: #9ca3af;
+    padding: 16px 0;
+    text-align: center;
+  }
+
+  &__move {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    text-align: left;
+  }
+
+  &__move-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+  }
+
+  &__move-check {
+    cursor: pointer;
+    accent-color: $color-accent;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  &__select {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    color: #1f2937;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+    &:focus { border-color: $color-accent; }
+  }
+}
+
 .proj-upgrade {
   position: relative;
   background: #fff;
@@ -525,6 +746,11 @@ async function confirmDelete(p) {
     align-items: center;
     justify-content: center;
     margin: 0 auto 18px;
+
+    &--danger {
+      background: #fef2f2;
+      color: #dc2626;
+    }
   }
 
   &__title {
@@ -554,12 +780,21 @@ async function confirmDelete(p) {
     background: $color-accent;
     color: #fff;
     text-decoration: none;
+    border: none;
+    font: inherit;
     font-size: 14px;
     font-weight: 600;
     padding: 11px 20px;
     border-radius: 10px;
+    cursor: pointer;
     transition: background 0.15s;
-    &:hover { background: color-mix(in srgb, #{$color-accent} 85%, #000); }
+    &:hover:not(:disabled) { background: color-mix(in srgb, #{$color-accent} 85%, #000); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    &--danger {
+      background: #dc2626;
+      &:hover:not(:disabled) { background: #b91c1c; }
+    }
   }
 
   &__cancel {

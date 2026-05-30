@@ -8,7 +8,7 @@
         </svg>
         <h3>Upload images</h3>
       </div>
-      <button class="upload-modal__close-btn" @click="$emit('close')">
+      <button class="upload-modal__close-btn" :disabled="isUploading" @click="$emit('close')">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M1 1l12 12M13 1L1 13" />
         </svg>
@@ -75,11 +75,14 @@
     </div>
 
     <div class="upload-modal__footer">
-      <span v-if="isUploading" class="upload-modal__footer-info">
-        Uploading {{ uploadingIndex }}/{{ pendingCount }}…
+      <span v-if="isUploading" class="upload-modal__footer-info upload-modal__footer-info--warning">
+        ⚠ {{ completedCount }}/{{ totalQueued }} done — please don't close this window.
       </span>
       <span v-else-if="items.length === 0" class="upload-modal__footer-info">
         Add at least one image to start.
+      </span>
+      <span v-else-if="errorCount > 0 && !isUploading" class="upload-modal__footer-info upload-modal__footer-info--error">
+        {{ errorCount }} failed · {{ doneCount }} uploaded successfully.
       </span>
       <span v-else class="upload-modal__footer-info">
         Ready to upload {{ pendingCount }} file{{ pendingCount !== 1 ? 's' : '' }}.
@@ -87,14 +90,25 @@
 
       <div class="upload-modal__footer-actions">
         <button
+          v-if="errorCount > 0 && !isUploading"
+          class="upload-modal__btn upload-modal__btn--retry"
+          @click="retryFailed"
+        >
+          Retry failed ({{ errorCount }})
+        </button>
+        <button
           class="upload-modal__btn upload-modal__btn--primary"
           :disabled="pendingCount === 0 || isUploading"
           @click="startUpload"
         >
-          {{ isUploading ? 'Uploading…' : `Upload ${pendingCount || ''}` }}
+          {{ isUploading ? `Uploading… (${CONCURRENCY} at a time)` : `Upload ${pendingCount || ''}` }}
         </button>
-        <button class="upload-modal__btn" @click="$emit('close')">
-          {{ doneCount > 0 ? 'Done' : 'Cancel' }}
+        <button
+          class="upload-modal__btn"
+          :disabled="isUploading"
+          @click="$emit('close')"
+        >
+          {{ allDone ? 'Done' : 'Cancel' }}
         </button>
       </div>
     </div>
@@ -103,24 +117,29 @@
 
 <script setup>
 const props = defineProps({
-  // Optional: files seeded from a page-level drop or other source.
   initialFiles: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['close', 'uploaded'])
 
-const fileInputEl = ref(null)
-const dragOver = ref(false)
-const isUploading = ref(false)
-const uploadingIndex = ref(0)
+// Number of simultaneous uploads. 6 is a good balance: fast without
+// overwhelming the server or hitting browser connection limits.
+const CONCURRENCY = 6
+
+const fileInputEl    = ref(null)
+const dragOver       = ref(false)
+const isUploading    = ref(false)
 
 // items: { id, file, status: 'pending'|'uploading'|'done'|'error', error?, image? }
 let _nextId = 1
 const items = ref([])
 
-const pendingCount = computed(() => items.value.filter(i => i.status === 'pending').length)
-const doneCount = computed(() => items.value.filter(i => i.status === 'done').length)
-const errorCount = computed(() => items.value.filter(i => i.status === 'error').length)
+const pendingCount   = computed(() => items.value.filter(i => i.status === 'pending').length)
+const doneCount      = computed(() => items.value.filter(i => i.status === 'done').length)
+const errorCount     = computed(() => items.value.filter(i => i.status === 'error').length)
+const completedCount = computed(() => items.value.filter(i => i.status === 'done' || i.status === 'error').length)
+const allDone        = computed(() => items.value.length > 0 && pendingCount.value === 0 && !isUploading.value)
+const totalQueued    = ref(0)
 
 const ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/avif'])
 const MAX_BYTES = 20 * 1024 * 1024
@@ -180,28 +199,99 @@ async function startUpload() {
   if (queue.length === 0) return
 
   isUploading.value = true
-  uploadingIndex.value = 0
-  const uploadedImages = []
+  totalQueued.value = queue.length
 
-  for (const item of queue) {
-    uploadingIndex.value++
-    item.status = 'uploading'
-    item.error = null
+  // ── Step 1: get presigned PUT URLs for the whole batch (1 server request) ──
+  let uploads
+  try {
+    const res = await $fetch('/api/images/prepare-upload', {
+      method: 'POST',
+      body: {
+        files: queue.map(item => ({
+          clientId: item.id,
+          name:     item.file.name,
+          type:     item.file.type,
+          size:     item.file.size,
+        })),
+      },
+    })
+    uploads = res.uploads
+    if (res.skipped > 0) {
+      // Mark quota-skipped items
+      const allowedIds = new Set(uploads.map(u => u.clientId))
+      for (const item of queue) {
+        if (!allowedIds.has(item.id)) {
+          item.status = 'error'
+          item.error  = 'Upload limit reached for your plan'
+        }
+      }
+    }
+  } catch (e) {
+    // Whole batch rejected (quota, validation, etc.) — mark all pending as error
+    const msg = e?.data?.statusMessage ?? e?.message ?? 'Prepare failed'
+    for (const item of queue) { item.status = 'error'; item.error = msg }
+    isUploading.value = false
+    return
+  }
+
+  // ── Step 2: PUT files directly to R2 in parallel (server not in data path) ──
+  const confirmed = []
+  let head = 0
+
+  async function worker() {
+    while (head < uploads.length) {
+      const upload = uploads[head++]
+      const item   = queue.find(i => i.id === upload.clientId)
+      if (!item) continue
+      item.status = 'uploading'
+      item.error  = null
+      try {
+        const resp = await fetch(upload.presignedUrl, {
+          method:  'PUT',
+          body:    item.file,
+          headers: { 'Content-Type': item.file.type },
+        })
+        if (!resp.ok) throw new Error(`R2 responded ${resp.status}`)
+        item.status = 'done'
+        confirmed.push({ key: upload.key, publicUrl: upload.publicUrl, mimeType: upload.mimeType })
+      } catch (e) {
+        item.status = 'error'
+        item.error  = e?.message ?? 'Upload to storage failed'
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker))
+
+  // ── Step 3: bulk DB insert for all successful uploads (1 server request) ────
+  if (confirmed.length > 0) {
     try {
-      const form = new FormData()
-      form.append('file', item.file, item.file.name)
-      const res = await $fetch('/api/images/upload', { method: 'POST', body: form })
-      item.status = 'done'
-      item.image = res.image
-      if (res.image) uploadedImages.push(res.image)
+      const { images } = await $fetch('/api/images/batch-confirm', {
+        method: 'POST',
+        body: { confirmed },
+      })
+      emit('uploaded', images ?? [])
     } catch (e) {
-      item.status = 'error'
-      item.error = e?.data?.statusMessage ?? e?.message ?? 'Upload failed'
+      // DB insert failed — files are in R2 but not in the DB. Mark all done
+      // items with a soft error so the user knows to retry.
+      const msg = e?.data?.statusMessage ?? e?.message ?? 'Saving failed'
+      for (const item of queue) {
+        if (item.status === 'done') { item.status = 'error'; item.error = msg }
+      }
     }
   }
 
   isUploading.value = false
-  if (uploadedImages.length > 0) emit('uploaded', uploadedImages)
+}
+
+function retryFailed() {
+  for (const item of items.value) {
+    if (item.status === 'error') {
+      item.status = 'pending'
+      item.error  = null
+    }
+  }
+  startUpload()
 }
 
 function formatBytes(bytes) {
@@ -429,6 +519,11 @@ function statusLabel(item) {
   &__footer-info {
     font-size: 12px;
     color: #6b7280;
+
+    &--warning {
+      color: #92400e;
+      font-weight: 500;
+    }
   }
 
   &__footer-actions {
