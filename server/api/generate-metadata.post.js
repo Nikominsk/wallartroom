@@ -19,7 +19,6 @@ export default defineEventHandler(async (event) => {
 
   const contextLines = []
   if (options?.usePromptAsContext && prompt) contextLines.push(`Image creation prompt: "${prompt}"`)
-  if (options?.useColorsAsContext && colorList) contextLines.push(`Dominant colors: ${colorList}`)
   if (additionalContext?.trim()) contextLines.push(`Additional context: ${additionalContext.trim()}`)
 
   const includeKw = options?.includeKeywords?.trim()
@@ -76,9 +75,9 @@ Additional guidelines:
 - Language: ${options?.language ?? 'English'}
 - Tone/style: ${options?.tone?.trim() || 'inspiring, elegant, modern'}
 - Target audience: ${options?.targetAudience?.trim() || 'home decorators, interior design lovers'}
-- Niche: ${options?.niche?.trim() || 'wall art, home decor, printable art'}${includeKw ? `\n- You MUST include these keywords naturally: ${includeKw}` : ''}${excludeKw ? `\n- You MUST NOT use these words: ${excludeKw}` : ''}${boards?.length ? `\n- Pinterest board: pick the single most fitting board from this list and return it as the "board" field: ${boards.join(', ')}` : ''}${recentExistingTitles.length ? `\n\nTitles ALREADY used in this run (your new title must NOT match or be a trivial variation of any of these):\n${recentExistingTitles.map(t => `- ${t}`).join('\n')}` : ''}
+- Niche: ${options?.niche?.trim() || 'wall art, home decor, printable art'}${includeKw ? `\n- You MUST include these keywords naturally: ${includeKw}` : ''}${excludeKw ? `\n- You MUST NOT use these words: ${excludeKw}` : ''}${boards?.length ? `\n- Pinterest board: choose the single MOST SPECIFIC, topically-fitting board from this list and return its exact name as the "board" field. Specific boards rank better on Pinterest, so prefer a precise match (e.g. "Botanical Wall Art") over a generic catch-all board (names like "All", "General", "Misc", "Other", "Everything"). Only fall back to a generic board if no specific board fits at all. Boards: ${boards.join(', ')}` : ''}${recentExistingTitles.length ? `\n\nTitles ALREADY used in this run (your new title must NOT match or be a trivial variation of any of these):\n${recentExistingTitles.map(t => `- ${t}`).join('\n')}` : ''}
 
-Respond with a JSON object containing exactly two keys: "title" (string) and "description" (string). No other keys. No markdown.`
+Respond with a JSON object containing the keys "title" (string)${boards?.length ? ', "description" (string) and "board" (string — the EXACT board name you picked from the list above)' : ' and "description" (string)'}. No markdown.`
 
   const userPrompt = [
     `Filename: ${filename}`,
@@ -87,30 +86,37 @@ Respond with a JSON object containing exactly two keys: "title" (string) and "de
     `Generate the Pinterest metadata now. Title MUST be ${titleTargetMin}–${titleMax} characters, MUST be unique vs. the list above.`,
   ].join('\n')
 
-  const response = await $fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: 600,
-      temperature: 0.8,
-    }),
-  }).catch((e) => {
-    const msg =
-      e?.data?.error?.message ??
-      e?.data?.message ??
-      e?.message ??
-      JSON.stringify(e?.data ?? e ?? 'unknown')
-    throw createError({ statusCode: 502, statusMessage: `OpenAI: ${msg}` })
-  })
+  const openAiBody = {
+    model: 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 600,
+    temperature: 0.8,
+  }
+
+  // Retry with exponential backoff when OpenAI rate-limits (429).
+  // This keeps multi-user traffic transparent — the request retries server-side
+  // rather than surfacing a failure to the client.
+  const response = await (async function callOpenAI(attempt) {
+    try {
+      return await $fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(openAiBody),
+      })
+    } catch (e) {
+      const status = e?.response?.status ?? e?.status ?? 0
+      if (status === 429 && attempt < 4) {
+        await new Promise(r => setTimeout(r, (2 ** attempt) * 1000))
+        return callOpenAI(attempt + 1)
+      }
+      const msg = e?.data?.error?.message ?? e?.data?.message ?? e?.message ?? JSON.stringify(e?.data ?? e ?? 'unknown')
+      throw createError({ statusCode: 502, statusMessage: `OpenAI: ${msg}` })
+    }
+  })(0)
 
   let parsed
   try {
@@ -121,9 +127,16 @@ Respond with a JSON object containing exactly two keys: "title" (string) and "de
 
   const clean = str => String(str ?? '').replace(/[-|;]/g, ' ').replace(/\s{2,}/g, ' ').trim()
 
-  const pickedBoard = boards?.length && parsed.board && boards.includes(parsed.board)
-    ? parsed.board
-    : null
+  // Match the AI's board choice back to a real board name. Exact match first,
+  // then case-insensitive/trimmed so a minor formatting difference from the
+  // model still resolves to the canonical name (returned exactly as stored).
+  let pickedBoard = null
+  if (boards?.length && parsed.board) {
+    const want = String(parsed.board).trim().toLowerCase()
+    pickedBoard = boards.find(b => b === parsed.board)
+      ?? boards.find(b => String(b).trim().toLowerCase() === want)
+      ?? null
+  }
 
   // The AI is told the limit but doesn't always respect it. We enforce the
   // user-configured max in code — but instead of a dumb mid-word slice, we cut

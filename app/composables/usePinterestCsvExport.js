@@ -65,16 +65,26 @@ export function usePinterestCsvExport() {
     })
 
     const header = 'Title,Media URL,Pinterest board,Description,Link,Publish date'
-    const rows = sorted.map(img =>
-      [
+
+    const boardNamesOf = (img) => {
+      const names = Array.isArray(img.pinterest.boards)
+        ? img.pinterest.boards.map(b => b?.name).filter(Boolean)
+        : []
+      if (names.length) return names
+      return [img.pinterest.board || '']
+    }
+
+    const rows = sorted.map(img => {
+      const boardCell = escape(boardNamesOf(img).join(','))
+      return [
         escape(img.pinterest.title ?? ''),
         escape(img.mediaUrl),
-        escape(img.pinterest.board ?? ''),
+        boardCell,
         escape(img.pinterest.description ?? ''),
         escape(img.pinterest.link ?? ''),
         escape(img.pinterest.publishDate ? formatWallClockInZone(img.pinterest.publishDate, tz) : ''),
       ].join(',')
-    )
+    })
     return [header, ...rows].join('\n')
   }
 

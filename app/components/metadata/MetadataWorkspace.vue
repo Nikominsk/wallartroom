@@ -230,6 +230,7 @@
               :boards="boards"
               :mode="mode"
               @manage-boards="showBoardsManager = true"
+              @open-ai="openAiModal"
             />
           </template>
         </div>
@@ -405,8 +406,16 @@
                   <td><div class="meta-page__export-cell">{{ img.pinterest?.title }}</div></td>
                   <td><div class="meta-page__export-cell">{{ img.pinterest?.description }}</div></td>
                   <td class="meta-page__export-col--board">
+                    <template v-if="img.pinterest?.boards?.length">
+                      <span
+                        v-for="b in img.pinterest.boards"
+                        :key="b.id"
+                        class="meta-page__export-board-chip"
+                        :style="boardChipStyle(b.name)"
+                      >{{ b.name }}</span>
+                    </template>
                     <span
-                      v-if="img.pinterest?.board"
+                      v-else-if="img.pinterest?.board"
                       class="meta-page__export-board-chip"
                       :style="boardChipStyle(img.pinterest.board)"
                     >{{ img.pinterest.board }}</span>
@@ -483,8 +492,8 @@
                 <path d="M10 1l9 17H1L10 1z"/><path d="M10 8v4M10 15h.01"/>
               </svg>
               <div>
-                <strong>Board doesn't exist in your Pinterest account.</strong>
-                You must create it in Pinterest before importing — otherwise the CSV will fail.
+                <strong>This is a new board.</strong>
+                Accepting will create it in WallArtRoom and assign it to this pin. Remember to also create it in Pinterest with the same name before importing the CSV.
               </div>
             </div>
 
@@ -505,20 +514,32 @@
               <p class="bi-modal__reason">{{ boardSuggestionResult.reasoning }}</p>
             </div>
 
-            <!-- Alternative -->
-            <div v-if="boardSuggestionResult.alternativeBoard" class="bi-modal__alt">
-              <span class="bi-modal__alt-label">Alternative</span>
-              <span class="bi-modal__alt-name">{{ boardSuggestionResult.alternativeBoard }}</span>
-              <span class="bi-modal__alt-score">{{ boardSuggestionResult.alternativeScore }}%</span>
-              <button class="bi-modal__alt-btn" @click="applyBoardSuggestion('alternative')">Use this</button>
+            <!-- Alternative boards list -->
+            <div v-if="boardSuggestionResult.alternativeBoards?.length" class="bi-modal__alts">
+              <div class="bi-modal__alts-label">{{ boardSuggestionResult.isNewBoard ? 'Best existing boards' : 'Alternatives' }}</div>
+              <div
+                v-for="alt in boardSuggestionResult.alternativeBoards"
+                :key="alt.name"
+                class="bi-modal__alt"
+              >
+                <span class="bi-modal__alt-name">{{ alt.name }}</span>
+                <span v-if="alt.score > 0" class="bi-modal__alt-score">{{ alt.score }}%</span>
+                <button class="bi-modal__alt-btn" :disabled="applyingBoardSuggestion" @click="applyBoardSuggestion(alt.name)">Use this</button>
+              </div>
             </div>
 
             <!-- Actions -->
             <div class="bi-modal__footer">
-              <button class="meta-page__btn meta-page__btn--primary" @click="applyBoardSuggestion('suggested')">
-                Apply board
+              <button
+                class="meta-page__btn meta-page__btn--primary"
+                :disabled="applyingBoardSuggestion"
+                @click="applyBoardSuggestion('suggested')"
+              >
+                {{ applyingBoardSuggestion
+                  ? 'Applying…'
+                  : (boardSuggestionResult.isNewBoard ? 'Create & apply board' : 'Apply board') }}
               </button>
-              <button class="meta-page__btn" @click="showBoardSuggestion = false">Cancel</button>
+              <button class="meta-page__btn" :disabled="applyingBoardSuggestion" @click="showBoardSuggestion = false">Cancel</button>
             </div>
 
           </template>
@@ -1257,35 +1278,75 @@ const aiTargetImages = computed(() => {
 })
 
 async function handleGenerate() {
+  // Collect all non-active-image results during generation so we can flush
+  // them to the DB in one bulk request at the end instead of N individual ones.
+  const batchedSaves = []
+
   await generate(
     aiTargetImages.value,
     (updated) => {
+      // The AI returns the chosen board as a name string. Resolve it to a real
+      // board and merge it into the pin's board set (a pin can be on several
+      // boards, so we add rather than replace), then keep the primary in sync.
+      if (updated.pinterest.board) {
+        const match = boards.value.find(b => b.name === updated.pinterest.board)
+        if (match) {
+          // singleBoardOnly: replace the entire board set with the AI pick.
+          // Otherwise: add the AI pick to whatever boards are already assigned.
+          const rawIds = aiOptions.singleBoardOnly
+            ? [match.id]
+            : [...new Set([...(updated.pinterest.boardIds ?? []), match.id])]
+          const boardObjs = rawIds
+            .map(id => boards.value.find(b => b.id === id))
+            .filter(Boolean)
+            .map(b => ({ id: b.id, name: b.name, color: b.color ?? null }))
+          updated = {
+            ...updated,
+            pinterest: {
+              ...updated.pinterest,
+              boardIds: rawIds,
+              boards: boardObjs,
+              boardId: rawIds[0] ?? null,
+              board: boardObjs[0]?.name ?? '',
+            },
+          }
+        }
+      }
+
+      // Always update local state immediately so the UI reflects progress live.
       const idx = images.value.findIndex(i => i.id === updated.id)
       if (idx !== -1) images.value[idx] = updated
       if (updated.id === activeId.value) {
+        // Active image stays "dirty" — saved when the user navigates or saves manually.
         activeDraft.value = JSON.parse(JSON.stringify(updated))
         isDirty.value = true
         savedAt.value = null
       } else {
-        saveImage(updated)
+        batchedSaves.push(updated)
       }
     },
     async (img, opts, ctx = {}) => {
       return await $fetch('/api/generate-metadata', {
         method: 'POST',
         body: {
-          filename: img.filename,
-          prompt: img.prompt,
-          colors: img.colors,
+          filename:          img.filename,
+          prompt:            img.prompt,
+          colors:            img.colors,
           additionalContext: opts.additionalContext,
-          accountContext: analyticsBrief.value || '',
-          options: opts,
-          boards: opts.generateFor.pinterestBoard ? boards.value.map(b => b.name) : [],
-          existingTitles: ctx.existingTitles ?? [],
+          accountContext:    analyticsBrief.value || '',
+          options:           opts,
+          boards:            opts.generateFor.pinterestBoard ? boards.value.map(b => b.name) : [],
+          existingTitles:    ctx.existingTitles ?? [],
         },
       })
     },
   )
+
+  // One bulk save request for all generated images (2 DB upserts regardless
+  // of how many images were generated).
+  if (batchedSaves.length > 0) {
+    await $fetch('/api/images/save', { method: 'POST', body: batchedSaves }).catch(() => {})
+  }
 }
 
 // ── AI modal (single + bulk share one transparent flow) ──────────────────────
@@ -1324,18 +1385,52 @@ async function handleSuggestBoard() {
   )
 }
 
-function applyBoardSuggestion(which = 'suggested') {
+const applyingBoardSuggestion = ref(false)
+
+async function applyBoardSuggestion(nameOrWhich = 'suggested') {
   if (!boardSuggestionResult.value || !activeDraft.value) return
-  const name = which === 'alternative'
-    ? boardSuggestionResult.value.alternativeBoard
-    : boardSuggestionResult.value.suggestedBoard
+  // 'suggested' is the magic token for the primary pick; anything else is a
+  // direct board name coming from the alternatives list.
+  const name = nameOrWhich === 'suggested'
+    ? boardSuggestionResult.value.suggestedBoard
+    : nameOrWhich
   if (!name) return
-  const boardObj = boards.value.find(b => b.name === name)
-  onDraftUpdate({
-    ...activeDraft.value,
-    pinterest: { ...activeDraft.value.pinterest, board: name, boardId: boardObj?.id ?? null },
-  })
-  showBoardSuggestion.value = false
+
+  applyingBoardSuggestion.value = true
+  try {
+    let boardObj = boards.value.find(b => b.name === name)
+
+    // New-board suggestion (only ever for the primary pick): create it so it's
+    // saved and reusable, then use its real id.
+    if (!boardObj && nameOrWhich === 'suggested' && boardSuggestionResult.value.isNewBoard) {
+      boardObj = await addBoard(name)
+    }
+    if (!boardObj) return
+
+    // Add the chosen board to the pin's existing board set (don't replace).
+    const ids = new Set([...(activeDraft.value.pinterest.boardIds ?? []), boardObj.id])
+    const boardIds = [...ids]
+    const boardObjs = boardIds
+      .map(id => boards.value.find(b => b.id === id))
+      .filter(Boolean)
+      .map(b => ({ id: b.id, name: b.name, color: b.color ?? null }))
+
+    onDraftUpdate({
+      ...activeDraft.value,
+      pinterest: {
+        ...activeDraft.value.pinterest,
+        boardIds,
+        boards: boardObjs,
+        boardId: boardIds[0] ?? null,
+        board: boardObjs[0]?.name ?? '',
+      },
+    })
+    showBoardSuggestion.value = false
+  } catch (e) {
+    console.error('Could not apply board suggestion', e)
+  } finally {
+    applyingBoardSuggestion.value = false
+  }
 }
 
 
@@ -1402,8 +1497,7 @@ const viewCaps = computed(() => {
     // AI generation is useful on every view (re-generate posted pins, fix
     // scheduled ones, draft new ones) — always available.
     ai: true,
-    // CSV is the Drafts/Pins → ready-to-post step.
-    exportCsv: !isPosted && !isSchedules,
+    exportCsv: !isPosted,
     // Date assignment is irrelevant once everything is posted.
     scheduling: !isPosted,
   }
@@ -2371,6 +2465,7 @@ function goToPage(page) {
   &__export-board-chip {
     display: inline-block;
     padding: 2px 8px;
+    margin: 1px 3px 1px 0;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 500;
@@ -2378,6 +2473,7 @@ function goToPage(page) {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 120px;
+    vertical-align: middle;
   }
 
   &__export-board-empty { color: #d1d5db; font-size: 13px; }
@@ -2911,6 +3007,21 @@ function goToPage(page) {
     margin: 0;
   }
 
+  // Alternatives section
+  &__alts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__alts-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+  }
+
   // Alternative row
   &__alt {
     display: flex;
@@ -2921,15 +3032,6 @@ function goToPage(page) {
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     font-size: 12.5px;
-  }
-
-  &__alt-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #9ca3af;
-    flex-shrink: 0;
   }
 
   &__alt-name {

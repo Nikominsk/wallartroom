@@ -74,8 +74,17 @@
         <!-- ── Configure state ─────────────────────────────────────────── -->
         <div v-else class="ai-modal__body">
 
+          <!-- ── Templates loading ─────────────────────────────────────── -->
+          <div v-if="templatesLoading" class="ai-modal__tpl-loading">
+            <svg class="ai-modal__tpl-spinner" width="14" height="14" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="9" stroke="#e5e7eb" stroke-width="2.5"/>
+              <path d="M11 2a9 9 0 0 1 9 9" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            Loading templates…
+          </div>
+
           <!-- ── Templates bar ──────────────────────────────────────────── -->
-          <div v-if="templates.length || loaded" class="ai-modal__tpl-bar">
+          <div v-else-if="templates.length || loaded" class="ai-modal__tpl-bar">
             <select
               v-model="selectedTplId"
               class="ai-modal__tpl-select"
@@ -210,8 +219,8 @@
 
             <div class="ai-modal__field-row">
               <div class="ai-modal__field">
-                <label class="ai-modal__label" for="ai-niche">Niche / topic</label>
-                <input id="ai-niche" class="ai-modal__input" v-model="options.niche" placeholder="e.g. boho living room" />
+                <label class="ai-modal__label" for="ai-exclude">Exclude keywords</label>
+                <input id="ai-exclude" class="ai-modal__input" v-model="options.excludeKeywords" placeholder="word1, word2" />
               </div>
               <div class="ai-modal__field">
                 <label class="ai-modal__label" for="ai-keywords">Include keywords</label>
@@ -224,9 +233,9 @@
                 <input type="checkbox" v-model="options.usePromptAsContext" />
                 <span>Use image prompt as context</span>
               </label>
-              <label class="ai-modal__check">
-                <input type="checkbox" v-model="options.useColorsAsContext" />
-                <span>Use detected colors as context</span>
+              <label v-if="options.generateFor.pinterestBoard" class="ai-modal__check">
+                <input type="checkbox" v-model="options.singleBoardOnly" />
+                <span>Assign single board only (replaces existing)</span>
               </label>
             </div>
 
@@ -248,8 +257,8 @@
                 <input id="ai-audience" class="ai-modal__input" v-model="options.targetAudience" placeholder="e.g. home decorators" />
               </div>
               <div class="ai-modal__field">
-                <label class="ai-modal__label" for="ai-exclude">Exclude keywords</label>
-                <input id="ai-exclude" class="ai-modal__input" v-model="options.excludeKeywords" placeholder="word1, word2" />
+                <label class="ai-modal__label" for="ai-niche">Niche / topic</label>
+                <input id="ai-niche" class="ai-modal__input" v-model="options.niche" placeholder="e.g. boho living room" />
               </div>
             </div>
           </section>
@@ -333,7 +342,7 @@ const emit = defineEmits(['close', 'generate', 'cancel', 'reset-progress', 'mana
 const showMore = ref(false)
 
 // ── Templates ─────────────────────────────────────────────────────────────────
-const { templates, loaded, load: loadTemplates, create: createTemplate } = useAiTemplates()
+const { templates, loaded, loading: templatesLoading, load: loadTemplates, create: createTemplate } = useAiTemplates()
 
 const selectedTplId = ref('')
 const showSaveForm  = ref(false)
@@ -504,6 +513,22 @@ function handleClose() {
 }
 
 // ── Templates bar ─────────────────────────────────────────────────────────────
+.ai-modal__tpl-loading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: #9ca3af;
+  padding: 6px 12px;
+}
+
+.ai-modal__tpl-spinner {
+  flex-shrink: 0;
+  animation: tpl-spin 0.8s linear infinite;
+}
+
+@keyframes tpl-spin { to { transform: rotate(360deg); } }
+
 .ai-modal__tpl-bar {
   display: flex;
   align-items: center;

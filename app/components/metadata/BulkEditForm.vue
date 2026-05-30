@@ -7,6 +7,13 @@
       <span>You are editing <strong>{{ count }} images</strong>. Applied fields may overwrite existing values for all selected images.</span>
     </div>
 
+    <button type="button" class="bulk-form__ai-btn" @click="$emit('open-ai')">
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2l1.5 4.5H16l-3.5 2.5 1.5 4.5L10 11l-4 2.5 1.5-4.5L4 6.5h4.5L10 2Z"/>
+      </svg>
+      Generate with AI for {{ count }} images
+    </button>
+
     <div v-if="mode === 'pinterest'" class="bulk-form__section">
       <h4 class="bulk-form__section-title">Pinterest</h4>
 
@@ -18,34 +25,32 @@
         <textarea class="bulk-form__textarea" rows="3" v-model="spec.pinterestDescription.value" :disabled="!spec.pinterestDescription.enabled" />
       </BulkField>
 
-      <BulkField label="Pinterest board" v-model:enabled="spec.pinterestBoard.enabled" v-model:clear="spec.pinterestBoard.clear">
-        <div class="bulk-form__board-row">
-          <select
-            v-if="boards.length"
-            class="bulk-form__input bulk-form__board-select"
-            :value="spec.pinterestBoard.value"
-            :disabled="!spec.pinterestBoard.enabled || spec.pinterestBoard.clear"
-            @change="onBoardChange($event.target.value)"
-          >
-            <option value="">— select board —</option>
-            <option v-for="b in boards" :key="b.id" :value="b.id">{{ b.name }}</option>
-          </select>
-          <input
-            v-else
-            class="bulk-form__input bulk-form__board-select"
-            v-model="spec.pinterestBoard.value"
-            :disabled="!spec.pinterestBoard.enabled || spec.pinterestBoard.clear"
-            placeholder="No boards configured — add one →"
-          />
+      <BulkField label="Pinterest boards" v-model:enabled="spec.pinterestBoard.enabled" v-model:clear="spec.pinterestBoard.clear">
+        <div v-if="boards.length" class="bulk-form__board-chips">
           <button
+            v-for="b in boards"
+            :key="b.id"
             type="button"
-            class="bulk-form__boards-btn"
-            :disabled="!spec.pinterestBoard.enabled"
-            @click="$emit('manage-boards')"
+            class="bulk-form__board-chip"
+            :class="{ 'bulk-form__board-chip--on': spec.pinterestBoard.boardIds.includes(b.id) }"
+            :disabled="spec.pinterestBoard.clear"
+            @click="toggleBoard(b.id)"
           >
-            Manage boards
+            <span class="bulk-form__board-check" aria-hidden="true">
+              <svg v-if="spec.pinterestBoard.boardIds.includes(b.id)" width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5l3.5 3.5L12 4"/></svg>
+            </span>
+            {{ b.name }}
           </button>
         </div>
+        <p v-else class="bulk-form__board-empty">No boards configured yet.</p>
+        <button
+          type="button"
+          class="bulk-form__boards-btn"
+          :disabled="!spec.pinterestBoard.enabled"
+          @click="$emit('manage-boards')"
+        >
+          Manage boards
+        </button>
       </BulkField>
 
       <BulkField label="Pinterest redirect URL" v-model:enabled="spec.pinterestLink.enabled" v-model:clear="spec.pinterestLink.clear">
@@ -109,12 +114,18 @@ const props = defineProps({
   mode: { type: String, default: 'pinterest' },
 })
 
-defineEmits(['manage-boards'])
+defineEmits(['manage-boards', 'open-ai'])
 
-function onBoardChange(boardId) {
-  const board = props.boards.find(b => b.id === boardId)
-  props.spec.pinterestBoard.value = boardId
-  props.spec.pinterestBoard.name  = board?.name ?? ''
+function toggleBoard(boardId) {
+  const ids = props.spec.pinterestBoard.boardIds
+  const idx = ids.indexOf(boardId)
+  if (idx === -1) ids.push(boardId)
+  else ids.splice(idx, 1)
+  // Keep the display list in sync with the selected ids.
+  props.spec.pinterestBoard.boards = ids
+    .map(id => props.boards.find(b => b.id === id))
+    .filter(Boolean)
+    .map(b => ({ id: b.id, name: b.name, color: b.color ?? null }))
 }
 
 function toDatetimeLocal(iso) {
@@ -193,6 +204,26 @@ export const BulkField = defineComponent({
     svg { flex-shrink: 0; margin-top: 1px; color: #d97706; }
   }
 
+  &__ai-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    height: 38px;
+    border: none;
+    border-radius: 9px;
+    background: $color-accent;
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover { background: color-mix(in srgb, #{$color-accent} 85%, #000); }
+  }
+
   &__section { display: flex; flex-direction: column; gap: 12px; }
 
   &__section-title {
@@ -235,20 +266,64 @@ export const BulkField = defineComponent({
     cursor: pointer;
   }
 
-  &__board-row {
+  &__board-chips {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
-    align-items: stretch;
   }
 
-  &__board-select {
-    flex: 1;
-    min-width: 0;
+  &__board-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px 5px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fafafa;
+    font: inherit;
+    font-size: 12.5px;
+    color: #4b5563;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+    &:hover:not(:disabled) { background: #f3f4f6; border-color: #d1d5db; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    &--on {
+      background: color-mix(in srgb, #{$color-accent} 12%, #fff);
+      border-color: $color-accent;
+      color: $color-primary;
+      font-weight: 600;
+    }
+  }
+
+  &__board-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    border: 1.5px solid #d1d5db;
+    color: #fff;
+    flex-shrink: 0;
+
+    .bulk-form__board-chip--on & {
+      background: $color-accent;
+      border-color: $color-accent;
+    }
+  }
+
+  &__board-empty {
+    margin: 0;
+    font-size: 12.5px;
+    color: #9ca3af;
   }
 
   &__boards-btn {
-    flex-shrink: 0;
-    padding: 0 10px;
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 6px 10px;
     border: 1px solid #e5e7eb;
     border-radius: 7px;
     background: #f9fafb;

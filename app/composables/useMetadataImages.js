@@ -8,6 +8,22 @@ function mapRow(row) {
   const p = (Array.isArray(row.pinterest_image) ? row.pinterest_image[0] : row.pinterest_image) ?? {}
   const a = (Array.isArray(row.adobe_image) ? row.adobe_image[0] : row.adobe_image) ?? {}
 
+  // Multi-board: the join table carries every board the pin belongs to. Each
+  // row embeds its pinterest_board (id, name, color). Falls back to the legacy
+  // single board_id/board on pinterest_image when the join data isn't present.
+  const boardLinks = Array.isArray(row.pinterest_image_board) ? row.pinterest_image_board : []
+  let boards = boardLinks
+    .map(l => {
+      const b = Array.isArray(l.pinterest_board) ? l.pinterest_board[0] : l.pinterest_board
+      if (b) return { id: b.id, name: b.name, color: b.color ?? null }
+      return l.board_id ? { id: l.board_id, name: '', color: null } : null
+    })
+    .filter(Boolean)
+  if (boards.length === 0 && p.board_id) {
+    boards = [{ id: p.board_id, name: p.board ?? '', color: null }]
+  }
+  const boardIds = boards.map(b => b.id)
+
   return {
     id: row.id,
     filename: row.filename,
@@ -22,8 +38,12 @@ function mapRow(row) {
       pinId: p.pin_id ?? null,
       title: p.title ?? '',
       description: p.description ?? '',
-      boardId: p.board_id ?? null,
-      board: p.board ?? '',
+      // Primary board (first) kept for backward-compatible single-board display.
+      boardId: boardIds[0] ?? null,
+      board: boards[0]?.name ?? p.board ?? '',
+      // Full multi-board set.
+      boardIds,
+      boards,
       link: p.link ?? '',
       publishDate: p.publish_date ?? null,
       exportedAt: p.exported_at ?? null,
@@ -45,6 +65,11 @@ function mapRow(row) {
 // We now load *all* images in one fetch so the gallery can filter/paginate
 // client-side — total count then naturally reflects the active filter.
 let _cachedImages = null // Array | null
+
+// Components that are actively showing images register their loadImages here
+// so that any external invalidateCache() call (e.g. from csv-exports) also
+// triggers an immediate reload in those components.
+const _reloadListeners = new Set()
 
 // ── Composable ────────────────────────────────────────────────────────────────
 
@@ -76,7 +101,15 @@ export function useMetadataImages() {
 
   function invalidateCache() {
     _cachedImages = null
+    for (const fn of [..._reloadListeners]) {
+      try { fn() } catch { /* stale listener */ }
+    }
   }
+
+  // While this instance is mounted, register its loadImages so external
+  // invalidations (e.g. marking exports) reload the visible gallery too.
+  onMounted(() => _reloadListeners.add(loadImages))
+  onUnmounted(() => _reloadListeners.delete(loadImages))
 
   function applyToCache(updater) {
     if (_cachedImages) _cachedImages = updater(_cachedImages)

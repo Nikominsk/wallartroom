@@ -64,25 +64,30 @@ export default defineEventHandler(async (event) => {
 
   const systemPrompt = `You are a Pinterest marketing strategist. Given pin content and a list of available boards, determine the best board placement.
 
-Analyze the pin's topic, keywords, and visual theme to match it with the most relevant board. Consider:
-- Topical relevance (does the pin's subject match the board's theme?)
-- Keyword alignment (do the pin's keywords match what users would search in that board context?)
-- Audience intent (would a user browsing that board expect to find this pin?)${hasStats ? `
-- Real performance: each board is tagged with its actual Pinterest traffic. When two boards are similarly relevant, PREFER the higher-performing one. Never route a clearly strong, on-topic pin into a "low traffic" board if a relevant "solid" or "top performer" board exists. Relevance still comes first — do not force an irrelevant pin into a popular board.` : ''}
+Pinterest SEO works best when a pin sits on a SPECIFIC, topical board — narrow boards rank better in search and reach the right audience. A pin on a precise board ("Botanical Wall Art", "Minimalist Floral Prints") performs far better than the same pin dumped on a generic catch-all board.
+
+Analyze the pin's topic, keywords, and visual theme, then score each board:
+- Topical relevance: does the board's theme specifically match the pin's subject?
+- Specificity: SPECIFIC boards are strongly preferred. Treat generic catch-all boards (names like "All", "General", "Misc", "Other", "Everything", "Pins", a brand name alone) as a POOR fit — never score them above 40, because they give the pin no search context.
+- Keyword & audience alignment: would someone browsing that board expect this exact pin?${hasStats ? `
+- Real performance: each board is tagged with its actual Pinterest traffic. When two SPECIFIC boards are similarly relevant, prefer the higher-performing one. Never force a pin onto a generic board just because it has traffic.` : ''}
 
 IMPORTANT RULES:
-- "suggestedBoard" MUST be an exact name from the "Available boards" list if any board scores 50 or higher.
-- Only when NO existing board scores above 50 should you suggest a brand-new board name in "suggestedBoard" AND set "isNewBoard" to true.
-- "alternativeBoard" must always be an exact name from the "Available boards" list, or null.
-- relevanceScore and alternativeScore are integers 0–100.
+- Prefer an EXACT board name copied from the "Available boards" list when a SPECIFIC board genuinely fits (score 50+). Set "isNewBoard" to false.
+- If the only fitting boards are generic catch-alls (or nothing fits well), propose a brand-new SPECIFIC board: put a concise, descriptive Pinterest-style name (2–4 words, Title Case, e.g. "Botanical Wall Art") in "suggestedBoard" and set "isNewBoard" to true.
+- "alternativeBoards" MUST list the 2–3 next-best SPECIFIC boards from the "Available boards" list, ranked by score. When "isNewBoard" is true these are the user's best existing options. Never include generic catch-all boards unless no specific board exists. Omit the primary suggestedBoard from this list. If fewer than 2 alternatives exist return as many as you can (can be empty array).
+- All score fields are integers 0–100.
+- "reasoning" MUST be one short, CONCRETE sentence (max 18 words) that names the pin's actual subject and why the board fits it. Do not use vague filler like "aligns with the themes".
 
 Respond with JSON:
 {
-  "suggestedBoard": "exact board name from list, OR a new board name if isNewBoard is true",
+  "suggestedBoard": "exact board name from the list, OR a new specific board name when isNewBoard is true",
   "relevanceScore": 85,
-  "reasoning": "Brief explanation why this board is the best fit",
-  "alternativeBoard": "second best board name from the list, or null",
-  "alternativeScore": 70,
+  "reasoning": "Concrete one-liner naming the pin's subject and the specific fit.",
+  "alternativeBoards": [
+    {"name": "second best board name from the list", "score": 70},
+    {"name": "third best board name from the list", "score": 55}
+  ],
   "isNewBoard": false
 }`
 
@@ -111,7 +116,7 @@ Respond with JSON:
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 300,
+      max_tokens: 400,
       temperature: 0.3,
     }),
   }).catch((e) => {
@@ -126,20 +131,58 @@ Respond with JSON:
   }
 
   // The model may echo the "[tier: …]" annotation — strip it back to the bare
-  // name and validate against the real board list.
+  // name, then resolve to a REAL board name from the list (exact, then
+  // case-insensitive).
   const cleanName = (v) => String(v ?? '').replace(/\s*\[.*$/, '').trim()
-  const suggested = cleanName(parsed.suggestedBoard)
-  const alternative = cleanName(parsed.alternativeBoard)
-  const isNewBoard = !!parsed.isNewBoard && !boards.includes(suggested)
+  const resolve = (v) => {
+    const name = cleanName(v)
+    if (!name) return null
+    const want = name.toLowerCase()
+    return boards.find(b => b === name) ?? boards.find(b => String(b).trim().toLowerCase() === want) ?? null
+  }
+
+  const rawSuggested = cleanName(parsed.suggestedBoard)
+  const matched = resolve(parsed.suggestedBoard)
+
+  // It's a new board only if the model flagged it AND the name isn't already
+  // one of the user's boards. Otherwise resolve to the matching board (or, as
+  // a last resort, the first board so we never return an empty suggestion).
+  const isNewBoard = !!parsed.isNewBoard && !matched && !!rawSuggested
+  const suggested = isNewBoard ? rawSuggested : (matched ?? boards[0] ?? null)
+
+  // Build the ranked alternative list. Each entry must resolve to a real board
+  // name from the user's list and must differ from the primary suggestion.
+  const rawAlts = Array.isArray(parsed.alternativeBoards) ? parsed.alternativeBoards : []
+  const seen = new Set([suggested?.toLowerCase()])
+  const alternativeBoards = []
+
+  for (const entry of rawAlts) {
+    const name = resolve(typeof entry === 'string' ? entry : entry?.name)
+    if (!name) continue
+    if (seen.has(name.toLowerCase())) continue
+    seen.add(name.toLowerCase())
+    const score = Math.min(100, Math.max(0, Number(entry?.score ?? 0)))
+    alternativeBoards.push({ name, score })
+    if (alternativeBoards.length >= 3) break
+  }
+
+  // If the model returned nothing useful, fill with the next best boards from
+  // the list so the section is never empty when alternatives exist.
+  if (alternativeBoards.length === 0 && boards.length) {
+    for (const b of boards) {
+      if (seen.has(b.toLowerCase())) continue
+      alternativeBoards.push({ name: b, score: 0 })
+      if (alternativeBoards.length >= 2) break
+    }
+  }
 
   await recordUsage(event, user.id, { aiGenerations: 1 })
 
   return {
-    suggestedBoard: suggested || null,
+    suggestedBoard: suggested,
     relevanceScore: Math.min(100, Math.max(0, Number(parsed.relevanceScore) || 0)),
     reasoning: parsed.reasoning || '',
-    alternativeBoard: alternative && boards.includes(alternative) ? alternative : null,
-    alternativeScore: Math.min(100, Math.max(0, Number(parsed.alternativeScore) || 0)),
+    alternativeBoards,
     isNewBoard,
   }
 })

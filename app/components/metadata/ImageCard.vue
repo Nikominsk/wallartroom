@@ -43,27 +43,69 @@
     <div class="img-card__info">
       <div class="img-card__indicators">
         <template v-if="mode === 'pinterest'">
+          <!-- Title -->
           <span
-            class="img-card__dot"
-            :class="pinterestComplete ? 'img-card__dot--ok' : 'img-card__dot--warn'"
-            title="Pinterest metadata"
-          >P</span>
-          <span
-            class="img-card__dot img-card__dot--icon"
-            :class="image.pinterest.publishDate ? 'img-card__dot--date' : 'img-card__dot--none'"
-            title="Pinterest publish date"
+            class="img-card__ind"
+            :class="image.pinterest.title ? 'img-card__ind--on' : ''"
+            :title="image.pinterest.title ? `Title: ${image.pinterest.title}` : 'No title'"
           >
-            <svg width="7" height="7" viewBox="0 0 12 12" fill="currentColor">
-              <path d="M9 1V0H8v1H4V0H3v1H1a1 1 0 00-1 1v9a1 1 0 001 1h10a1 1 0 001-1V2a1 1 0 00-1-1H9zM1 4h10v7H1V4zm2 2h1v1H3V6zm2 0h1v1H5V6zm2 0h1v1H7V6z"/>
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M1.5 2.5h9M6 2.5v7"/>
             </svg>
           </span>
+          <!-- Description -->
           <span
-            v-if="image.pinterest.link"
-            class="img-card__dot img-card__dot--link"
-            :title="`Redirect URL: ${image.pinterest.link}`"
-          >W</span>
-          <span v-if="image.pinterest.exportedAt" class="img-card__badge img-card__badge--exported">EXP</span>
-          <span v-if="image.pinterest.publishedAt" class="img-card__badge img-card__badge--published">PUB</span>
+            class="img-card__ind"
+            :class="image.pinterest.description ? 'img-card__ind--on' : ''"
+            title="Description"
+          >
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M1.5 3h9M1.5 6h9M1.5 9h6"/>
+            </svg>
+          </span>
+          <!-- Board -->
+          <span
+            class="img-card__ind"
+            :class="image.pinterest.board ? 'img-card__ind--on' : ''"
+            :title="image.pinterest.board ? `Board: ${image.pinterest.board}` : 'No board'"
+          >
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 1a2.5 2.5 0 012.5 2.5C8.5 5.5 6 10 6 10S3.5 5.5 3.5 3.5A2.5 2.5 0 016 1z"/>
+              <circle cx="6" cy="3.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </span>
+          <!-- Redirect URL -->
+          <span
+            class="img-card__ind"
+            :class="image.pinterest.link ? 'img-card__ind--on' : ''"
+            :title="image.pinterest.link ? `URL: ${image.pinterest.link}` : 'No redirect URL'"
+          >
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4.5 2H2.5A1 1 0 001.5 3v6.5A1 1 0 002.5 10.5H9A1 1 0 0010 9.5V7.5"/>
+              <path d="M7 1.5h3.5V5M10.5 1.5L6 6"/>
+            </svg>
+          </span>
+          <!-- Publish date (scheduling) -->
+          <span
+            class="img-card__ind"
+            :class="image.pinterest.publishDate ? 'img-card__ind--date' : ''"
+            :title="image.pinterest.publishDate ? `Scheduled: ${image.pinterest.publishDate}` : 'No publish date'"
+          >
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="2" width="10" height="9" rx="1.5"/>
+              <path d="M1 5h10M4 1v2M8 1v2"/>
+            </svg>
+          </span>
+          <!-- Exported -->
+          <span
+            class="img-card__ind"
+            :class="(image.pinterest.exportedAt || image.pinterest.status === 'exported') ? 'img-card__ind--exported' : ''"
+            :title="image.pinterest.exportedAt ? 'Exported' : 'Not exported'"
+          >
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1.5 8.5l3 3 6-6"/>
+            </svg>
+          </span>
         </template>
         <template v-else>
           <span
@@ -247,10 +289,25 @@ watch(safeImgSrc, () => { imgLoaded.value = false })
   &__indicators {
     display: flex;
     align-items: center;
-    gap: 3px;
-    flex-wrap: wrap;
+    gap: 2px;
   }
 
+  // Icon-based indicators (Pinterest mode)
+  &__ind {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    color: #d1d5db;
+    flex-shrink: 0;
+
+    &--on       { color: $color-accent; }
+    &--exported { color: #16a34a; }
+    &--date     { color: #3b82f6; }
+  }
+
+  // Text-badge indicators (Adobe mode, kept)
   &__dot {
     display: inline-flex;
     align-items: center;
@@ -266,22 +323,7 @@ watch(safeImgSrc, () => { imgLoaded.value = false })
     &--warn { background: #fef3c7; color: #d97706; }
     &--date { background: #dbeafe; color: #2563eb; }
     &--none { background: #f3f4f6; color: #9ca3af; }
-    &--link { background: #f0fdf4; color: #16a34a; }
     &--icon { font-size: 7px; }
-  }
-
-  &__badge {
-    display: inline-flex;
-    align-items: center;
-    height: 13px;
-    padding: 0 4px;
-    border-radius: 3px;
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-
-    &--exported  { background: #ede9fe; color: #7c3aed; }
-    &--published { background: #d1fae5; color: #059669; }
   }
 }
 

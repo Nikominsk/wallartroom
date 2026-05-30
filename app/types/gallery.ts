@@ -93,7 +93,7 @@ export interface AiGenerationOptions {
   maxAdobeStockDescriptionLength: number
   adobeStockKeywordCount: number
   usePromptAsContext: boolean
-  useColorsAsContext: boolean
+  singleBoardOnly: boolean
   overwriteMode: 'missing-only' | 'replace' | 'ask'
 }
 

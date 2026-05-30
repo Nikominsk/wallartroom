@@ -127,46 +127,73 @@
             @input="updatePinterest('description', $event.target.value)" />
         </div>
         <div class="single-form__field">
-          <label class="single-form__label single-form__label--req">Pinterest board</label>
-          <div class="single-form__board-row">
-            <select
-              v-if="boards.length"
-              class="single-form__select"
-              :value="draft.pinterest.boardId ?? ''"
-              @change="updatePinterestBoard($event.target.value)"
-            >
-              <option value="">— select board —</option>
-              <option v-for="b in boards" :key="b.id" :value="b.id">{{ b.name }}</option>
-            </select>
-            <input
-              v-else
-              class="single-form__input"
-              :value="draft.pinterest.board ?? ''"
-              @input="updatePinterest('board', $event.target.value)"
-            />
-            <button
-              v-if="boards.length"
-              class="single-form__suggest-btn"
-              type="button"
-              title="AI Board Suggestion"
-              @click="emit('suggest-board')"
-            >
-              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
-              </svg>
-            </button>
-            <button
-              class="single-form__manage-btn"
-              type="button"
-              title="Manage boards"
-              @click="emit('manage-boards')"
-            >
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="10" cy="10" r="2.5"/>
-                <path d="M16.5 10a6.5 6.5 0 0 0-.1-1.1l1.5-1.2-1.5-2.6-1.8.6a6.5 6.5 0 0 0-1.9-1.1L12.4 2.8h-3l-.3 1.8a6.5 6.5 0 0 0-1.9 1.1l-1.8-.6L3.9 7.7l1.5 1.2A6.5 6.5 0 0 0 5.4 10c0 .4 0 .8.1 1.1L4 12.3l1.5 2.6 1.8-.6c.6.5 1.2.9 1.9 1.1l.3 1.8h3l.3-1.8c.7-.2 1.3-.6 1.9-1.1l1.8.6 1.5-2.6-1.5-1.2c.1-.3.1-.7.1-1.1Z"/>
-              </svg>
-            </button>
+          <div class="single-form__board-head">
+            <label class="single-form__label single-form__label--req">Pinterest boards</label>
+            <div class="single-form__board-actions">
+              <button
+                v-if="boards.length"
+                class="single-form__suggest-btn"
+                type="button"
+                title="AI Board Suggestion"
+                @click="emit('suggest-board')"
+              >
+                <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+                </svg>
+              </button>
+              <button
+                class="single-form__manage-btn"
+                type="button"
+                title="Manage boards"
+                @click="emit('manage-boards')"
+              >
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="10" cy="10" r="2.5"/>
+                  <path d="M16.5 10a6.5 6.5 0 0 0-.1-1.1l1.5-1.2-1.5-2.6-1.8.6a6.5 6.5 0 0 0-1.9-1.1L12.4 2.8h-3l-.3 1.8a6.5 6.5 0 0 0-1.9 1.1l-1.8-.6L3.9 7.7l1.5 1.2A6.5 6.5 0 0 0 5.4 10c0 .4 0 .8.1 1.1L4 12.3l1.5 2.6 1.8-.6c.6.5 1.2.9 1.9 1.1l.3 1.8h3l.3-1.8c.7-.2 1.3-.6 1.9-1.1l1.8.6 1.5-2.6-1.5-1.2c.1-.3.1-.7.1-1.1Z"/>
+                </svg>
+              </button>
+            </div>
           </div>
+
+          <div v-if="boards.length" ref="boardDropEl" class="single-form__board-drop">
+            <button
+              type="button"
+              class="single-form__board-trigger"
+              :class="{ 'single-form__board-trigger--open': boardDropOpen }"
+              @click="boardDropOpen = !boardDropOpen"
+            >
+              <span class="single-form__board-trigger-text">
+                <template v-if="selectedBoardIds.length === 0">Select boards</template>
+                <template v-else>{{ selectedBoardNames }}</template>
+              </span>
+              <svg class="single-form__board-trigger-chev" width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 5l4 4 4-4"/>
+              </svg>
+            </button>
+
+            <div v-if="boardDropOpen" class="single-form__board-menu">
+              <label
+                v-for="b in boards"
+                :key="b.id"
+                class="single-form__board-option"
+                :class="{ 'single-form__board-option--on': selectedBoardIds.includes(b.id) }"
+              >
+                <input
+                  type="checkbox"
+                  class="single-form__board-cb"
+                  :checked="selectedBoardIds.includes(b.id)"
+                  @change="toggleBoard(b.id)"
+                />
+                <span class="single-form__board-cb-box" aria-hidden="true">
+                  <svg v-if="selectedBoardIds.includes(b.id)" width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5l3.5 3.5L12 4"/></svg>
+                </span>
+                {{ b.name }}
+              </label>
+            </div>
+          </div>
+          <p v-else class="single-form__board-empty">
+            No boards yet — use "Manage boards" to add some.
+          </p>
         </div>
         <div class="single-form__field">
           <label class="single-form__label single-form__label--req">Redirect URL</label>
@@ -323,9 +350,55 @@ function updatePinterest(key, value) {
   emit('update', { ...props.draft, pinterest: { ...props.draft.pinterest, [key]: value } })
 }
 
-function updatePinterestBoard(boardId) {
-  const board = props.boards.find(b => b.id === boardId)
-  emit('update', { ...props.draft, pinterest: { ...props.draft.pinterest, boardId: boardId || null, board: board?.name ?? '' } })
+const boardDropEl   = ref(null)
+const boardDropOpen = ref(false)
+
+onMounted(() => document.addEventListener('click', onDocClickBoard))
+onBeforeUnmount(() => document.removeEventListener('click', onDocClickBoard))
+function onDocClickBoard(e) {
+  if (boardDropOpen.value && boardDropEl.value && !boardDropEl.value.contains(e.target)) {
+    boardDropOpen.value = false
+  }
+}
+
+const selectedBoardIds = computed(() => {
+  const ids = props.draft?.pinterest?.boardIds
+  if (Array.isArray(ids)) return ids
+  return props.draft?.pinterest?.boardId ? [props.draft.pinterest.boardId] : []
+})
+
+const selectedBoardNames = computed(() => {
+  if (!selectedBoardIds.value.length) return ''
+  return selectedBoardIds.value
+    .map(id => props.boards.find(b => b.id === id)?.name)
+    .filter(Boolean)
+    .join(', ')
+})
+
+function toggleBoard(boardId) {
+  const current = [...selectedBoardIds.value]
+  const idx = current.indexOf(boardId)
+  if (idx === -1) current.push(boardId)
+  else current.splice(idx, 1)
+
+  // Keep primary boardId/board (first) in sync for single-board displays.
+  const primary = current[0] ?? null
+  const primaryBoard = props.boards.find(b => b.id === primary)
+  const boardObjs = current
+    .map(id => props.boards.find(b => b.id === id))
+    .filter(Boolean)
+    .map(b => ({ id: b.id, name: b.name, color: b.color ?? null }))
+
+  emit('update', {
+    ...props.draft,
+    pinterest: {
+      ...props.draft.pinterest,
+      boardIds: current,
+      boards: boardObjs,
+      boardId: primary,
+      board: primaryBoard?.name ?? '',
+    },
+  })
 }
 
 function updateAdobe(key, value) {
@@ -476,6 +549,126 @@ function fmtDate(iso) {
 
     .single-form__select,
     .single-form__input { flex: 1; min-width: 0; }
+  }
+
+  &__board-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  &__board-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  &__board-drop {
+    position: relative;
+  }
+
+  &__board-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    background: #fafafa;
+    font: inherit;
+    font-size: 13px;
+    color: $color-primary;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s;
+
+    &:hover { border-color: #d1d5db; background: #f3f4f6; }
+    &--open { border-color: $color-accent; background: #fff; }
+  }
+
+  &__board-trigger-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: inherit;
+
+    &:empty, &:first-child:last-child { color: #9ca3af; }
+  }
+
+  &__board-trigger-chev {
+    flex-shrink: 0;
+    color: #9ca3af;
+    transition: transform 0.15s;
+
+    .single-form__board-trigger--open & { transform: rotate(180deg); }
+  }
+
+  &__board-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    z-index: 200;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  &__board-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s;
+
+    &:hover { background: #f3f4f6; }
+
+    &--on { color: $color-primary; font-weight: 500; }
+  }
+
+  &__board-cb {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  &__board-cb-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    border: 1.5px solid #d1d5db;
+    flex-shrink: 0;
+    color: #fff;
+    transition: background 0.12s, border-color 0.12s;
+
+    .single-form__board-option--on & {
+      background: $color-accent;
+      border-color: $color-accent;
+    }
+  }
+
+  &__board-empty {
+    margin: 0;
+    font-size: 12.5px;
+    color: #9ca3af;
   }
 
   &__suggest-btn {

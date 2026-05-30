@@ -314,6 +314,7 @@ async function toggleImages(id) {
 const settingIds = reactive(new Set())
 const deletingIds = reactive(new Set())
 const { invalidateCache } = useMetadataImages()
+const { bump: bumpCsvBadge } = useCsvExportBadge()
 
 async function handleSetExported(exp) {
   const ok = await confirm(
@@ -326,9 +327,11 @@ async function handleSetExported(exp) {
     const res = await $fetch(`/api/pinterest/csv-exports/${exp.id}/set-exported`, { method: 'POST' })
     const markedAt = res?.marked_exported_at ?? new Date().toISOString()
 
-    // Update the export row in-place so the badge flips to green immediately.
-    const row = exports.value.find(e => e.id === exp.id)
-    if (row) row.marked_exported_at = markedAt
+    // Replace the row in the array (safer than in-place mutation for Vue reactivity).
+    exports.value = exports.value.map(e =>
+      e.id === exp.id ? { ...e, marked_exported_at: markedAt } : e
+    )
+    bumpCsvBadge(-1)
 
     // Update locally in the images cache so the badges refresh immediately
     const state = imagesCache[exp.id]
@@ -357,9 +360,11 @@ async function handleDelete(exp) {
   deletingIds.add(exp.id)
   try {
     await $fetch(`/api/pinterest/csv-exports/${exp.id}`, { method: 'DELETE' })
+    const wasUnexported = !exp.marked_exported_at
     exports.value = exports.value.filter(e => e.id !== exp.id)
     delete imagesCache[exp.id]
     if (expandedId.value === exp.id) expandedId.value = null
+    if (wasUnexported) bumpCsvBadge(-1)
   } catch (e) {
     await alert(`Failed to delete: ${e.data?.statusMessage ?? e.message}`)
   } finally {

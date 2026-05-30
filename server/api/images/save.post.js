@@ -24,27 +24,37 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'No matching images in the active project' })
   }
 
-  // Validate all board IDs in a single query. A stale boardId (e.g. from a
-  // tab that had the board loaded before it was deleted) is caught here and
-  // returned as a clear 422 so the user knows what to fix.
-  const boardIds = [...new Set(scoped.map(i => i.pinterest?.boardId).filter(Boolean))]
+  // Resolve every image's board set. `boardIds` (array) is the canonical
+  // multi-board field; fall back to the legacy single `boardId` for older
+  // payloads. The primary (first) board is mirrored onto pinterest_image so
+  // single-board consumers (calendar, dashboard, admin) keep working.
+  const boardIdsOf = (img) => {
+    const arr = Array.isArray(img.pinterest?.boardIds)
+      ? img.pinterest.boardIds
+      : (img.pinterest?.boardId ? [img.pinterest.boardId] : [])
+    return [...new Set(arr.filter(Boolean))]
+  }
+
+  // Validate the union of all referenced board IDs in one query. A stale id
+  // (e.g. a board deleted in another tab) is caught here as a clear 422.
+  const allBoardIds = [...new Set(scoped.flatMap(boardIdsOf))]
   const boardNameMap = {}
-  if (boardIds.length) {
+  if (allBoardIds.length) {
     const { data: boards, error: boardErr } = await client
       .from('pinterest_board')
       .select('id, name')
       .eq('project_id', projectId)
-      .in('id', boardIds)
+      .in('id', allBoardIds)
     if (boardErr) throw createError({ statusCode: 500, statusMessage: boardErr.message })
 
     const foundIds = new Set((boards ?? []).map(b => b.id))
-
-    // Collect all missing board IDs and resolve their cached names from the
-    // payload so the error message names the specific boards that are gone.
-    const missingIds = boardIds.filter(id => !foundIds.has(id))
+    const missingIds = allBoardIds.filter(id => !foundIds.has(id))
     if (missingIds.length) {
       const payloadNameMap = {}
       for (const img of scoped) {
+        for (const b of img.pinterest?.boards ?? []) {
+          if (b?.id) payloadNameMap[b.id] = b.name || null
+        }
         if (img.pinterest?.boardId) payloadNameMap[img.pinterest.boardId] = img.pinterest?.board || null
       }
       const names = missingIds.map(id => payloadNameMap[id] ? `"${payloadNameMap[id]}"` : `(id: ${id})`)
@@ -60,16 +70,17 @@ export default defineEventHandler(async (event) => {
   }
 
   const pRows = scoped.map(img => {
-    const boardId = img.pinterest?.boardId ?? null
-    // Derive the board name from the DB record (handles renames automatically).
-    // Fall back to the name the client sent only when there is no boardId.
-    const board = boardId ? (boardNameMap[boardId] ?? null) : (img.pinterest?.board || null)
+    const ids = boardIdsOf(img)
+    const primaryId = ids[0] ?? null
+    // Primary board name from DB (handles renames). Fall back to client name
+    // only when there's no board id at all.
+    const board = primaryId ? (boardNameMap[primaryId] ?? null) : (img.pinterest?.board || null)
     return {
       image_id:     img.id,
       project_id:   projectId,
       title:        img.pinterest.title || null,
       description:  img.pinterest.description || null,
-      board_id:     boardId,
+      board_id:     primaryId,
       board,
       link:         img.pinterest.link || null,
       publish_date: img.pinterest.publishDate || null,
@@ -98,6 +109,36 @@ export default defineEventHandler(async (event) => {
     .from('adobe_image')
     .upsert(aRows, { onConflict: 'image_id' })
   if (ae) throw createError({ statusCode: 500, statusMessage: ae.message })
+
+  // ── Multi-board memberships ────────────────────────────────────────────────
+  // Only manage boards for images whose payload actually carries board data, so
+  // a partial save (e.g. a status-only update) never wipes a pin's boards.
+  // For those, replace the set: clear existing rows then insert one per board.
+  const managesBoards = (img) =>
+    Array.isArray(img.pinterest?.boardIds) ||
+    Array.isArray(img.pinterest?.boards) ||
+    img.pinterest?.boardId !== undefined
+  const boardManaged = scoped.filter(managesBoards)
+
+  if (boardManaged.length) {
+    const managedIds = boardManaged.map(i => i.id)
+    const { error: delErr } = await client
+      .from('pinterest_image_board')
+      .delete()
+      .in('image_id', managedIds)
+    if (delErr) throw createError({ statusCode: 500, statusMessage: delErr.message })
+
+    const links = []
+    for (const img of boardManaged) {
+      for (const bid of boardIdsOf(img)) {
+        links.push({ image_id: img.id, board_id: bid, project_id: projectId })
+      }
+    }
+    if (links.length) {
+      const { error: linkErr } = await client.from('pinterest_image_board').insert(links)
+      if (linkErr) throw createError({ statusCode: 500, statusMessage: linkErr.message })
+    }
+  }
 
   return { ok: true }
 })

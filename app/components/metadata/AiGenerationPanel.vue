@@ -165,9 +165,9 @@
             <input type="checkbox" v-model="options.usePromptAsContext" />
             Use image prompt as context
           </label>
-          <label class="ai-panel__check">
-            <input type="checkbox" v-model="options.useColorsAsContext" />
-            Use detected colors as context
+          <label v-if="options.generateFor.pinterestBoard" class="ai-panel__check">
+            <input type="checkbox" v-model="options.singleBoardOnly" />
+            Assign single board only (replaces existing)
           </label>
         </div>
 

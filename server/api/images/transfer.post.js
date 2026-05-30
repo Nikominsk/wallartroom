@@ -79,6 +79,11 @@ export default defineEventHandler(async (event) => {
     const r3 = await client.from('adobe_image').update({ project_id: targetProjectId }).in('image_id', allowedIds)
     if (r3.error) throw createError({ statusCode: 500, statusMessage: r3.error.message })
 
+    // Boards are project-scoped, so memberships don't carry to the new project.
+    // Clear them (the legacy `board` name text stays on pinterest_image as a hint).
+    const r4 = await client.from('pinterest_image_board').delete().in('image_id', allowedIds)
+    if (r4.error) throw createError({ statusCode: 500, statusMessage: r4.error.message })
+
     return {
       ok: true,
       mode,

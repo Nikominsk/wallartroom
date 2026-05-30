@@ -103,7 +103,11 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest')) 
       }
 
       if (isPinterestMode.value && filters.pinterestBoard) {
-        if (img.pinterest.boardId !== filters.pinterestBoard) return false
+        // Match if the pin is assigned to the filtered board on ANY of its boards.
+        const ids = Array.isArray(img.pinterest.boardIds) && img.pinterest.boardIds.length
+          ? img.pinterest.boardIds
+          : (img.pinterest.boardId ? [img.pinterest.boardId] : [])
+        if (!ids.includes(filters.pinterestBoard)) return false
       }
 
       if (isPinterestMode.value && (filters.pinterestDateFrom || filters.pinterestDateTo)) {

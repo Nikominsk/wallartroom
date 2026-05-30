@@ -23,12 +23,17 @@ function defaultOptions() {
     maxAdobeStockDescriptionLength: 500,
     adobeStockKeywordCount: 49,
     usePromptAsContext: true,
-    useColorsAsContext: true,
+    singleBoardOnly: false,
     skipFilled: true,
     overwriteMode: 'missing-only',
   }
 }
 
+// 4 concurrent OpenAI calls per user. Safe: JS is single-threaded so the
+// shared usedTitles Set updates atomically between awaits. Any title collision
+// between parallel workers is resolved by generateUnique's retry loop which
+// re-snapshots the set on each attempt.
+const CONCURRENCY = 4
 const MAX_UNIQUENESS_ATTEMPTS = 3
 const DISAMBIGUATOR_SUFFIXES = [
   'Print', 'Wall Art', 'Decor', 'Edition',
@@ -111,61 +116,70 @@ export function useAiMetadataGeneration() {
     progress.status = 'running'
     progress.total = images.length
 
-    // Track titles used in this run (case-insensitive). Seed with titles that
-    // already exist on the batch — those are still "taken" relative to new
-    // generations, even though they were set before this run.
+    // Seed usedTitles with titles already set on the batch so new generations
+    // don't collide with pre-existing ones either.
     const usedTitles = new Set()
     for (const img of images) {
       const t = img?.pinterest?.title
       if (t) usedTitles.add(norm(t))
     }
 
-    for (const img of images) {
-      if (progress.status === 'cancelled') break
+    // Shared queue pointer. Safe: head++ executes synchronously before the
+    // next await so no two workers ever claim the same index.
+    let head = 0
 
-      if (!needsGeneration(img)) {
-        progress.imageStatuses[img.id] = 'skipped'
-        progress.skippedCount++
-        progress.current++
-        continue
-      }
+    async function worker() {
+      while (head < images.length) {
+        if (progress.status === 'cancelled') break
 
-      progress.imageStatuses[img.id] = 'generating'
-      progress.current++
+        const img = images[head++]
 
-      try {
-        const partial = await generateUnique(img, generateFn, usedTitles)
-
-        // Drop the image's prior title from the used set before re-adding,
-        // otherwise re-running on the same image flags its own old title as
-        // a collision.
-        const prior = norm(img?.pinterest?.title)
-        if (prior) usedTitles.delete(prior)
-
-        const newTitle = partial?.pinterest?.title
-        if (newTitle) usedTitles.add(norm(newTitle))
-
-        const updated = {
-          ...img,
-          pinterest: { ...img.pinterest, ...partial.pinterest },
-          adobeStock: { ...img.adobeStock, ...partial.adobeStock },
-          updatedAt: new Date().toISOString(),
+        if (!needsGeneration(img)) {
+          progress.imageStatuses[img.id] = 'skipped'
+          progress.skippedCount++
+          progress.current++
+          continue
         }
-        progress.imageStatuses[img.id] = 'done'
-        progress.successCount++
-        onUpdate(updated)
-      } catch (e) {
-        progress.imageStatuses[img.id] = 'failed'
-        progress.failedCount++
-        progress.failedIds.push(img.id)
-        progress.lastError = e?.data?.statusMessage ?? e?.message ?? 'Unknown error'
-        // Quota exhausted — no point continuing, every remaining call will fail.
-        if (e?.status === 402 || e?.statusCode === 402) {
-          progress.status = 'cancelled'
-          break
+
+        progress.imageStatuses[img.id] = 'generating'
+        progress.current++
+
+        try {
+          const partial = await generateUnique(img, generateFn, usedTitles)
+
+          // Drop the image's prior title before re-adding so re-runs on the
+          // same image don't flag their own old title as a collision.
+          const prior = norm(img?.pinterest?.title)
+          if (prior) usedTitles.delete(prior)
+
+          const newTitle = partial?.pinterest?.title
+          if (newTitle) usedTitles.add(norm(newTitle))
+
+          const updated = {
+            ...img,
+            pinterest:  { ...img.pinterest,  ...partial.pinterest  },
+            adobeStock: { ...img.adobeStock, ...partial.adobeStock },
+            updatedAt:  new Date().toISOString(),
+          }
+          progress.imageStatuses[img.id] = 'done'
+          progress.successCount++
+          onUpdate(updated)
+        } catch (e) {
+          progress.imageStatuses[img.id] = 'failed'
+          progress.failedCount++
+          progress.failedIds.push(img.id)
+          progress.lastError = e?.data?.statusMessage ?? e?.message ?? 'Unknown error'
+          // Quota exhausted — abort immediately, every remaining call will also fail.
+          if (e?.status === 402 || e?.statusCode === 402) {
+            progress.status = 'cancelled'
+            break
+          }
         }
       }
     }
+
+    // Run CONCURRENCY workers; each drains the shared queue until empty.
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker))
 
     if (progress.status !== 'cancelled') progress.status = 'done'
   }
