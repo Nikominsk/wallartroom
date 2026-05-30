@@ -10,7 +10,6 @@ function defaultFilters() {
     // Default: hide already-exported pins so the grid focuses on work still to
     // be done. The user can flip it to "Any" or "Exported" via the filter UI.
     pinterestExported: 'not-exported',
-    pinterestPublished: '',
     pinterestBoard: '',
     pinterestDateFrom: '',
     pinterestDateTo: '',
@@ -39,7 +38,7 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest')) 
   // Filters belonging to the inactive mode are ignored — they're hidden in the
   // UI for that mode, so showing a non-default state would be misleading.
   const defaultsSnapshot = defaultFilters()
-  const PINTEREST_KEYS = new Set(['pinterestComplete', 'pinterestDate', 'pinterestExported', 'pinterestPublished', 'pinterestBoard', 'pinterestDateFrom', 'pinterestDateTo'])
+  const PINTEREST_KEYS = new Set(['pinterestComplete', 'pinterestDate', 'pinterestExported', 'pinterestBoard', 'pinterestDateFrom', 'pinterestDateTo'])
   const ADOBE_KEYS = new Set(['adobeStockComplete', 'adobeStockDate'])
   const hasFilters = computed(() => {
     for (const key of Object.keys(defaultsSnapshot)) {
@@ -99,19 +98,12 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest')) 
       if (isPinterestMode.value && filters.pinterestExported) {
         const exp = !!img.pinterest.exportedAt
           || img.pinterest.status === 'exported'
-          || img.pinterest.status === 'published'
         if (filters.pinterestExported === 'exported' && !exp) return false
         if (filters.pinterestExported === 'not-exported' && exp) return false
       }
 
-      if (isPinterestMode.value && filters.pinterestPublished) {
-        const pub = !!img.pinterest.publishedAt
-        if (filters.pinterestPublished === 'published' && !pub) return false
-        if (filters.pinterestPublished === 'not-published' && pub) return false
-      }
-
       if (isPinterestMode.value && filters.pinterestBoard) {
-        if (img.pinterest.board !== filters.pinterestBoard) return false
+        if (img.pinterest.boardId !== filters.pinterestBoard) return false
       }
 
       if (isPinterestMode.value && (filters.pinterestDateFrom || filters.pinterestDateTo)) {

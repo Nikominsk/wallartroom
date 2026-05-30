@@ -29,19 +29,6 @@ export function useDuplicateGuard() {
       const img = images[i]
       const title = img?.pinterest?.title || ''
 
-      // Freshness check: if published more than 90 days ago and low engagement
-      if (img.status === 'published' && img.publishedAt) {
-        const daysSince = Math.floor((Date.now() - new Date(img.publishedAt).getTime()) / (1000 * 60 * 60 * 24))
-        if (daysSince > 90) {
-          stale.push({
-            id: img.id,
-            title: title || img.filename,
-            daysSince,
-            suggestion: 'Consider creating a fresh variant with updated title and description',
-          })
-        }
-      }
-
       // Duplicate title detection
       if (!title || checked.has(img.id)) continue
 

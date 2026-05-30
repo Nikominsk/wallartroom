@@ -15,6 +15,10 @@
       </div>
 
       <div class="admin__head-right">
+        <NuxtLink to="/admin/help" class="admin__link admin__link--help">
+          Help Tickets
+          <span v-if="openTickets > 0" class="admin__help-badge">{{ openTickets }}</span>
+        </NuxtLink>
         <NuxtLink to="/metadata" class="admin__link">↳ Metadata workspace</NuxtLink>
         <button
           class="admin__refresh"
@@ -263,32 +267,6 @@
 
       </div>
 
-      <!-- ── Recent uploads ─────────────────────────────────────────────── -->
-      <section class="admin__card">
-        <div class="admin__card-head">
-          <h2 class="admin__card-title">Recent uploads</h2>
-          <span class="admin__card-meta">latest {{ data.recentUploads.length }} in range</span>
-        </div>
-        <div v-if="!data.recentUploads.length" class="admin__empty">No uploads in this range.</div>
-        <div v-else class="admin__uploads">
-          <div
-            v-for="img in data.recentUploads"
-            :key="img.id"
-            class="admin__upload"
-            :title="`${img.filename}\n${img.user_email || '—'} · ${img.project || '—'}`"
-          >
-            <div class="admin__upload-thumb">
-              <img v-if="img.thumbnail_url" :src="img.thumbnail_url" :alt="img.filename" loading="lazy" />
-              <div v-else class="admin__upload-placeholder" />
-            </div>
-            <div class="admin__upload-meta">
-              <div class="admin__upload-email">{{ img.user_email || '—' }}</div>
-              <div class="admin__upload-time">{{ formatRel(img.created_at) }}</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- ── New users (only when range has any) ────────────────────────── -->
       <section v-if="data.newUsers.length" class="admin__card">
         <div class="admin__card-head">
@@ -329,19 +307,16 @@ const RANGE_PRESETS = [
 ]
 
 const STACK_COLORS = {
-  uploads:   '#c08457',
-  pins:      '#6366f1',
-  exported:  '#f59e0b',
-  published: '#22c55e',
-  csv:       '#0ea5e9',
+  uploads:  '#c08457',
+  pins:     '#6366f1',
+  exported: '#f59e0b',
+  csv:      '#0ea5e9',
 }
 
 const STATUS_COLORS = {
-  draft:     '#94a3b8',
-  ready:     '#6366f1',
-  exported:  '#f59e0b',
-  published: '#22c55e',
-  error:     '#ef4444',
+  draft:    '#94a3b8',
+  exported: '#f59e0b',
+  error:    '#ef4444',
 }
 
 const activeRange = ref('today')
@@ -403,10 +378,40 @@ const query = computed(() => ({
   to:   range.value.to.toISOString(),
 }))
 
-const { data, status, error, refresh } = useFetch('/api/admin/overview', {
-  query,
-  lazy: true,
-  watch: [query],
+// NOTE: deliberately uses on-demand `$fetch` (client-side) rather than
+// `useFetch`. This page is auth-gated and has no SSR benefit, and the reactive
+// `useFetch(url, { query, watch })` form was crashing inside Nuxt's
+// useAsyncData internals on this route. Plain $fetch + watch is the pattern the
+// rest of the app uses and is rock-solid here.
+const data    = ref(null)
+const status  = ref('pending') // 'pending' | 'success' | 'error'
+const error   = ref(null)
+
+async function load() {
+  status.value = 'pending'
+  error.value  = null
+  try {
+    data.value   = await $fetch('/api/admin/overview', { query: query.value })
+    status.value = 'success'
+  } catch (e) {
+    error.value  = e
+    status.value = 'error'
+  }
+}
+
+function refresh() {
+  return load()
+}
+
+watch(query, load)
+onMounted(load)
+
+const openTickets = ref(0)
+onMounted(async () => {
+  try {
+    const t = await $fetch('/api/admin/help-tickets')
+    openTickets.value = t.openCount ?? 0
+  } catch {}
 })
 
 // ── KPI cards ────────────────────────────────────────────────────────────
@@ -419,7 +424,6 @@ const kpiCards = computed(() => {
     { label: 'Uploads',     value: r.uploads,       sub: `${l.images} lifetime`,     color: STACK_COLORS.uploads },
     { label: 'Pins created', value: r.pinsCreated,  sub: `${l.pins} lifetime`,        color: STACK_COLORS.pins },
     { label: 'Exported',    value: r.pinsExported,  sub: `${data.value.statusCounts.exported} pending export`, color: STACK_COLORS.exported },
-    { label: 'Published',   value: r.pinsPublished, sub: `${data.value.statusCounts.published} lifetime`, color: STACK_COLORS.published },
     { label: 'CSV exports', value: r.csvExports,    sub: `${r.csvRows} rows`,         color: STACK_COLORS.csv },
     { label: 'Active users', value: r.activeUsers,  sub: `${r.newUsers} new · ${l.users} total`, color: '#9b5f3d' },
     { label: 'New projects', value: r.newProjects,  sub: `${l.projects} lifetime`,    color: '#8b5cf6' },
@@ -433,7 +437,6 @@ const stackSeries = [
   { key: 'uploads',   label: 'Uploads',   color: STACK_COLORS.uploads },
   { key: 'pins',      label: 'Pins',      color: STACK_COLORS.pins },
   { key: 'exported',  label: 'Exported',  color: STACK_COLORS.exported },
-  { key: 'published', label: 'Published', color: STACK_COLORS.published },
   { key: 'csv',       label: 'CSV',       color: STACK_COLORS.csv },
 ]
 
@@ -515,11 +518,9 @@ const pipelineRows = computed(() => {
   const sc = data.value.statusCounts
   const total = pipelineTotal.value || 1
   return [
-    { key: 'draft',     label: 'Draft',     color: STATUS_COLORS.draft,     count: sc.draft,     pct: Math.round(sc.draft     / total * 100) },
-    { key: 'ready',     label: 'Ready',     color: STATUS_COLORS.ready,     count: sc.ready,     pct: Math.round(sc.ready     / total * 100) },
-    { key: 'exported',  label: 'Exported',  color: STATUS_COLORS.exported,  count: sc.exported,  pct: Math.round(sc.exported  / total * 100) },
-    { key: 'published', label: 'Published', color: STATUS_COLORS.published, count: sc.published, pct: Math.round(sc.published / total * 100) },
-    { key: 'error',     label: 'Error',     color: STATUS_COLORS.error,     count: sc.error,     pct: Math.round(sc.error     / total * 100) },
+    { key: 'draft',    label: 'Draft',    color: STATUS_COLORS.draft,    count: sc.draft,    pct: Math.round(sc.draft    / total * 100) },
+    { key: 'exported', label: 'Exported', color: STATUS_COLORS.exported, count: sc.exported, pct: Math.round(sc.exported / total * 100) },
+    { key: 'error',    label: 'Error',    color: STATUS_COLORS.error,    count: sc.error,    pct: Math.round(sc.error    / total * 100) },
   ]
 })
 
@@ -630,6 +631,27 @@ function formatRel(iso) {
     color: #8a7a6e;
     text-decoration: none;
     &:hover { color: #6b4423; }
+
+    &--help {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  &__help-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
   }
 
   &__refresh {

@@ -23,11 +23,12 @@
           <select
             v-if="boards.length"
             class="bulk-form__input bulk-form__board-select"
-            v-model="spec.pinterestBoard.value"
+            :value="spec.pinterestBoard.value"
             :disabled="!spec.pinterestBoard.enabled || spec.pinterestBoard.clear"
+            @change="onBoardChange($event.target.value)"
           >
             <option value="">— select board —</option>
-            <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
+            <option v-for="b in boards" :key="b.id" :value="b.id">{{ b.name }}</option>
           </select>
           <input
             v-else
@@ -101,7 +102,7 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   spec: Object,
   count: Number,
   boards: { type: Array, default: () => [] },
@@ -109,6 +110,12 @@ defineProps({
 })
 
 defineEmits(['manage-boards'])
+
+function onBoardChange(boardId) {
+  const board = props.boards.find(b => b.id === boardId)
+  props.spec.pinterestBoard.value = boardId
+  props.spec.pinterestBoard.name  = board?.name ?? ''
+}
 
 function toDatetimeLocal(iso) {
   if (!iso) return ''

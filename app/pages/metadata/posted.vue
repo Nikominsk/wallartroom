@@ -5,7 +5,7 @@ definePageMeta({
   layout: 'metadata',
   gallery: {
     viewLabel: 'Posted',
-    presetStatus: ['exported', 'published'],
+    presetStatus: ['exported'],
   },
 })
 </script>

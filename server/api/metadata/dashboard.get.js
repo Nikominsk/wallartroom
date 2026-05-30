@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
     { data: pins, error: pinsError },
     { data: boards },
     { data: upcomingRaw, error: upcomingError },
+    { count: totalImages },
   ] = await Promise.all([
     client
       .from('pinterest_image')
@@ -27,6 +28,10 @@ export default defineEventHandler(async (event) => {
       .gte('publish_date', today.toISOString())
       .lt('publish_date', next7.toISOString())
       .order('publish_date', { ascending: true }),
+    client
+      .from('image')
+      .select('*', { count: 'exact', head: true })
+      .eq('project_id', projectId),
   ])
 
   if (pinsError) throw createError({ statusCode: 500, statusMessage: pinsError.message })
@@ -35,10 +40,13 @@ export default defineEventHandler(async (event) => {
   const all = pins ?? []
   const boardColorMap = new Map((boards ?? []).map(b => [b.name, b.color]))
 
-  // Status counts
-  const statusCounts = { draft: 0, ready: 0, exported: 0, published: 0, error: 0 }
-  for (const p of all) {
-    if (p.status in statusCounts) statusCounts[p.status]++
+  // Status counts — draft is derived from total images so it matches the
+  // drafts page (which includes images that have no pinterest_image row yet).
+  const exportedCount = all.filter(p => p.status === 'exported').length
+  const scheduledCount = all.filter(p => p.publish_date && p.status !== 'exported').length
+  const statusCounts = {
+    draft:    (totalImages ?? 0) - exportedCount,
+    exported: exportedCount,
   }
 
   // Board distribution (top 7 by count)
@@ -108,6 +116,7 @@ export default defineEventHandler(async (event) => {
 
   return {
     statusCounts,
+    scheduled: scheduledCount,
     boardCounts,
     weeklySchedule,
     upcomingPins,

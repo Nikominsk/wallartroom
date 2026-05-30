@@ -14,6 +14,7 @@
       </div>
 
       <button class="login-page__btn" :disabled="loading" @click="signIn">
+
         <svg v-if="loading" class="login-page__spinner" width="18" height="18" viewBox="0 0 22 22" fill="none">
           <circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="28" stroke-dashoffset="14" />
         </svg>
@@ -25,6 +26,11 @@
         </svg>
         {{ loading ? 'Redirecting…' : 'Sign in with Google' }}
       </button>
+      <p class="login-page__legal">
+        By signing in you agree to our
+        <NuxtLink to="/privacy" class="login-page__legal-link">Privacy Policy</NuxtLink>.
+        We only use strictly necessary cookies.
+      </p>
     </div>
   </div>
 </template>
@@ -155,6 +161,21 @@ async function signIn() {
 
   &__spinner {
     animation: login-spin 0.8s linear infinite;
+  }
+
+  &__legal {
+    margin: 16px 0 0;
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  &__legal-link {
+    color: #9ca3af;
+    text-decoration: underline;
+
+    &:hover { color: #6b7280; }
   }
 
   @keyframes login-spin { to { transform: rotate(360deg); } }

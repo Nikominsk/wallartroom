@@ -5,7 +5,7 @@ definePageMeta({
   layout: 'metadata',
   gallery: {
     viewLabel: 'Drafts',
-    presetStatus: ['draft', 'ready'],
+    presetStatus: ['draft'],
   },
 })
 </script>

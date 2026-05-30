@@ -146,26 +146,53 @@
                   <span v-if="!board.color" class="board-row__swatch-auto">A</span>
                 </button>
 
-                <input
-                  v-model.trim="editNames[board.id]"
-                  class="board-row__name-input"
-                  :placeholder="board.name"
-                  @blur="commitName(board)"
-                  @keydown.enter.prevent="$event.target.blur()"
-                />
+                <!-- View mode -->
+                <template v-if="editingId !== board.id">
+                  <span class="board-row__name-label">{{ board.name }}</span>
+                  <button
+                    type="button"
+                    class="board-row__icon-btn"
+                    title="Rename board"
+                    @click="startEditName(board)"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.5 2.5a2.121 2.121 0 0 1 3 3L6 17H3v-3L14.5 2.5z"/>
+                    </svg>
+                  </button>
+                  <button
+                    class="settings-btn settings-btn--ghost-danger"
+                    type="button"
+                    :disabled="deletingId === board.id"
+                    @click="handleDelete(board)"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 4h10M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1M5 4l1 9a1 1 0 001 1h2a1 1 0 001-1l1-9" />
+                    </svg>
+                  </button>
+                </template>
 
-                <span v-if="rowError[board.id]" class="board-row__error" :title="rowError[board.id]">{{ rowError[board.id] }}</span>
+                <!-- Edit mode -->
+                <template v-else>
+                  <input
+                    v-model.trim="editNames[board.id]"
+                    class="board-row__name-input"
+                    @keydown.enter.prevent="commitName(board)"
+                    @keydown.esc="cancelEditName(board)"
+                  />
+                  <button
+                    type="button"
+                    class="settings-btn settings-btn--primary settings-btn--sm"
+                    :disabled="!editNames[board.id] || editNames[board.id] === board.name"
+                    @click="commitName(board)"
+                  >Save</button>
+                  <button
+                    type="button"
+                    class="settings-btn settings-btn--sm"
+                    @click="cancelEditName(board)"
+                  >Cancel</button>
+                </template>
 
-                <button
-                  class="settings-btn settings-btn--ghost-danger"
-                  type="button"
-                  :disabled="deletingId === board.id"
-                  @click="handleDelete(board)"
-                >
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 4h10M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1M5 4l1 9a1 1 0 001 1h2a1 1 0 001-1l1-9" />
-                  </svg>
-                </button>
+                <span v-if="rowError[board.id]" class="board-row__error board-row__error--full" :title="rowError[board.id]">{{ rowError[board.id] }}</span>
 
                 <!-- Color picker popover (inline, anchored to this row) -->
                 <div
@@ -802,6 +829,7 @@
 
 <script setup>
 definePageMeta({ layout: 'metadata' })
+const { confirm } = useConfirm()
 
 // ── State ─────────────────────────────────────────────────────────────────────
 // Pickable swatches. The FIRST 8 must stay in sync with FALLBACK_PALETTE in
@@ -884,9 +912,10 @@ const addingBoard = ref(false)
 const addError = ref('')
 const deletingId = ref(null)
 
-// Per-row editable name + per-row inline error
+// Per-row editable name + per-row inline error + which row is in edit mode
 const editNames = reactive({})
-const rowError = reactive({})
+const rowError  = reactive({})
+const editingId = ref(null)
 
 // Which row has its color picker open ('new', a board id, or null)
 const pickerOpenFor = ref(null)
@@ -969,15 +998,25 @@ async function setColor(board, color) {
   }
 }
 
+function startEditName(board) {
+  editingId.value = board.id
+  editNames[board.id] = board.name
+  rowError[board.id] = ''
+}
+
+function cancelEditName(board) {
+  editingId.value = null
+  editNames[board.id] = board.name
+  rowError[board.id] = ''
+}
+
 async function commitName(board) {
   const next = (editNames[board.id] ?? '').trim()
-  if (!next || next === board.name) {
-    editNames[board.id] = board.name
-    return
-  }
+  if (!next || next === board.name) { cancelEditName(board); return }
   rowError[board.id] = ''
   try {
     await updateBoard(board.id, { name: next })
+    editingId.value = null
   } catch (e) {
     rowError[board.id] = e?.data?.statusMessage ?? 'Could not rename board'
     editNames[board.id] = board.name
@@ -1000,7 +1039,7 @@ async function handleAddBoard() {
 }
 
 async function handleDelete(board) {
-  if (!confirm(`Delete board "${board.name}"? This can't be undone.`)) return
+  if (!await confirm(`Delete board "${board.name}"? This can't be undone.`)) return
   deletingId.value = board.id
   rowError[board.id] = ''
   try {
@@ -1121,7 +1160,7 @@ async function saveTplOptions(tpl) {
 }
 
 async function deleteTpl(id) {
-  if (!confirm('Delete this template? This cannot be undone.')) return
+  if (!await confirm('Delete this template? This cannot be undone.')) return
   tplDeleting.value = id
   try {
     await removeTemplate(id)
@@ -1689,7 +1728,13 @@ onMounted(() => {
     color: #fff;
     font-weight: 600;
 
-    &:hover { background: color-mix(in srgb, #{$color-accent} 94%, #000); border-color: color-mix(in srgb, #{$color-accent} 94%, #000); }
+    &:hover:not(:disabled) { background: color-mix(in srgb, #{$color-accent} 94%, #000); border-color: color-mix(in srgb, #{$color-accent} 94%, #000); }
+  }
+
+  &--sm {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
   }
 
   &--ghost-danger {
@@ -1858,22 +1903,32 @@ onMounted(() => {
     color: rgba(255, 255, 255, 0.85);
   }
 
+  &__name-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: $color-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   &__name-input {
     flex: 1;
     min-width: 0;
     height: 32px;
     padding: 0 10px;
-    border: 1px solid transparent;
+    border: 1px solid #e5e7eb;
     border-radius: 7px;
     font: inherit;
     font-size: 13.5px;
     color: $color-primary;
-    background: transparent;
-    transition: border-color 0.15s, background 0.15s;
+    background: #fff;
+    transition: border-color 0.15s;
     box-sizing: border-box;
 
-    &:hover { background: #fff; border-color: #e5e7eb; }
-    &:focus { outline: none; background: #fff; border-color: $color-accent; }
+    &:focus { outline: none; border-color: $color-accent; }
   }
 
   &--new &__name-input {
@@ -1881,14 +1936,31 @@ onMounted(() => {
     border-color: #e5e7eb;
   }
 
+  &__icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background 0.12s, color 0.12s;
+
+    &:hover { background: #f3f4f6; color: $color-primary; }
+  }
+
   &__error {
     color: #b91c1c;
     font-size: 12px;
     font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 220px;
+    word-break: break-word;
+
+    &--full { width: 100%; }
   }
 
   &__picker {

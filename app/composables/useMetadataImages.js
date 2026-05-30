@@ -22,6 +22,7 @@ function mapRow(row) {
       pinId: p.pin_id ?? null,
       title: p.title ?? '',
       description: p.description ?? '',
+      boardId: p.board_id ?? null,
       board: p.board ?? '',
       link: p.link ?? '',
       publishDate: p.publish_date ?? null,

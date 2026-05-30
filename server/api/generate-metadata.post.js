@@ -1,4 +1,9 @@
 export default defineEventHandler(async (event) => {
+  // Require login + enforce the free-plan AI generation cap (402 when exhausted).
+  // Pro users are unlimited (assertQuota returns without throwing).
+  const user = await requireUser(event)
+  await assertQuota(event, user.id, 'aiGenerations', 1)
+
   const body = await readBody(event)
   const { filename, prompt, colors, additionalContext, accountContext, options, boards, existingTitles } = body
 
@@ -119,6 +124,9 @@ Respond with a JSON object containing exactly two keys: "title" (string) and "de
   // user-configured max in code — but instead of a dumb mid-word slice, we cut
   // at the last full sentence (or failing that, the last word) so the text
   // still reads cleanly.
+  // Count this successful generation against the user's plan quota (no-op for pro).
+  await recordUsage(event, user.id, { aiGenerations: 1 })
+
   return {
     pinterest: {
       title: trimToLimit(clean(parsed.title), titleMax, { sentenceAware: false }),

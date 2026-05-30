@@ -22,9 +22,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'No fields to update' })
   }
 
-  // If the name is changing, mirror it onto every pinterest_image.board
-  // reference IN THIS PROJECT so existing pins keep their board association.
-  let oldName
   if (patch.name !== undefined) {
     const { data: current, error: fetchErr } = await client
       .from('pinterest_board')
@@ -33,7 +30,6 @@ export default defineEventHandler(async (event) => {
       .eq('project_id', projectId)
       .single()
     if (fetchErr || !current) throw createError({ statusCode: 404, statusMessage: 'Board not found' })
-    oldName = current.name
   }
 
   const { data, error } = await client
@@ -50,12 +46,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
-  if (patch.name !== undefined && oldName && oldName !== patch.name) {
+  // Keep the denormalized board name in sync for all images that reference
+  // this board by ID (reliable regardless of what name the client had cached).
+  if (patch.name !== undefined) {
     const { error: rebindErr } = await client
       .from('pinterest_image')
       .update({ board: patch.name })
       .eq('project_id', projectId)
-      .eq('board', oldName)
+      .eq('board_id', id)
     if (rebindErr) throw createError({ statusCode: 500, statusMessage: rebindErr.message })
   }
 

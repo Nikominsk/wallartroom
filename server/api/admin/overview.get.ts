@@ -170,7 +170,7 @@ export default defineEventHandler(async (event) => {
 
   // ── Lifetime pipeline status counts ─────────────────────────────────────
   const statusCounts: Record<string, number> = {
-    draft: 0, ready: 0, exported: 0, published: 0, error: 0,
+    draft: 0, exported: 0, error: 0,
   }
   for (const r of pinStatusRows) {
     const s = r.status

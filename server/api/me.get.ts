@@ -31,6 +31,19 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: `projects: ${projectsRes.error.message}` })
   }
 
+  // Free-plan usage counters + the limits that apply to this user's plan.
+  // limit === null means unlimited (paid plans).
+  const planUsage = await getPlanUsage(event, user.id)
+  const planLimits = limitsForPlan(profileRes.data.plan)
+  const usage = {
+    imageUploads:  planUsage.imageUploads,
+    aiGenerations: planUsage.aiGenerations,
+  }
+  const limits = {
+    imageUploads:  isUnlimited(planLimits.imageUploads)  ? null : planLimits.imageUploads,
+    aiGenerations: isUnlimited(planLimits.aiGenerations) ? null : planLimits.aiGenerations,
+  }
+
   const w = walletRes.data
   const wallet = {
     monthlyCreditsRemaining:   w.monthly_credits_remaining,
@@ -57,6 +70,8 @@ export default defineEventHandler(async (event) => {
     },
     stripeCustomerId: profileRes.data.stripe_customer_id,
     wallet,
+    usage,
+    limits,
     projects: projectsRes.data.map((p) => ({
       id:           p.id,
       title:        p.title,

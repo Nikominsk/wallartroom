@@ -88,6 +88,7 @@
               :style="{ '--bc': colorForBoard(pin.board) }"
               @mouseenter="showTip($event, pin)"
               @mouseleave="hideTip"
+              @click="openInSchedules(pin)"
             >
               <span class="cal__chip-time">{{ formatTime(pin.publish_date) }}</span>
             </div>
@@ -244,6 +245,13 @@ function showTip(event, pin) {
 }
 function hideTip() {
   tip.visible = false
+}
+
+function openInSchedules(pin) {
+  const filename = pin.filename?.replace(/\.[^.]+$/, '') || pin.title
+  if (!filename) return
+  hideTip()
+  window.open(`/metadata?search=${encodeURIComponent(filename)}`, '_blank')
 }
 </script>
 
@@ -497,7 +505,7 @@ function hideTip() {
     border-left: 2px solid var(--bc, #6366f1);
     background: color-mix(in srgb, var(--bc, #6366f1) 14%, transparent);
     overflow: hidden;
-    cursor: default;
+    cursor: pointer;
     min-width: 0;
 
     &:hover {

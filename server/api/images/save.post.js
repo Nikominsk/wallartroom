@@ -24,27 +24,69 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'No matching images in the active project' })
   }
 
-  const pRows = scoped.map(img => ({
-    image_id: img.id,
-    project_id: projectId,
-    title: img.pinterest.title || null,
-    description: img.pinterest.description || null,
-    board: img.pinterest.board || null,
-    link: img.pinterest.link || null,
-    publish_date: img.pinterest.publishDate || null,
-    exported_at: img.pinterest.exportedAt || null,
-    published_at: img.pinterest.publishedAt || null,
-    status: img.pinterest.status ?? 'draft',
-  }))
+  // Validate all board IDs in a single query. A stale boardId (e.g. from a
+  // tab that had the board loaded before it was deleted) is caught here and
+  // returned as a clear 422 so the user knows what to fix.
+  const boardIds = [...new Set(scoped.map(i => i.pinterest?.boardId).filter(Boolean))]
+  const boardNameMap = {}
+  if (boardIds.length) {
+    const { data: boards, error: boardErr } = await client
+      .from('pinterest_board')
+      .select('id, name')
+      .eq('project_id', projectId)
+      .in('id', boardIds)
+    if (boardErr) throw createError({ statusCode: 500, statusMessage: boardErr.message })
+
+    const foundIds = new Set((boards ?? []).map(b => b.id))
+
+    // Collect all missing board IDs and resolve their cached names from the
+    // payload so the error message names the specific boards that are gone.
+    const missingIds = boardIds.filter(id => !foundIds.has(id))
+    if (missingIds.length) {
+      const payloadNameMap = {}
+      for (const img of scoped) {
+        if (img.pinterest?.boardId) payloadNameMap[img.pinterest.boardId] = img.pinterest?.board || null
+      }
+      const names = missingIds.map(id => payloadNameMap[id] ? `"${payloadNameMap[id]}"` : `(id: ${id})`)
+      const list = names.join(', ')
+      throw createError({
+        statusCode: 422,
+        statusMessage: names.length === 1
+          ? `Board ${list} no longer exists. Please select a different board.`
+          : `These boards no longer exist: ${list}. Please select different boards for the affected images.`,
+      })
+    }
+    for (const b of boards ?? []) boardNameMap[b.id] = b.name
+  }
+
+  const pRows = scoped.map(img => {
+    const boardId = img.pinterest?.boardId ?? null
+    // Derive the board name from the DB record (handles renames automatically).
+    // Fall back to the name the client sent only when there is no boardId.
+    const board = boardId ? (boardNameMap[boardId] ?? null) : (img.pinterest?.board || null)
+    return {
+      image_id:     img.id,
+      project_id:   projectId,
+      title:        img.pinterest.title || null,
+      description:  img.pinterest.description || null,
+      board_id:     boardId,
+      board,
+      link:         img.pinterest.link || null,
+      publish_date: img.pinterest.publishDate || null,
+      exported_at:  img.pinterest.exportedAt || null,
+      published_at: img.pinterest.publishedAt || null,
+      status:       img.pinterest.status ?? 'draft',
+    }
+  })
 
   const aRows = scoped.map(img => ({
-    image_id: img.id,
-    project_id: projectId,
-    title: img.adobeStock.title || null,
-    description: img.adobeStock.description || null,
-    keywords: img.adobeStock.keywords?.length ? img.adobeStock.keywords : null,
+    image_id:     img.id,
+    project_id:   projectId,
+    title:        img.adobeStock.title || null,
+    description:  img.adobeStock.description || null,
+    keywords:     img.adobeStock.keywords?.length ? img.adobeStock.keywords : null,
     publish_date: img.adobeStock.publishDate || null,
-    status: img.adobeStock.status ?? 'draft',
+    status:       img.adobeStock.status ?? 'draft',
   }))
 
   const { error: pe } = await client

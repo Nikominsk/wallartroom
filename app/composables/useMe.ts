@@ -19,6 +19,17 @@ export interface MeWallet {
   available:                 number
 }
 
+export interface MeUsage {
+  imageUploads:  number
+  aiGenerations: number
+}
+
+// null = unlimited (paid plans)
+export interface MeLimits {
+  imageUploads:  number | null
+  aiGenerations: number | null
+}
+
 export interface Me {
   id:    string
   email: string
@@ -31,6 +42,8 @@ export interface Me {
   }
   stripeCustomerId: string | null
   wallet:           MeWallet
+  usage:            MeUsage
+  limits:           MeLimits
   projects:         MeProject[]
 }
 

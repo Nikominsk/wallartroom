@@ -3,7 +3,7 @@
     <header class="profile-page__header">
       <div>
         <h1 class="profile-page__title">Profile</h1>
-        <p class="profile-page__subtitle">Your account details and credit balance.</p>
+        <p class="profile-page__subtitle">Your account details and plan usage.</p>
       </div>
     </header>
 
@@ -39,49 +39,33 @@
         </div>
       </div>
 
-      <!-- ── Credits card ──────────────────────────────────────────────── -->
+      <!-- ── Plan usage card ───────────────────────────────────────────── -->
       <div class="profile-card" v-if="me">
         <div class="profile-card__section-title">
           <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="10" cy="10" r="8"/>
-            <path d="M10 6v4l2.5 2.5"/>
+            <path d="M3 3v14h14"/>
+            <path d="M7 13l3-4 3 2 3-5"/>
           </svg>
-          AI Credits
+          Plan usage
         </div>
 
-        <!-- Available total -->
-        <div class="profile-credits__total">
-          <span class="profile-credits__total-num">{{ me.wallet.available }}</span>
-          <span class="profile-credits__total-label">credits available</span>
-        </div>
-
-        <!-- Monthly bar -->
-        <div class="profile-credits__row">
+        <div v-for="u in usageRows" :key="u.key" class="profile-credits__row">
           <div class="profile-credits__row-info">
-            <span class="profile-credits__row-label">Monthly</span>
+            <span class="profile-credits__row-label">{{ u.label }}</span>
             <span class="profile-credits__row-count">
-              {{ me.wallet.monthlyCreditsRemaining }} / {{ me.wallet.monthlyCreditsTotal }}
+              <template v-if="u.limit !== null">{{ u.used }} / {{ u.limit }}</template>
+              <template v-else>{{ u.used }} · Unlimited</template>
             </span>
           </div>
-          <div class="profile-credits__bar">
-            <div
-              class="profile-credits__bar-fill"
-              :style="{ width: monthlyPct + '%' }"
-            />
+          <div v-if="u.limit !== null" class="profile-credits__bar">
+            <div class="profile-credits__bar-fill" :style="{ width: u.pct + '%' }" />
           </div>
           <p class="profile-credits__row-hint">
-            Resets {{ resetDate }}
+            <template v-if="u.limit !== null">{{ u.remaining }} remaining on the {{ planLabel }} plan</template>
+            <template v-else>Unlimited on the {{ planLabel }} plan</template>
           </p>
         </div>
 
-        <!-- Purchased credits row (only shown if > 0) -->
-        <div v-if="me.wallet.purchasedCreditsRemaining > 0" class="profile-credits__row profile-credits__row--purchased">
-          <div class="profile-credits__row-info">
-            <span class="profile-credits__row-label">Purchased</span>
-            <span class="profile-credits__row-count">{{ me.wallet.purchasedCreditsRemaining }}</span>
-          </div>
-          <p class="profile-credits__row-hint">Used after monthly credits run out</p>
-        </div>
       </div>
 
       <!-- Loading state -->
@@ -95,7 +79,7 @@
         <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
         </svg>
-        Could not load credit balance.
+        Could not load plan usage.
       </div>
 
       <!-- ── Danger zone: delete account ───────────────────────────────── -->
@@ -156,7 +140,7 @@ definePageMeta({ layout: 'metadata' })
 
 const user = useSupabaseUser()
 
-const { data: me, pending, error } = await useFetch('/api/me')
+const { data: me, pending, error } = useFetch('/api/me', { lazy: true })
 
 const displayName = computed(() => {
   const meta = user.value?.user_metadata ?? {}
@@ -176,17 +160,25 @@ const memberSince = computed(() => {
   return new Date(raw).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 })
 
-const resetDate = computed(() => {
-  const raw = me.value?.wallet?.resetDate
-  if (!raw) return '—'
-  return new Date(raw).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-})
+const planLabel = computed(() => capitalize(me.value?.plan ?? 'free'))
 
-const monthlyPct = computed(() => {
-  const total = me.value?.wallet?.monthlyCreditsTotal ?? 0
-  const rem   = me.value?.wallet?.monthlyCreditsRemaining ?? 0
-  if (!total) return 0
-  return Math.round((rem / total) * 100)
+// Free-plan usage vs. limits (limit === null means unlimited, i.e. Pro).
+const usageRows = computed(() => {
+  const usage = me.value?.usage
+  const limits = me.value?.limits
+  if (!usage || !limits) return []
+  const row = (key, label, used, limit) => ({
+    key,
+    label,
+    used,
+    limit,
+    remaining: limit === null ? null : Math.max(0, limit - used),
+    pct: limit ? Math.min(100, Math.round((used / limit) * 100)) : 0,
+  })
+  return [
+    row('uploads', 'Image uploads', usage.imageUploads, limits.imageUploads),
+    row('ai', 'AI generations', usage.aiGenerations, limits.aiGenerations),
+  ]
 })
 
 function capitalize(s) {
@@ -452,6 +444,17 @@ async function handleDeleteAccount() {
     font-size: 12px;
     color: #9ca3af;
     margin: 0;
+  }
+
+  &__upgrade {
+    display: inline-block;
+    margin-top: 18px;
+    color: $color-accent;
+    font-weight: 600;
+    font-size: 13.5px;
+    text-decoration: none;
+
+    &:hover { text-decoration: underline; }
   }
 
   &__skeleton {

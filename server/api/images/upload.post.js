@@ -12,6 +12,11 @@ const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 
 export default defineEventHandler(async (event) => {
   const { user, projectId } = await requireMetadataProject(event)
+
+  // Free plan: cap total uploads. Fails fast (402) before we spend an R2 write.
+  // Pro users are unlimited (assertQuota returns without throwing).
+  await assertQuota(event, user.id, 'imageUploads', 1)
+
   const parts = await readMultipartFormData(event)
   const filePart = parts?.find(p => p.name === 'file' && p.filename && p.data)
   if (!filePart) {
@@ -83,6 +88,9 @@ export default defineEventHandler(async (event) => {
       statusMessage: `Supabase insert failed: ${error.message}. (R2 key: ${key})`,
     })
   }
+
+  // Count this upload against the user's plan quota (no-op for pro/unlimited).
+  await recordUsage(event, user.id, { imageUploads: 1 })
 
   return { image: imageRow, key }
 })

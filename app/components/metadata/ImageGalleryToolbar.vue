@@ -65,17 +65,6 @@
 
         <div v-if="moreOpen" class="gallery-toolbar__menu">
           <button
-            v-if="mode === 'pinterest' && caps.timeManager"
-            class="gallery-toolbar__menu-item"
-            @click="emit('time-manager'); moreOpen = false"
-          >
-            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-              <rect x="2" y="3" width="16" height="15" rx="2" />
-              <path d="M6 1v4M14 1v4M2 8h16" />
-            </svg>
-            Time Manager
-          </button>
-          <button
             v-if="mode === 'pinterest' && caps.scheduling"
             class="gallery-toolbar__menu-item"
             @click="emit('pinterest-schedule'); moreOpen = false"
@@ -177,19 +166,6 @@
           </select>
         </div>
 
-        <div class="gallery-toolbar__filter-group">
-          <label class="gallery-toolbar__filter-label">Pinterest published</label>
-          <select
-            :value="filters.pinterestPublished"
-            class="gallery-toolbar__select gallery-toolbar__select--sm"
-            @change="updateFilter('pinterestPublished', $event.target.value)"
-          >
-            <option value="">Any</option>
-            <option value="published">Published</option>
-            <option value="not-published">Not published</option>
-          </select>
-        </div>
-
         <div v-if="boards.length" class="gallery-toolbar__filter-group">
           <label class="gallery-toolbar__filter-label">Pinterest board</label>
           <select
@@ -198,7 +174,7 @@
             @change="updateFilter('pinterestBoard', $event.target.value)"
           >
             <option value="">Any</option>
-            <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
+            <option v-for="b in boards" :key="b.id" :value="b.id">{{ b.name }}</option>
           </select>
         </div>
 
@@ -279,7 +255,7 @@ const props = defineProps({
   // Per-view action capabilities (see viewCaps in MetadataWorkspace).
   caps: {
     type: Object,
-    default: () => ({ exportCsv: true, scheduling: true, timeManager: true }),
+    default: () => ({ exportCsv: true, scheduling: true }),
   },
 })
 
@@ -289,7 +265,6 @@ const emit = defineEmits([
   'update:filter',
   'reset-filters',
   'clear-selection',
-  'time-manager',
   'pinterest-schedule',
   'export-csv',
   'show-invalid',

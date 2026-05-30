@@ -50,6 +50,7 @@
           </div>
           <div class="dash__kpi-count">{{ s.count }}</div>
           <div class="dash__kpi-sub">{{ s.pct }}% of total</div>
+          <div v-if="s.note" class="dash__kpi-note">{{ s.note }}</div>
           <div class="dash__kpi-track">
             <div class="dash__kpi-fill" :style="{ width: `${Math.max(s.pct, 2)}%` }" />
           </div>
@@ -292,7 +293,8 @@ function colorForBoard(name) {
 
 const totalPins = computed(() => {
   if (!data.value) return 0
-  return Object.values(data.value.statusCounts).reduce((s, n) => s + n, 0)
+  const sc = data.value.statusCounts
+  return sc.draft + sc.exported
 })
 
 const pipelineCards = computed(() => {
@@ -300,8 +302,8 @@ const pipelineCards = computed(() => {
   const sc = data.value.statusCounts
   const tot = totalPins.value || 1
   return [
-    { key: 'draft',    label: 'Draft',    color: STATUS_COLORS.draft,    count: sc.draft,    pct: Math.round(sc.draft    / tot * 100) },
-    { key: 'exported', label: 'Exported', color: STATUS_COLORS.exported, count: sc.exported, pct: Math.round(sc.exported / tot * 100) },
+    { key: 'draft',    label: 'Draft',    color: STATUS_COLORS.draft,    count: sc.draft,    pct: Math.round(sc.draft    / tot * 100), note: `${data.value.scheduled} scheduled` },
+    { key: 'exported', label: 'Exported', color: STATUS_COLORS.exported, count: sc.exported, pct: Math.round(sc.exported / tot * 100), note: null },
   ]
 })
 
@@ -552,6 +554,12 @@ function formatTime(dateStr) {
   &__kpi-sub {
     font-size: 11px;
     color: #9ca3af;
+  }
+
+  &__kpi-note {
+    font-size: 11px;
+    color: var(--c);
+    opacity: 0.8;
     margin-bottom: 9px;
   }
 

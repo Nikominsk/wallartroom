@@ -4,7 +4,7 @@
       <!-- ── Brand + collapse toggle ─────────────────────────────────── -->
       <div class="meta-shell__brand">
         <NuxtLink to="/metadata" class="meta-shell__brand-link" :title="collapsed ? 'WallArtRoom' : ''">
-          <span class="meta-shell__brand-mark">W</span>
+          <img src="/favicon.ico" class="meta-shell__brand-mark" alt="" width="28" height="28" />
           <span class="meta-shell__brand-text">Wall<span>Art</span>Room</span>
         </NuxtLink>
         <button
@@ -40,8 +40,20 @@
       <!-- ── Primary nav ─────────────────────────────────────────────── -->
       <nav class="meta-shell__nav" aria-label="Metadata sections">
         <template v-for="item in navItems" :key="item.to">
-          <!-- Parent -->
+          <!-- Parent: non-clickable section label -->
+          <div
+            v-if="item.noLink"
+            class="meta-shell__nav-item meta-shell__nav-item--parent meta-shell__nav-item--no-link"
+            :class="{ 'meta-shell__nav-item--parent-trail': isInChildTrail(item) }"
+            :title="collapsed ? item.label : ''"
+          >
+            <span class="meta-shell__nav-icon" v-html="item.icon" />
+            <span class="meta-shell__nav-label">{{ item.label }}</span>
+          </div>
+
+          <!-- Parent: regular link -->
           <NuxtLink
+            v-else
             :to="item.to"
             class="meta-shell__nav-item"
             :class="{
@@ -81,8 +93,27 @@
         </template>
       </nav>
 
-      <!-- ── Profile (pinned to the bottom, separated from the section nav) ── -->
+      <!-- ── Help + Profile (pinned to the bottom, separated from the section nav) ── -->
       <div class="meta-shell__profile">
+        <!-- Help -->
+        <button
+          class="meta-shell__nav-item meta-shell__nav-item--btn"
+          type="button"
+          :title="collapsed ? 'Help & Support' : ''"
+          :class="{ 'meta-shell__nav-item--active': helpOpen }"
+          @click="toggleHelp"
+        >
+          <span class="meta-shell__nav-icon">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M9 9a1 1 0 0 1 2 0c0 1-1.5 1.5-1.5 2.5"/><circle cx="10" cy="14.5" r=".75" fill="currentColor" stroke="none"/></svg>
+          </span>
+          <span class="meta-shell__nav-label">Help</span>
+          <span
+            v-if="helpUnreadCount > 0"
+            class="meta-shell__nav-badge"
+            :title="`${helpUnreadCount} new reply from the founder`"
+          >{{ helpUnreadCount }}</span>
+        </button>
+        <!-- Profile -->
         <NuxtLink
           to="/metadata/profile"
           class="meta-shell__nav-item"
@@ -95,6 +126,15 @@
           <span class="meta-shell__nav-label">Profile</span>
         </NuxtLink>
       </div>
+
+      <!-- ── Legal link ────────────────────────────────────────────── -->
+      <NuxtLink
+        v-if="!collapsed"
+        to="/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="meta-shell__privacy"
+      >Privacy Policy</NuxtLink>
 
       <!-- ── Footer: project switcher + user ─────────────────────────── -->
       <div class="meta-shell__footer">
@@ -143,6 +183,12 @@
         <MetadataUploadModal @close="closeUpload" @uploaded="onUploadedFromModal" />
       </div>
     </Teleport>
+
+    <!-- Single confirm/alert dialog instance for the whole metadata section. -->
+    <MetadataConfirmDialog />
+
+    <!-- Help chat popup -->
+    <MetadataHelpChat :open="helpOpen" @close="helpOpen = false" />
   </div>
 </template>
 
@@ -150,19 +196,24 @@
 const { collapsed, toggle } = useMetadataSidebar()
 const { open: uploadOpen, openUpload, closeUpload, emitUploaded } = useMetadataUpload()
 const { count: csvCount, refresh: refreshCsvBadge } = useCsvExportBadge()
+const { count: helpUnreadCount, refresh: refreshHelpBadge } = useHelpBadge()
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const route = useRoute()
+
+const helpOpen = ref(false)
+function toggleHelp() {
+  helpOpen.value = !helpOpen.value
+}
 
 async function onUploadedFromModal() {
   await emitUploaded()
   closeUpload()
 }
 
-// Keep the sidebar badge fresh: on load and whenever the route changes (e.g.
-// after marking exports on the CSV history page).
-onMounted(refreshCsvBadge)
-watch(() => route.path, refreshCsvBadge)
+// Keep the sidebar badges fresh on load and route changes.
+onMounted(() => { refreshCsvBadge(); refreshHelpBadge() })
+watch(() => route.path, () => { refreshCsvBadge(); refreshHelpBadge() })
 
 const galleryMeta = computed(() => route.meta?.gallery ?? null)
 
@@ -175,6 +226,7 @@ const navItems = [
   {
     to: '/metadata',
     label: 'Pins',
+    noLink: true,
     icon: `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17v-5"/><path d="M7 7.5a3 3 0 1 1 6 0c0 1.5-.7 2.4-1.4 3.1-.6.6-1.6 1.4-1.6 2.4M5 4h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>`,
     children: [
       {
@@ -189,7 +241,7 @@ const navItems = [
       },
       {
         to: '/metadata/posted',
-        label: 'Posted',
+        label: 'Exported',
         icon: `<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l4 4 10-10"/></svg>`,
       },
     ],
@@ -318,13 +370,8 @@ $sidebar-w-collapsed: 68px;
     width: 28px;
     height: 28px;
     border-radius: 7px;
-    background: $color-accent;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 14px;
+    display: block;
+    object-fit: contain;
   }
 
   &__brand-text {
@@ -410,6 +457,16 @@ $sidebar-w-collapsed: 68px;
     font-weight: 500;
     transition: background 0.12s, color 0.12s;
     position: relative;
+    width: 100%;
+    box-sizing: border-box;
+
+    &--btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+    }
 
     &:hover {
       background: #f3f4f6;
@@ -440,6 +497,11 @@ $sidebar-w-collapsed: 68px;
       color: $color-primary;
       font-weight: 600;
       .meta-shell__nav-icon { color: $color-accent; }
+    }
+
+    &--no-link {
+      cursor: default;
+      &:hover { background: none; color: #4b5563; }
     }
 
     // Child rows are slightly indented and use smaller spacing so the parent
@@ -558,6 +620,18 @@ $sidebar-w-collapsed: 68px;
 
   @media (max-width: 768px) {
     &__profile .meta-shell__nav-item { justify-content: center; padding: 9px 0; }
+  }
+
+  // ── Privacy link ────────────────────────────────────────────────────
+  &__privacy {
+    display: block;
+    padding: 6px 14px;
+    font-size: 11px;
+    color: #c4c4c4;
+    text-decoration: none;
+    text-align: center;
+
+    &:hover { color: #9ca3af; }
   }
 
   // ── Footer ──────────────────────────────────────────────────────────

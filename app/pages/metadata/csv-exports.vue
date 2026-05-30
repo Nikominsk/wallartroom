@@ -175,6 +175,7 @@
 
 <script setup>
 definePageMeta({ layout: 'metadata' })
+const { confirm, alert } = useConfirm()
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const EMPTY_SET = new Set()
@@ -315,7 +316,7 @@ const deletingIds = reactive(new Set())
 const { invalidateCache } = useMetadataImages()
 
 async function handleSetExported(exp) {
-  const ok = confirm(
+  const ok = await confirm(
     `Mark all ${exp.row_count} image${exp.row_count !== 1 ? 's' : ''} from "${exp.filename}" as exported?\n\nThis sets the Pinterest status to "exported" and records the exported_at timestamp for each pin.`
   )
   if (!ok) return
@@ -341,14 +342,14 @@ async function handleSetExported(exp) {
     // Bust the metadata page cache so navigating back shows fresh data
     invalidateCache()
   } catch (e) {
-    alert(`Failed to set exported: ${e.data?.statusMessage ?? e.message}`)
+    await alert(`Failed to set exported: ${e.data?.statusMessage ?? e.message}`)
   } finally {
     settingIds.delete(exp.id)
   }
 }
 
 async function handleDelete(exp) {
-  const ok = confirm(
+  const ok = await confirm(
     `Delete history entry for "${exp.filename}"?\n\nThis only removes the audit record; the pins themselves are not affected.`
   )
   if (!ok) return
@@ -360,7 +361,7 @@ async function handleDelete(exp) {
     delete imagesCache[exp.id]
     if (expandedId.value === exp.id) expandedId.value = null
   } catch (e) {
-    alert(`Failed to delete: ${e.data?.statusMessage ?? e.message}`)
+    await alert(`Failed to delete: ${e.data?.statusMessage ?? e.message}`)
   } finally {
     deletingIds.delete(exp.id)
   }

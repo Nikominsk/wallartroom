@@ -62,7 +62,6 @@
         @update:filter="onUpdateFilter"
         @reset-filters="resetFilters"
         @clear-selection="clearSelection"
-        @time-manager="showTimeManager = true"
         @pinterest-schedule="openPinterestScheduler"
         @export-csv="openExport"
         @show-invalid="showInvalidImages = true"
@@ -282,13 +281,6 @@
       </div>
     </nav>
 
-    <!-- ── Time Manager modal ───────────────────────────────────────────── -->
-    <div v-if="showTimeManager" class="meta-page__overlay" @click.self="showTimeManager = false">
-      <MetadataPublishCalendar
-        :boards="boards"
-        @close="showTimeManager = false"
-      />
-    </div>
 
     <!-- ── Pinterest Scheduler modal ─────────────────────────────────────── -->
     <div v-if="showPinterestScheduler" class="meta-page__overlay" @click.self="showPinterestScheduler = false">
@@ -309,9 +301,9 @@
       <MetadataPinterestBoardsManager
         :boards="boards"
         :loading="boardsLoading"
+        :add-handler="handleAddBoard"
+        :delete-handler="handleDeleteBoard"
         @close="showBoardsManager = false"
-        @add="handleAddBoard"
-        @delete="handleDeleteBoard"
       />
     </div>
 
@@ -743,14 +735,24 @@ const {
   deleteImage, deleteImages, updateImageUrl, transferImages,
 } = useMetadataImages()
 
-onMounted(() => { loadImages(); loadBoards(); loadProjectMeta() })
+const route = useRoute()
+
+onMounted(() => {
+  loadImages(); loadBoards(); loadProjectMeta()
+  if (route.query.search) {
+    filters.search = String(route.query.search)
+    // Show all images so the target is visible regardless of its export status.
+    // applyRoutePreset has already run by the time onMounted fires, so this sticks.
+    filters.pinterestExported = ''
+  }
+})
 
 // CSV-history badge now lives in the sidebar; we just bump the shared count
 // after a download here (see handleDownloadCsv).
 const { bump: bumpCsvBadge } = useCsvExportBadge()
 
 // ── Pinterest boards ──────────────────────────────────────────────────────────
-const { boards, loading: boardsLoading, loadBoards, addBoard, deleteBoard, chipStyleForName } = usePinterestBoards()
+const { boards, loading: boardsLoading, loadBoards, addBoard, deleteBoard, updateBoard, chipStyleForName } = usePinterestBoards()
 // Account-performance brief (from the imported Pinterest analytics CSV) — fed
 // to the AI so generated copy leans into proven, high-traffic themes. We also
 // pull `projects` / `activeProjectId` so the Move-or-Copy modal can populate
@@ -798,12 +800,17 @@ const presetStatusSet = computed(() => new Set(props.presetStatus ?? []))
 // /metadata, /drafts, /schedules, /posted — switching routes only flips these
 // props, so the watcher is what makes each view feel "fresh."
 function applyRoutePreset() {
+  // Clear the search when switching views so a URL-injected search from e.g.
+  // the calendar click doesn't bleed into Drafts/Schedules/Posted.
+  // onMounted re-applies it from route.query.search on the initial load.
+  filters.search = ''
+
   // Default the Pinterest "exported" filter to whatever the preset implies so
   // the toolbar UI matches the view (Drafts → hide exported, Posted → only
   // exported, Pins → not-exported by default).
   if (props.presetStatus?.length) {
-    const allExported = props.presetStatus.every(s => s === 'exported' || s === 'published')
-    const noneExported = props.presetStatus.every(s => s === 'draft' || s === 'ready')
+    const allExported = props.presetStatus.every(s => s === 'exported')
+    const noneExported = props.presetStatus.every(s => s === 'draft')
     if (allExported) filters.pinterestExported = 'exported'
     else if (noneExported) filters.pinterestExported = 'not-exported'
   } else {
@@ -872,11 +879,13 @@ onMounted(() => {
 onUnmounted(() => { _offUploaded?.() })
 
 // ── Delete (individual / bulk) ───────────────────────────────────────────────
+const { confirm } = useConfirm()
+
 async function handleDeleteActive() {
   if (!activeId.value) return
   const img = images.value.find(i => i.id === activeId.value)
   const label = img?.filename ?? activeId.value
-  if (!confirm(`Delete "${label}"? This cannot be undone.`)) return
+  if (!await confirm(`Delete "${label}"? This cannot be undone.`)) return
 
   const id = activeId.value
   try {
@@ -894,7 +903,7 @@ async function handleDeleteActive() {
 async function handleDeleteSelected() {
   const ids = [...selectedIds.value]
   if (ids.length === 0) return
-  if (!confirm(`Delete ${ids.length} image${ids.length !== 1 ? 's' : ''}? This cannot be undone.`)) return
+  if (!await confirm(`Delete ${ids.length} image${ids.length !== 1 ? 's' : ''}? This cannot be undone.`)) return
 
   try {
     await deleteImages(ids)
@@ -1321,9 +1330,10 @@ function applyBoardSuggestion(which = 'suggested') {
     ? boardSuggestionResult.value.alternativeBoard
     : boardSuggestionResult.value.suggestedBoard
   if (!name) return
+  const boardObj = boards.value.find(b => b.name === name)
   onDraftUpdate({
     ...activeDraft.value,
-    pinterest: { ...activeDraft.value.pinterest, board: name },
+    pinterest: { ...activeDraft.value.pinterest, board: name, boardId: boardObj?.id ?? null },
   })
   showBoardSuggestion.value = false
 }
@@ -1396,12 +1406,8 @@ const viewCaps = computed(() => {
     exportCsv: !isPosted && !isSchedules,
     // Date assignment is irrelevant once everything is posted.
     scheduling: !isPosted,
-    timeManager: !isPosted,
   }
 })
-
-// ── Time Manager ─────────────────────────────────────────────────────────────
-const showTimeManager = ref(false)
 
 // ── Pinterest Bulk Scheduler ───────────────────────────────────────────────────
 const showPinterestScheduler = ref(false)
@@ -1920,6 +1926,10 @@ function goToPage(page) {
   &__save-status {
     font-size: 12px;
     color: #6b7280;
+    max-width: 260px;
+    white-space: normal;
+    word-break: break-word;
+    text-align: right;
 
     &--ok  { color: #16a34a; }
     &--err { color: #ef4444; }

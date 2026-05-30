@@ -132,11 +132,11 @@
             <select
               v-if="boards.length"
               class="single-form__select"
-              :value="draft.pinterest.board ?? ''"
-              @change="updatePinterest('board', $event.target.value)"
+              :value="draft.pinterest.boardId ?? ''"
+              @change="updatePinterestBoard($event.target.value)"
             >
               <option value="">— select board —</option>
-              <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
+              <option v-for="b in boards" :key="b.id" :value="b.id">{{ b.name }}</option>
             </select>
             <input
               v-else
@@ -153,6 +153,17 @@
             >
               <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+            <button
+              class="single-form__manage-btn"
+              type="button"
+              title="Manage boards"
+              @click="emit('manage-boards')"
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="10" cy="10" r="2.5"/>
+                <path d="M16.5 10a6.5 6.5 0 0 0-.1-1.1l1.5-1.2-1.5-2.6-1.8.6a6.5 6.5 0 0 0-1.9-1.1L12.4 2.8h-3l-.3 1.8a6.5 6.5 0 0 0-1.9 1.1l-1.8-.6L3.9 7.7l1.5 1.2A6.5 6.5 0 0 0 5.4 10c0 .4 0 .8.1 1.1L4 12.3l1.5 2.6 1.8-.6c.6.5 1.2.9 1.9 1.1l.3 1.8h3l.3-1.8c.7-.2 1.3-.6 1.9-1.1l1.8.6 1.5-2.6-1.5-1.2c.1-.3.1-.7.1-1.1Z"/>
               </svg>
             </button>
           </div>
@@ -188,9 +199,7 @@
           <select class="single-form__select" :value="draft.pinterest.status ?? 'draft'"
             @change="updatePinterest('status', $event.target.value)">
             <option value="draft">Draft</option>
-            <option value="ready">Ready</option>
             <option value="exported">Exported</option>
-            <option value="published">Published</option>
             <option value="error">Error</option>
           </select>
         </div>
@@ -198,11 +207,6 @@
           <label class="single-form__label">Exported at</label>
           <input class="single-form__input" :value="fmtDate(draft.pinterest.exportedAt)" readonly />
         </div>
-        <div v-if="draft.pinterest.publishedAt" class="single-form__field">
-          <label class="single-form__label">Published at</label>
-          <input class="single-form__input" :value="fmtDate(draft.pinterest.publishedAt)" readonly />
-        </div>
-
       </template>
 
       <!-- Adobe Stock tab -->
@@ -317,6 +321,11 @@ function update(key, value) {
 
 function updatePinterest(key, value) {
   emit('update', { ...props.draft, pinterest: { ...props.draft.pinterest, [key]: value } })
+}
+
+function updatePinterestBoard(boardId) {
+  const board = props.boards.find(b => b.id === boardId)
+  emit('update', { ...props.draft, pinterest: { ...props.draft.pinterest, boardId: boardId || null, board: board?.name ?? '' } })
 }
 
 function updateAdobe(key, value) {
@@ -484,6 +493,23 @@ function fmtDate(iso) {
     transition: background 0.12s, border-color 0.12s;
 
     &:hover { background: #fef3c7; border-color: #fbbf24; }
+  }
+
+  &__manage-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #6b7280;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+    &:hover { background: #f3f4f6; border-color: #d1d5db; color: $color-primary; }
   }
 
 

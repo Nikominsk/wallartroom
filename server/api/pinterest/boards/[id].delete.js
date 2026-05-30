@@ -5,22 +5,17 @@ export default defineEventHandler(async (event) => {
 
   const { data: board, error: fetchErr } = await client
     .from('pinterest_board')
-    .select('name')
+    .select('id')
     .eq('id', id)
     .eq('project_id', projectId)
     .single()
 
   if (fetchErr || !board) throw createError({ statusCode: 404, statusMessage: 'Board not found' })
 
-  const { count, error: countErr } = await client
-    .from('pinterest_image')
-    .select('image_id', { count: 'exact', head: true })
-    .eq('project_id', projectId)
-    .eq('board', board.name)
-
-  if (countErr) throw createError({ statusCode: 500, statusMessage: countErr.message })
-  if (count > 0) throw createError({ statusCode: 409, statusMessage: `In use by ${count} image${count !== 1 ? 's' : ''}` })
-
+  // board_id on pinterest_image is ON DELETE SET NULL — affected images keep
+  // their cached board name text but lose the FK reference. Any tab still
+  // holding a stale boardId will get a 422 on next save, prompting the user
+  // to reassign the board.
   const { error: deleteErr } = await client
     .from('pinterest_board')
     .delete()

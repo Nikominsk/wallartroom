@@ -1,4 +1,4 @@
-export type PinterestStatus = 'draft' | 'ready' | 'exported' | 'published' | 'error'
+export type PinterestStatus = 'draft' | 'exported' | 'error'
 export type AdobeStockStatus = 'draft' | 'ready' | 'scheduled' | 'submitted' | 'error'
 export type AiImageStatus = 'queued' | 'generating' | 'done' | 'failed' | 'skipped'
 export type SortField =
@@ -28,6 +28,7 @@ export interface GalleryImage {
   pinterest: {
     title?: string
     description?: string
+    boardId?: string | null
     board?: string
     link?: string
     publishDate?: string
@@ -51,8 +52,7 @@ export interface FilterState {
   pinterestDate: '' | 'set' | 'missing'
   adobeStockDate: '' | 'set' | 'missing'
   pinterestExported: '' | 'exported' | 'not-exported'
-  pinterestPublished: '' | 'published' | 'not-published'
-  onlySelected: boolean
+onlySelected: boolean
 }
 
 export interface BulkField<T = string> {

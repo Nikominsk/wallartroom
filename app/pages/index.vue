@@ -11,7 +11,7 @@
     <header class="nav">
       <div class="nav__inner">
         <a class="nav__brand" href="#top">
-          <span class="nav__mark" aria-hidden="true">P</span>
+          <img class="nav__mark" src="/favicon.ico" alt="" aria-hidden="true" width="28" height="28" />
           <span class="nav__word">Wall<i>Art</i>Room</span>
         </a>
         <nav class="nav__links">
@@ -489,12 +489,12 @@
                 <template v-if="submitted && alreadyJoined">Already in ✓</template>
                 <template v-else-if="submitted">You're in ✓</template>
                 <template v-else-if="submitting">Saving…</template>
-                <template v-else>Start free trial</template>
+                <template v-else>Join the free beta</template>
               </button>
             </form>
             <p class="cta__note" :class="{ 'cta__note--err': formError }">
               <template v-if="formError">{{ formError }}</template>
-              <template v-else>No credit card. No spam. Full access for 14 days.</template>
+              <template v-else>No credit card. Free plan during beta.</template>
             </p>
           </div>
         </div>
@@ -1003,21 +1003,11 @@ h2 {
   }
 
   &__mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f0814e 0%, #e2603a 100%);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: 0;
-    box-shadow:
-      0 4px 12px -3px rgba(226, 96, 58, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    object-fit: cover;
   }
 
   &__word i {
@@ -1374,8 +1364,8 @@ h2 {
   // Feature cards
   &__feat-cards {
     margin-top: 30px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 10px;
     max-width: 560px;
   }
@@ -1394,25 +1384,13 @@ h2 {
       inset 0 1px 0 rgba(255, 255, 255, 0.6);
     color: $ink-1;
     cursor: default;
-    transition:
-      background 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-      border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-    &:hover {
-      background: rgba(255, 255, 255, 0.88);
-      border-color: rgba(229, 107, 58, 0.4);
-      transform: translateY(-3px);
-      box-shadow:
-        0 10px 22px -12px rgba(120, 80, 40, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    }
     svg { color: $color-accent; flex-shrink: 0; }
     span {
       font-size: 12px;
       font-weight: 600;
       line-height: 1.2;
       letter-spacing: -0.01em;
+      white-space: nowrap;
     }
   }
 }

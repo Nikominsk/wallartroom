@@ -100,9 +100,10 @@
             <div
               v-for="item in day.items"
               :key="item.image_id"
-              class="pub-cal__item"
+              class="pub-cal__item pub-cal__item--link"
               :style="{ '--item-color': itemColor(item.board) }"
-              :title="`${formatTime(item.publish_date)} · ${item.title ?? item.image_id}${item.board ? ' · ' + item.board : ''}`"
+              :title="`${formatTime(item.publish_date)} · ${item.title ?? item.image_id}${item.board ? ' · ' + item.board : ''}\nClick to open in Schedules`"
+              @click="openInSchedules(item)"
             >
               <span class="pub-cal__item-time">{{ formatTime(item.publish_date) }}</span>
               <span class="pub-cal__item-name">{{ item.title ?? '—' }}</span>
@@ -172,7 +173,7 @@ const showOnlyExported = ref(true)
 
 const displayData = computed(() =>
   showOnlyExported.value
-    ? rawData.value.filter(i => i.status === 'exported' || i.status === 'published')
+    ? rawData.value.filter(i => i.status === 'exported')
     : rawData.value
 )
 
@@ -194,6 +195,12 @@ async function load() {
 }
 
 onMounted(() => { loadSettings(); load() })
+
+function openInSchedules(item) {
+  const filename = item.image?.filename
+  if (!filename) return
+  window.open(`/metadata/schedules?search=${encodeURIComponent(filename)}`, '_blank')
+}
 
 // ── Colours ─────────────────────────────────────────────────────────────────
 const NO_BOARD_COLOR = '#9ca3af'
@@ -637,6 +644,8 @@ function formatTime(iso) {
     transition: background 0.12s;
 
     &:hover { background: color-mix(in srgb, var(--item-color) 20%, #fff); }
+
+    &--link { cursor: pointer; }
   }
 
   &__item-time {

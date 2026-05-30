@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const [{ data: pins, error }, { data: boards }] = await Promise.all([
     client
       .from('pinterest_image')
-      .select('image_id, title, board, status, publish_date')
+      .select('image_id, title, board, status, publish_date, image!image_id(filename)')
       .eq('project_id', projectId)
       .gte('publish_date', gridStart.toISOString())
       .lt('publish_date', gridEnd.toISOString())
@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
       board:        p.board,
       status:       p.status,
       publish_date: p.publish_date,
+      filename:     p.image?.filename ?? null,
     })),
     boardColors,
   }

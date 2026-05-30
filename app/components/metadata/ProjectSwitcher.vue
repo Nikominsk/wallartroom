@@ -94,21 +94,46 @@
 
       <p v-if="errMsg" class="proj__err">{{ errMsg }}</p>
     </div>
+
+    <!-- Upgrade modal -->
+    <Teleport to="body">
+      <div v-if="showUpgradeModal" class="proj-upgrade-overlay" @click.self="showUpgradeModal = false">
+        <div class="proj-upgrade">
+          <button class="proj-upgrade__close" type="button" aria-label="Close" @click="showUpgradeModal = false">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13"/></svg>
+          </button>
+          <div class="proj-upgrade__icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-7 10 7v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V9Z"/><path d="M9 22V12h6v10"/></svg>
+          </div>
+          <h2 class="proj-upgrade__title">Multiple projects require a paid plan</h2>
+          <p class="proj-upgrade__body">
+            The free beta plan includes one project. Paid plans with unlimited projects are coming soon — stay tuned!
+          </p>
+          <div class="proj-upgrade__actions">
+            <button type="button" class="proj-upgrade__cta" @click="showUpgradeModal = false">Got it</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 defineProps({ collapsed: { type: Boolean, default: false } })
+const { confirm } = useConfirm()
 
 const {
   projects, activeProjectId, activeProject,
   load, createProject, renameProject, deleteProject, switchTo,
 } = useMetadataProject()
 
+const { data: me } = useMe()
+
 const rootEl = ref(null)
 const open = ref(false)
 const busy = ref(false)
 const errMsg = ref('')
+const showUpgradeModal = ref(false)
 
 const creating = ref(false)
 const createValue = ref('')
@@ -153,6 +178,12 @@ async function choose(p) {
 }
 
 function startCreate() {
+  const plan = me.value?.plan ?? 'free'
+  if (plan === 'free' && projects.value.length >= 1) {
+    open.value = false
+    showUpgradeModal.value = true
+    return
+  }
   resetEditing()
   creating.value = true
   createValue.value = ''
@@ -200,7 +231,7 @@ async function confirmRename(p) {
 
 async function confirmDelete(p) {
   if (projects.value.length <= 1) return
-  if (!window.confirm(`Delete “${p.name}” and everything in it (pins, boards, exports)? This cannot be undone.`)) return
+  if (!await confirm(`Delete “${p.name}” and everything in it (pins, boards, exports)? This cannot be undone.`)) return
   busy.value = true
   errMsg.value = ''
   try {
@@ -437,6 +468,109 @@ async function confirmDelete(p) {
     margin: 4px 6px 2px;
     font-size: 11.5px;
     color: #b91c1c;
+  }
+}
+
+// ── Upgrade paywall modal ────────────────────────────────────────────────────
+// Teleported to <body> so scoped styles need :deep or a global class — using
+// unscoped class names with the proj-upgrade prefix is fine here.
+.proj-upgrade-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.proj-upgrade {
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px 28px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  text-align: center;
+
+  &__close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #f3f4f6;
+    border-radius: 8px;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.15s;
+    &:hover { background: #e5e7eb; color: #111827; }
+  }
+
+  &__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: color-mix(in srgb, #{$color-accent} 10%, #fff);
+    color: $color-accent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+  }
+
+  &__title {
+    font-size: 17px;
+    font-weight: 700;
+    color: $color-primary;
+    margin: 0 0 10px;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+
+  &__body {
+    font-size: 13.5px;
+    color: #6b7280;
+    line-height: 1.55;
+    margin: 0 0 24px;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__cta {
+    display: block;
+    background: $color-accent;
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 20px;
+    border-radius: 10px;
+    transition: background 0.15s;
+    &:hover { background: color-mix(in srgb, #{$color-accent} 85%, #000); }
+  }
+
+  &__cancel {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px;
+    &:hover { color: #6b7280; }
   }
 }
 </style>

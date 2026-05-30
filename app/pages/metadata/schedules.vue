@@ -5,7 +5,7 @@ definePageMeta({
   layout: 'metadata',
   gallery: {
     viewLabel: 'Schedules',
-    presetStatus: ['draft', 'ready'],
+    presetStatus: ['draft'],
     requirePublishDate: true,
     defaultSortByPublishDate: true,
   },

@@ -32,7 +32,7 @@
           <span class="boards-modal__name">{{ board.name }}</span>
           <button
             class="boards-modal__delete"
-            :title="deleteErrors[board.id] || 'Delete board'"
+            title="Delete board"
             :disabled="deleting === board.id"
             @click="handleDelete(board)"
           >
@@ -54,9 +54,11 @@
 const props = defineProps({
   boards: { type: Array, required: true },
   loading: { type: Boolean, default: false },
+  addHandler: { type: Function, required: true },
+  deleteHandler: { type: Function, required: true },
 })
 
-const emit = defineEmits(['close', 'add', 'delete'])
+const emit = defineEmits(['close'])
 
 const newName = ref('')
 const adding = ref(false)
@@ -66,11 +68,11 @@ const deleteErrors = reactive({})
 
 async function handleAdd() {
   const name = newName.value.trim()
-  if (!name) return
+  if (!name || adding.value) return
   adding.value = true
   addError.value = null
   try {
-    await emit('add', name)
+    await props.addHandler(name)
     newName.value = ''
   } catch (e) {
     addError.value = e.data?.statusMessage ?? e.message ?? 'Failed to add board'
@@ -80,10 +82,11 @@ async function handleAdd() {
 }
 
 async function handleDelete(board) {
+  if (deleting.value) return
   deleting.value = board.id
   delete deleteErrors[board.id]
   try {
-    await emit('delete', board.id)
+    await props.deleteHandler(board.id)
   } catch (e) {
     deleteErrors[board.id] = e.data?.statusMessage ?? e.message ?? 'Delete failed'
   } finally {
@@ -168,8 +171,11 @@ async function handleDelete(board) {
     font-size: 13px;
     cursor: pointer;
     white-space: nowrap;
+    background: #fff;
+    color: #374151;
 
     &:disabled { opacity: 0.45; cursor: not-allowed; }
+    &:hover:not(:disabled) { background: #f3f4f6; }
 
     &--primary {
       background: $color-accent;
@@ -185,6 +191,7 @@ async function handleDelete(board) {
     margin: 0;
     font-size: 12px;
     color: #dc2626;
+    word-break: break-word;
   }
 
   &__state {
@@ -220,6 +227,9 @@ async function handleDelete(board) {
     font-weight: 500;
     color: $color-primary;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__delete {
@@ -245,6 +255,7 @@ async function handleDelete(board) {
     width: 100%;
     font-size: 11px;
     color: #dc2626;
+    word-break: break-word;
   }
 
   &__spin {

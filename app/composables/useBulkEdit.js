@@ -6,7 +6,8 @@ function freshSpec() {
   return {
     pinterestTitle: bf(''),
     pinterestDescription: bf(''),
-    pinterestBoard: bf(''),
+    // value = boardId (UUID), name = display name
+    pinterestBoard: { enabled: false, value: '', name: '', clear: false },
     pinterestLink: bf(''),
     pinterestPublishDate: bf(''),
     pinterestStatus: bf(''),
@@ -33,8 +34,10 @@ export function useBulkEdit() {
         p.title = spec.pinterestTitle.clear ? undefined : spec.pinterestTitle.value || undefined
       if (spec.pinterestDescription.enabled)
         p.description = spec.pinterestDescription.clear ? undefined : spec.pinterestDescription.value || undefined
-      if (spec.pinterestBoard.enabled)
-        p.board = spec.pinterestBoard.clear ? undefined : spec.pinterestBoard.value || undefined
+      if (spec.pinterestBoard.enabled) {
+        p.boardId = spec.pinterestBoard.clear ? null : spec.pinterestBoard.value || null
+        p.board   = spec.pinterestBoard.clear ? ''   : spec.pinterestBoard.name  || ''
+      }
       if (spec.pinterestLink.enabled)
         p.link = spec.pinterestLink.clear ? undefined : spec.pinterestLink.value || undefined
       if (spec.pinterestPublishDate.enabled)

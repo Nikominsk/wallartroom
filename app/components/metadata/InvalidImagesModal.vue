@@ -145,6 +145,7 @@
 
 <script setup>
 import { isWellFormedImageUrl, extractUrlFromString } from '~/composables/useImageUrlValidation.js'
+const { confirm } = useConfirm()
 
 const props = defineProps({
   images: { type: Array, required: true },
@@ -263,7 +264,7 @@ async function handleSave(row) {
 }
 
 async function handleDelete(row) {
-  if (!confirm(`Delete image "${row.image.filename}"? This cannot be undone.`)) return
+  if (!await confirm(`Delete image "${row.image.filename}"? This cannot be undone.`)) return
   row.busy = true
   row.busyAction = 'delete'
   row.error = null

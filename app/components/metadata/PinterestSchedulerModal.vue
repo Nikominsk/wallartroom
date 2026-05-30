@@ -25,6 +25,44 @@
           <label class="ps-modal__label">Uploads per day</label>
           <input type="number" v-model.number="perDay" min="1" max="48" class="ps-modal__input ps-modal__input--sm" />
         </div>
+
+        <!-- Queue context stats -->
+        <div v-if="props.loading" class="ps-modal__queue">
+          <div class="ps-modal__queue-label">Schedule status <a href="/metadata/calendar" target="_blank" class="ps-modal__queue-cal-link">View calendar ↗</a></div>
+          <div class="ps-modal__queue-row">
+            <svg class="ps-modal__queue-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            <span class="ps-modal__queue-none">Loading…</span>
+          </div>
+        </div>
+        <div v-else-if="queueStats" class="ps-modal__queue">
+          <div class="ps-modal__queue-label">Schedule status <a href="/metadata/calendar" target="_blank" class="ps-modal__queue-cal-link">View calendar ↗</a></div>
+          <div class="ps-modal__queue-row">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><path d="M6 3v3l2 1.5"/></svg>
+            <template v-if="queueStats.denseEnd">
+              Pins posted until <strong>{{ formatDateDisplay(queueStats.denseEnd) }}</strong>
+              <span class="ps-modal__queue-days">{{ queueStats.denseEndDaysAhead }}d from now</span>
+              <button class="ps-modal__queue-use" :title="`Set start date to ${formatDateDisplay(queueStats.suggestStart)}`" @click="startDate = queueStats.suggestStart">
+                Start {{ formatDateDisplay(queueStats.suggestStart) }} →
+              </button>
+            </template>
+            <template v-else>
+              <span class="ps-modal__queue-none">No day has {{ perDay }}+ pins yet</span>
+              <template v-if="queueStats.anyEnd">
+                · last pin on <strong>{{ formatDateDisplay(queueStats.anyEnd) }}</strong>
+              </template>
+            </template>
+          </div>
+          <div v-if="queueStats.outlierCount" class="ps-modal__queue-row ps-modal__queue-row--warn">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1L1 10h10L6 1z"/><path d="M6 5v2M6 8.5h.01"/></svg>
+            {{ queueStats.outlierCount }} single pin{{ queueStats.outlierCount !== 1 ? 's' : '' }} scheduled much later (up to <strong>{{ formatDateDisplay(queueStats.outlierEnd) }}</strong>) — not counted above
+          </div>
+        </div>
+        <div v-else class="ps-modal__queue">
+          <div class="ps-modal__queue-label">Schedule status <a href="/metadata/calendar" target="_blank" class="ps-modal__queue-cal-link">View calendar ↗</a></div>
+          <div class="ps-modal__queue-row ps-modal__queue-none">No exported pins with a date yet</div>
+        </div>
       </div>
 
       <!-- Counts summary -->
@@ -150,12 +188,13 @@ const emit = defineEmits(['apply', 'cancel'])
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const startDate = ref(latestLocalDate())
+const startDate = ref(tomorrowLocalDate())
 const perDay = ref(5)
 
-function latestLocalDate() {
-  if (!props.scheduleInfo?.latestTimestamp) return todayLocalDate()
-  return localDateStr(new Date(props.scheduleInfo.latestTimestamp))
+function tomorrowLocalDate() {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return localDateStr(d)
 }
 
 function todayLocalDate() {
@@ -165,12 +204,6 @@ function todayLocalDate() {
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
-
-watch(() => props.scheduleInfo, (info) => {
-  if (info?.latestTimestamp) {
-    startDate.value = localDateStr(new Date(info.latestTimestamp))
-  }
-})
 
 // ── Time slots (editable, in 24-h "HH:MM" form) ───────────────────────────────
 
@@ -283,6 +316,47 @@ const existingCountOnStartDay = computed(() => {
 const remainingSlotsOnDay = computed(() =>
   Math.max(0, perDay.value - existingCountOnStartDay.value)
 )
+
+// ── Exported queue stats ──────────────────────────────────────────────────────
+
+function dateDiffDays(laterStr, earlierStr) {
+  const a = new Date(`${laterStr}T00:00:00`)
+  const b = new Date(`${earlierStr}T00:00:00`)
+  return Math.round((a - b) / 86400000)
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(`${dateStr}T00:00:00`)
+  d.setDate(d.getDate() + n)
+  return localDateStr(d)
+}
+
+const queueStats = computed(() => {
+  const dayCounts = props.scheduleInfo?.exportedDayCounts
+  if (!dayCounts || Object.keys(dayCounts).length === 0) return null
+
+  const n = Math.max(1, perDay.value)
+  const today = todayLocalDate()
+  const dates = Object.keys(dayCounts).sort()
+
+  // Last date where at least n exports are scheduled — the "dense" end of queue
+  let denseEnd = null
+  for (const d of dates) {
+    if (dayCounts[d] >= n) denseEnd = d
+  }
+
+  // Dates beyond denseEnd (sparse — below the perDay threshold)
+  const outlierDates = dates.filter(d => denseEnd ? d > denseEnd : false)
+  const outlierCount = outlierDates.reduce((s, d) => s + dayCounts[d], 0)
+  const outlierEnd   = outlierDates[outlierDates.length - 1] ?? null
+
+  const anyEnd = dates[dates.length - 1]  // absolute latest exported date
+
+  const suggestStart = denseEnd ? addDays(denseEnd, 1) : null
+  const denseEndDaysAhead = denseEnd ? dateDiffDays(denseEnd, today) : null
+
+  return { denseEnd, denseEndDaysAhead, suggestStart, outlierCount, outlierEnd, anyEnd }
+})
 
 // ── Computed schedule (date per image, based on order × slots × start) ────────
 
@@ -446,6 +520,95 @@ function handleApply() {
 
     &:focus { outline: none; border-color: $color-accent; background: #fff; }
     &--sm { width: 90px; }
+  }
+
+  // ── Queue stats ─────────────────────────────────────────────────────────────
+
+  &__queue {
+    flex: 1;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    align-self: flex-end;
+  }
+
+  &__queue-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__queue-cal-link {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-decoration: none;
+    text-transform: none;
+    letter-spacing: 0;
+    transition: color 0.12s;
+
+    &:hover { color: $color-accent; }
+  }
+
+  &__queue-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #374151;
+    flex-wrap: wrap;
+
+    svg { flex-shrink: 0; color: #6b7280; }
+
+    strong { font-weight: 700; color: $color-primary; }
+
+    &--warn { color: #92400e; svg { color: #d97706; } }
+  }
+
+  &__queue-days {
+    font-size: 11px;
+    color: #9ca3af;
+    background: #f3f4f6;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+
+  &__queue-use {
+    margin-left: 2px;
+    background: none;
+    border: 1px solid $color-accent;
+    border-radius: 5px;
+    color: $color-accent;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s, color 0.12s;
+
+    &:hover { background: $color-accent; color: #fff; }
+  }
+
+  &__queue-none {
+    font-size: 12px;
+    color: #9ca3af;
+  }
+
+  &__queue-spin {
+    flex-shrink: 0;
+    color: #9ca3af;
+    animation: ps-spin 0.9s linear infinite;
   }
 
   // ── Counts ──────────────────────────────────────────────────────────────────

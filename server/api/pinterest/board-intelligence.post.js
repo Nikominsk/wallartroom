@@ -3,7 +3,7 @@
 // the account's strongest themes — the model then prefers proven, relevant
 // boards instead of routing a strong pin into a dead board.
 export default defineEventHandler(async (event) => {
-  const { projectId } = await requireMetadataProject(event)
+  const { projectId, user } = await requireMetadataProject(event)
   const body = await readBody(event)
   const { title, description, keywords, filename, boards } = body
 
@@ -15,6 +15,8 @@ export default defineEventHandler(async (event) => {
   if (!apiKey) {
     throw createError({ statusCode: 500, statusMessage: 'OPENAI_API_KEY is not configured' })
   }
+
+  await assertQuota(event, user.id, 'aiGenerations', 1)
 
   const admin = serverSupabaseAdmin(event)
 
@@ -129,6 +131,8 @@ Respond with JSON:
   const suggested = cleanName(parsed.suggestedBoard)
   const alternative = cleanName(parsed.alternativeBoard)
   const isNewBoard = !!parsed.isNewBoard && !boards.includes(suggested)
+
+  await recordUsage(event, user.id, { aiGenerations: 1 })
 
   return {
     suggestedBoard: suggested || null,
