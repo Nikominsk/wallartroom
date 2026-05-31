@@ -125,6 +125,13 @@
           </span>
           <span class="meta-shell__nav-label">Profile</span>
         </NuxtLink>
+        <!-- Notify me label (hidden once subscribed or when collapsed) -->
+        <button
+          v-if="!notifyPlansLaunch && !collapsed"
+          class="meta-shell__notify-label"
+          :disabled="savingNotifyBanner"
+          @click="acceptNotifyBanner"
+        >{{ savingNotifyBanner ? 'Saving…' : '🔔 Notify me at launch' }}</button>
       </div>
 
       <!-- ── Legal link ────────────────────────────────────────────── -->
@@ -140,11 +147,13 @@
       <div class="meta-shell__footer">
         <MetadataProjectSwitcher :collapsed="collapsed" />
         <div class="meta-shell__user" :title="collapsed ? displayName : ''">
-          <div class="meta-shell__avatar">{{ signingOut ? '·' : initials }}</div>
-          <div class="meta-shell__user-meta">
-            <div class="meta-shell__user-name">{{ signingOut ? 'Signing out…' : displayName }}</div>
-            <div v-if="!signingOut" class="meta-shell__user-email">{{ user?.email }}</div>
-          </div>
+          <NuxtLink to="/metadata/profile" class="meta-shell__user-link">
+            <div class="meta-shell__avatar">{{ signingOut ? '·' : initials }}</div>
+            <div class="meta-shell__user-meta">
+              <div class="meta-shell__user-name">{{ signingOut ? 'Signing out…' : displayName }}</div>
+              <div v-if="!signingOut" class="meta-shell__user-email">{{ user?.email }}</div>
+            </div>
+          </NuxtLink>
           <button
             class="meta-shell__user-action"
             type="button"
@@ -160,12 +169,37 @@
       </div>
     </aside>
 
+    <!-- ── Beta notification banner ──────────────────────────────────────── -->
+    <Teleport to="body">
+      <div
+        v-if="showNotifyBanner"
+        class="notify-banner"
+      >
+        <div class="notify-banner__inner">
+          <span class="notify-banner__badge">Beta</span>
+          <p class="notify-banner__text">
+            WallArtRoom is free while in beta. Want to know when paid plans launch?
+          </p>
+          <button
+            class="notify-banner__yes"
+            :disabled="savingNotifyBanner"
+            @click="acceptNotifyBanner"
+          >
+            {{ savingNotifyBanner ? 'Saving...' : 'Yes, notify me' }}
+          </button>
+          <button class="notify-banner__no" @click="dismissNotifyBanner">Not now</button>
+        </div>
+      </div>
+    </Teleport>
+
     <main class="meta-shell__main">
       <!-- Gallery workspace stays mounted across Pins/Drafts/Schedules/Posted so
            switching is instant — only the preset prop changes. -->
       <MetadataWorkspace
         v-show="galleryMeta"
         :preset-status="galleryMeta?.presetStatus ?? []"
+        :preset-exported="galleryMeta?.presetExported ?? null"
+        :empty-hint="galleryMeta?.emptyHint ?? null"
         :view-label="galleryMeta?.viewLabel ?? 'Pins'"
         :require-publish-date="galleryMeta?.requirePublishDate ?? false"
         :default-sort-by-publish-date="galleryMeta?.defaultSortByPublishDate ?? false"
@@ -215,6 +249,40 @@ async function onUploadedFromModal() {
 onMounted(() => { refreshCsvBadge(); refreshHelpBadge() })
 watch(() => route.path, () => { refreshCsvBadge(); refreshHelpBadge() })
 
+// ── Beta notification banner ─────────────────────────────────────────────────
+// Shown once per login session until the user opts in. "Not now" hides it for
+// the current session only (sessionStorage) — it reappears on the next login.
+const { data: meData } = useFetch('/api/me', { key: 'layout-me', lazy: true })
+const bannerDismissed = ref(false)
+const savingNotifyBanner = ref(false)
+// Dedicated ref so acceptNotifyBanner can hide the UI immediately without
+// relying on meData being a deep reactive (useFetch uses shallowRef).
+const notifyOptedIn = ref(false)
+watch(meData, (val) => { if (val?.notifyPlansLaunch) notifyOptedIn.value = true }, { immediate: true })
+const notifyPlansLaunch = computed(() => notifyOptedIn.value || !!(meData.value?.notifyPlansLaunch))
+const showNotifyBanner = computed(() => !notifyPlansLaunch.value && !bannerDismissed.value)
+
+onMounted(() => {
+  if (sessionStorage.getItem('notify_banner_dismissed') === '1') {
+    bannerDismissed.value = true
+  }
+})
+
+function dismissNotifyBanner() {
+  bannerDismissed.value = true
+  sessionStorage.setItem('notify_banner_dismissed', '1')
+}
+
+async function acceptNotifyBanner() {
+  savingNotifyBanner.value = true
+  try {
+    await $fetch('/api/me/notify-plans', { method: 'PATCH', body: { notify: true } })
+    notifyOptedIn.value = true
+  } catch { /* silently ignore */ } finally {
+    savingNotifyBanner.value = false
+  }
+}
+
 const galleryMeta = computed(() => route.meta?.gallery ?? null)
 
 const navItems = [
@@ -226,7 +294,6 @@ const navItems = [
   {
     to: '/metadata',
     label: 'Pins',
-    noLink: true,
     icon: `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17v-5"/><path d="M7 7.5a3 3 0 1 1 6 0c0 1.5-.7 2.4-1.4 3.1-.6.6-1.6 1.4-1.6 2.4M5 4h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>`,
     children: [
       {
@@ -235,7 +302,7 @@ const navItems = [
         icon: `<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h10l3 3v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M14 4v3h3"/></svg>`,
       },
       {
-        to: '/metadata/posted',
+        to: '/metadata/exported',
         label: 'Exported',
         icon: `<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l4 4 10-10"/></svg>`,
       },
@@ -600,6 +667,27 @@ $sidebar-w-collapsed: 68px;
   &__nav-children--collapsed::before { display: none; }
   &--collapsed &__nav-item--child &__nav-icon { width: 18px; height: 18px; }
 
+  // ── Plan launch notifier label (under Profile in the profile section) ──
+  &__notify-label {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 4px 11px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: #f97316;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s;
+
+    &:hover:not(:disabled) { background: #fff7ed; }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+  }
+
   // ── Profile (separated, pinned above the footer) ────────────────────
   &__profile {
     padding: 8px 10px;
@@ -633,6 +721,19 @@ $sidebar-w-collapsed: 68px;
   &__footer {
     border-top: 1px solid #f3f3f3;
     padding: 12px 10px;
+  }
+
+  &__user-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.15s;
+
+    &:hover { background: rgba(0,0,0,0.04); }
   }
 
   &__user {
@@ -760,5 +861,84 @@ $sidebar-w-collapsed: 68px;
   z-index: 120;
   padding: 20px;
   box-sizing: border-box;
+}
+
+// ── Beta notification banner ───────────────────────────────────────────────────
+.notify-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: $color-accent;
+  color: #fff;
+  padding: 10px 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+
+  &__inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 900px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+  }
+
+  &__text {
+    flex: 1;
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    min-width: 200px;
+  }
+
+  &__yes {
+    flex-shrink: 0;
+    height: 32px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 8px;
+    background: #fff;
+    color: $color-accent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+
+    &:hover:not(:disabled) { opacity: 0.9; }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+  }
+
+  &__no {
+    flex-shrink: 0;
+    height: 32px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.85);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover { background: rgba(255, 255, 255, 0.12); }
+  }
 }
 </style>

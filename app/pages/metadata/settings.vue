@@ -39,21 +39,15 @@
               <path d="M10 13V3M6 7l4-4 4 4"/><path d="M3 13v3a1 1 0 001 1h12a1 1 0 001-1v-3"/>
             </svg>
             <div>
-              You don't have to add boards by hand — <button type="button" class="settings-card__link-btn" @click="activeSection = 'pinterest-import'">import them automatically</button>
-              from the CSV that Pinterest Business exports under <strong>Analytics → Overview → Export</strong>. It also pulls in each board's real impressions, saves and engagement so the AI can favour your proven boards.
+              You don't have to add boards by hand, <button type="button" class="settings-card__link-btn" @click="activeSection = 'pinterest-import'">import them automatically</button>
+              from the CSV that Pinterest Business exports under <strong>Analytics → Overview → Export</strong>.
             </div>
           </div>
 
-          <!-- Pinterest board name warning -->
-          <div class="settings-card__board-warning">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M10 1l9 17H1L10 1z"/><path d="M10 8v4M10 15h.01"/>
-            </svg>
-            <div>
-              <strong>Board names must match your Pinterest account exactly.</strong>
-              Pinterest CSV imports will fail if a board name doesn't already exist in your account. Use the exact same spelling, spaces, and capitalisation as shown in your Pinterest profile — including boards the AI may suggest.
-            </div>
-          </div>
+          <!-- Pinterest board note -->
+          <p class="settings-card__board-note">
+            Board names that don't exist in your Pinterest account yet will be created automatically when you upload the exported pins CSV to Pinterest.
+          </p>
 
           <div class="settings-card__body">
             <!-- New board row -->
@@ -132,8 +126,16 @@
 
             <p v-if="addError" class="settings-card__error">{{ addError }}</p>
 
+            <!-- Loading state -->
+            <div v-if="boardsLoading" class="settings-card__loading">
+              <svg class="settings-card__loading-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              Loading boards…
+            </div>
+
             <!-- Existing boards -->
-            <div v-if="boards.length" class="board-list">
+            <div v-else-if="boards.length" class="board-list">
               <div v-for="board in boards" :key="board.id" class="board-row">
                 <button
                   type="button"
@@ -247,7 +249,7 @@
               </div>
             </div>
 
-            <div v-else-if="!boardsLoading" class="settings-card__empty">
+            <div v-else class="settings-card__empty">
               No boards yet. Add your first board above.
             </div>
           </div>
@@ -684,8 +686,7 @@
                 impressions / saves) are saved so the AI favours your proven boards.
               </p>
               <p class="csv-import__preview-note">
-                Board names are derived from your Pinterest board URLs. Confirm they
-                match your account exactly — see the warning in the <strong>Boards</strong> section.
+                Board names are derived from your Pinterest board URLs. Any boards that don't exist yet will be created automatically by Pinterest.
               </p>
             </div>
 
@@ -906,6 +907,12 @@ const {
 // Reloaded after an analytics import so the AI account brief stays in sync.
 const { load: loadProjectMeta } = useMetadataProject()
 
+// Images loaded (from cache when available) for per-board usage counts.
+const { images, loadImages: loadImagesForBoards, invalidateCache: invalidateImagesCache } = useMetadataImages()
+function boardUsageCount(boardId) {
+  return images.value.filter(img => img.pinterest?.boardId === boardId).length
+}
+
 const newName = ref('')
 const newColor = ref(null)
 const addingBoard = ref(false)
@@ -1039,11 +1046,26 @@ async function handleAddBoard() {
 }
 
 async function handleDelete(board) {
-  if (!await confirm(`Delete board "${board.name}"? This can't be undone.`)) return
+  // Always fetch fresh from the API — the module-level cache can be stale if
+  // the user saved board assignments in another tab or earlier in this session.
+  invalidateImagesCache()
+  await loadImagesForBoards()
+  const usage = boardUsageCount(board.id)
+  const message = usage > 0
+    ? `${usage} image${usage !== 1 ? 's' : ''} currently use "${board.name}" as their board.\n\nDeleting it will remove the board assignment from those images.`
+    : `This can't be undone.`
+  if (!await confirm(message, {
+    title: `Delete board "${board.name}"?`,
+    confirmLabel: usage > 0 ? 'Delete anyway' : 'Delete',
+    danger: true,
+  })) return
   deletingId.value = board.id
   rowError[board.id] = ''
   try {
     await deleteBoard(board.id)
+    // Force the workspace to reload images so the board indicator clears
+    // immediately when the user navigates back to Drafts/Pins.
+    invalidateImagesCache()
     delete editNames[board.id]
     delete rowError[board.id]
   } catch (e) {
@@ -1398,7 +1420,7 @@ async function handleRenameProject() {
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(async () => {
-  await Promise.all([loadBoards(), loadSettings(), loadTemplates(), loadProjects()])
+  await Promise.all([loadBoards(), loadSettings(), loadTemplates(), loadProjects(), loadImagesForBoards()])
   syncDraftFromSettings()
 })
 
@@ -1537,31 +1559,12 @@ onMounted(() => {
     line-height: 1.5;
   }
 
-  &__board-warning {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    background: #fffbeb;
-    border: 1.5px solid #fcd34d;
-    border-radius: 10px;
-    padding: 14px 16px;
+  &__board-note {
+    font-size: 12.5px;
+    color: #6b7280;
+    line-height: 1.5;
     margin: 0 20px 16px;
-
-    svg { color: #d97706; flex-shrink: 0; margin-top: 2px; }
-
-    strong {
-      display: block;
-      font-size: 13px;
-      font-weight: 700;
-      color: #92400e;
-      margin-bottom: 4px;
-    }
-
-    div {
-      font-size: 12.5px;
-      color: #78350f;
-      line-height: 1.55;
-    }
+    padding: 0;
   }
 
   &__board-tip {
@@ -1628,6 +1631,23 @@ onMounted(() => {
     color: #9ca3af;
     font-size: 13px;
   }
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 4px;
+    color: #9ca3af;
+    font-size: 13px;
+  }
+
+  &__loading-spin {
+    animation: settings-spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes settings-spin { to { transform: rotate(360deg); } }
 
   &__error {
     margin: 0 0 8px;
@@ -1962,6 +1982,7 @@ onMounted(() => {
 
     &--full { width: 100%; }
   }
+
 
   &__picker {
     position: absolute;

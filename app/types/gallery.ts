@@ -63,10 +63,17 @@ export interface BulkField<T = string> {
   clear: boolean
 }
 
+export interface BulkBoardField {
+  enabled: boolean
+  boardId: string | null
+  boardName: string
+  clear: boolean
+}
+
 export interface BulkEditSpec {
   pinterestTitle: BulkField
   pinterestDescription: BulkField
-  pinterestBoard: BulkField
+  pinterestBoard: BulkBoardField
   pinterestLink: BulkField
   pinterestPublishDate: BulkField
   adobeStockTitle: BulkField
@@ -95,7 +102,6 @@ export interface AiGenerationOptions {
   maxAdobeStockDescriptionLength: number
   adobeStockKeywordCount: number
   usePromptAsContext: boolean
-  singleBoardOnly: boolean
   overwriteMode: 'missing-only' | 'replace' | 'ask'
 }
 

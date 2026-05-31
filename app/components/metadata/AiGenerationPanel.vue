@@ -165,10 +165,6 @@
             <input type="checkbox" v-model="options.usePromptAsContext" />
             Use image prompt as context
           </label>
-          <label v-if="options.generateFor.pinterestBoard" class="ai-panel__check">
-            <input type="checkbox" v-model="options.singleBoardOnly" />
-            Assign single board only (replaces existing)
-          </label>
         </div>
 
         <div class="ai-panel__section">

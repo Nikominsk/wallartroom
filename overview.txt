@@ -1,0 +1,120 @@
+WallArtRoom — App Overview
+==========================
+
+What it is
+----------
+WallArtRoom is a Pinterest productivity tool built for creators who sell wall art,
+prints, and digital downloads. It takes the manual work out of turning a batch of
+generated or photographed images into fully optimized, publish-ready Pinterest pins.
+The target users are solo creators, digital artists, and small print-on-demand shops
+who pin at scale (dozens to thousands of images per month).
+
+The app is currently in open beta. All features are free to use. Paid subscription
+plans are planned for a future launch.
+
+
+Core workflow
+-------------
+1. Upload images in bulk (drag-and-drop, up to hundreds at a time).
+2. Let AI generate Pinterest titles, descriptions, and board suggestions.
+3. Review and fine-tune metadata in the editor.
+4. Assign publish dates and export a Pinterest-compatible CSV.
+5. Track what has been exported and restore pins to draft if needed.
+
+
+Main features
+-------------
+
+Metadata workspace
+  Three views for working through the pin pipeline:
+  - Pins      — all images, export filter set to "All" by default.
+  - Drafts    — images still being worked on (status: draft).
+  - Exported  — read-only view of already-exported pins. Images can be
+                restored back to Drafts with optional field clearing.
+
+  Each image has a side panel with two tabs:
+  - Pinterest  — title, description, board, redirect URL, publish date, status.
+  - Adobe Stock — title, description, keywords, publish date, status.
+
+  Supported edit modes:
+  - Single image editing via the side panel.
+  - Multi-select bulk editing: apply one value to many images at once.
+  - Save individually or save all unsaved changes in one request.
+
+AI metadata generation
+  Generates Pinterest titles, descriptions, and board suggestions using the
+  image filename, prompt, colors, and optional user-configured context such as
+  niche, tone, target audience, and keywords to include or exclude.
+  - Runs up to 4 images in parallel for speed.
+  - Deduplicates titles automatically across the batch.
+  - Skips already-filled fields by default (configurable).
+  - Free plan: 500 AI generations included.
+
+Board management
+  - Create, rename, and delete Pinterest boards inside the app.
+  - Assign a color label to each board for visual organization.
+  - Board Intelligence: AI suggests the most relevant existing board for a pin
+    based on title, description, and filename, with the option to also create
+    a new board if none fit well.
+
+CSV export
+  Exports pins to a Pinterest bulk-upload CSV. The publish date is written in
+  the wall-clock time of the configured account timezone so Pinterest schedules
+  pins at the exact time intended. A validation step before download flags
+  missing required fields and optional gaps.
+
+Pinterest scheduler
+  Assigns sequential publish dates to a batch of images. Configurable start
+  date/time, interval between pins, and whether to skip images that already
+  have a date.
+
+Calendar view
+  Shows all scheduled pins on a monthly calendar. Clicking a date opens the
+  image for editing directly.
+
+Pinterest analytics import
+  Parses a Pinterest Business analytics CSV export (impressions, saves, clicks,
+  outbound clicks) and stores it per board. The data feeds into the board
+  intelligence suggestions so the AI can factor in which boards actually perform.
+
+Dashboard
+  High-level stats: total images, draft vs. exported counts, upcoming scheduled
+  pins, and board-level performance from imported analytics.
+
+Link health check
+  Pings all redirect URLs assigned to pins and reports which ones return errors
+  or redirects, so broken links can be fixed before export.
+
+Duplicate scan
+  Scans the active image set for visually similar or identical filenames and
+  flags potential duplicates before they get exported.
+
+Multi-project support
+  Each user can create multiple projects (e.g. one per niche or shop). Images,
+  boards, and metadata are fully isolated per project. Images can be moved or
+  copied between projects.
+
+AI templates
+  Save and reuse sets of generation options (tone, niche, context, field
+  targets) as named templates so switching between content types is one click.
+
+Settings
+  - Default AI generation preferences.
+  - CSV export timezone (matched to the Pinterest account timezone).
+  - Pinterest analytics import.
+
+Help system
+  Built-in support chat. Users can open a ticket and the founder replies
+  directly inside the app. Unread replies show a badge on the sidebar.
+
+
+Plans and limits (beta)
+-----------------------
+Free plan (current, beta)
+  - 200 image uploads
+  - 500 AI generations
+  - All features unlocked
+
+Paid plans: coming soon. Users can opt in on the Profile page to receive one
+email notification when subscription plans go live.
+

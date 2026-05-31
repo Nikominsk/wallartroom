@@ -23,7 +23,6 @@ function defaultOptions() {
     maxAdobeStockDescriptionLength: 500,
     adobeStockKeywordCount: 49,
     usePromptAsContext: true,
-    singleBoardOnly: false,
     skipFilled: true,
     overwriteMode: 'missing-only',
   }
@@ -61,8 +60,7 @@ function filterPartialPinterest(existing, partial, { generateFor, overwriteMode 
       result.description = partial.description
   }
   if (generateFor.pinterestBoard && partial.board) {
-    const alreadyHasBoard = !!(existing?.board || existing?.boardIds?.length)
-    if (overwriteMode !== 'missing-only' || !alreadyHasBoard)
+    if (overwriteMode !== 'missing-only' || !existing?.board)
       result.board = partial.board
   }
   return result

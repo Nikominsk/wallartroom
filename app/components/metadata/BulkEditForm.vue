@@ -25,24 +25,16 @@
         <textarea class="bulk-form__textarea" rows="3" v-model="spec.pinterestDescription.value" :disabled="!spec.pinterestDescription.enabled" />
       </BulkField>
 
-      <BulkField label="Pinterest boards" v-model:enabled="spec.pinterestBoard.enabled" v-model:clear="spec.pinterestBoard.clear">
-        <div v-if="boards.length" class="bulk-form__board-chips">
-          <button
-            v-for="b in boards"
-            :key="b.id"
-            type="button"
-            class="bulk-form__board-chip"
-            :class="{ 'bulk-form__board-chip--on': spec.pinterestBoard.boardIds.includes(b.id) }"
-            :disabled="spec.pinterestBoard.clear"
-            @click="toggleBoard(b.id)"
-          >
-            <span class="bulk-form__board-check" aria-hidden="true">
-              <svg v-if="spec.pinterestBoard.boardIds.includes(b.id)" width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5l3.5 3.5L12 4"/></svg>
-            </span>
-            {{ b.name }}
-          </button>
-        </div>
-        <p v-else class="bulk-form__board-empty">No boards configured yet.</p>
+      <BulkField label="Pinterest board" v-model:enabled="spec.pinterestBoard.enabled" v-model:clear="spec.pinterestBoard.clear">
+        <select
+          class="bulk-form__input bulk-form__select"
+          :value="spec.pinterestBoard.boardId ?? ''"
+          :disabled="!spec.pinterestBoard.enabled || spec.pinterestBoard.clear"
+          @change="onBoardSelect($event.target.value)"
+        >
+          <option value="">— select board —</option>
+          <option v-for="b in boards" :key="b.id" :value="b.id">{{ b.name }}</option>
+        </select>
         <button
           type="button"
           class="bulk-form__boards-btn"
@@ -116,16 +108,10 @@ const props = defineProps({
 
 defineEmits(['manage-boards', 'open-ai'])
 
-function toggleBoard(boardId) {
-  const ids = props.spec.pinterestBoard.boardIds
-  const idx = ids.indexOf(boardId)
-  if (idx === -1) ids.push(boardId)
-  else ids.splice(idx, 1)
-  // Keep the display list in sync with the selected ids.
-  props.spec.pinterestBoard.boards = ids
-    .map(id => props.boards.find(b => b.id === id))
-    .filter(Boolean)
-    .map(b => ({ id: b.id, name: b.name, color: b.color ?? null }))
+function onBoardSelect(boardId) {
+  const b = props.boards.find(b => b.id === boardId) || null
+  props.spec.pinterestBoard.boardId = b?.id ?? null
+  props.spec.pinterestBoard.boardName = b?.name ?? ''
 }
 
 function toDatetimeLocal(iso) {
@@ -264,54 +250,6 @@ export const BulkField = defineComponent({
     background-position: right 10px center;
     padding-right: 28px;
     cursor: pointer;
-  }
-
-  &__board-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  &__board-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 11px 5px 8px;
-    border: 1px solid #e5e7eb;
-    border-radius: 999px;
-    background: #fafafa;
-    font: inherit;
-    font-size: 12.5px;
-    color: #4b5563;
-    cursor: pointer;
-    transition: background 0.12s, border-color 0.12s, color 0.12s;
-
-    &:hover:not(:disabled) { background: #f3f4f6; border-color: #d1d5db; }
-    &:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    &--on {
-      background: color-mix(in srgb, #{$color-accent} 12%, #fff);
-      border-color: $color-accent;
-      color: $color-primary;
-      font-weight: 600;
-    }
-  }
-
-  &__board-check {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 15px;
-    height: 15px;
-    border-radius: 4px;
-    border: 1.5px solid #d1d5db;
-    color: #fff;
-    flex-shrink: 0;
-
-    .bulk-form__board-chip--on & {
-      background: $color-accent;
-      border-color: $color-accent;
-    }
   }
 
   &__board-empty {

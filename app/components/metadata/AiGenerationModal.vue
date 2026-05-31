@@ -233,10 +233,6 @@
                 <input type="checkbox" v-model="options.usePromptAsContext" />
                 <span>Use image prompt as context</span>
               </label>
-              <label v-if="options.generateFor.pinterestBoard" class="ai-modal__check">
-                <input type="checkbox" v-model="options.singleBoardOnly" />
-                <span>Assign single board only (replaces existing)</span>
-              </label>
             </div>
 
             <button class="ai-modal__more-btn" type="button" @click="showMore = !showMore">

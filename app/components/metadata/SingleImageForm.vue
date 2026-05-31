@@ -15,7 +15,7 @@
           :class="isAdobeStockComplete ? 'single-form__tab-dot--ok' : 'single-form__tab-dot--warn'" />
       </button>
 
-      <div class="single-form__tab-actions">
+      <div v-if="!readOnly" class="single-form__tab-actions">
         <button
           class="single-form__action-btn single-form__action-btn--save"
           :class="{ 'single-form__action-btn--active': isDirty && !saving }"
@@ -53,9 +53,9 @@
       </div>
     </div>
 
-    <div class="single-form__body">
+    <fieldset class="single-form__body" :disabled="readOnly">
       <button
-        v-if="mode === 'pinterest'"
+        v-if="mode === 'pinterest' && !readOnly"
         class="single-form__ai-cta"
         type="button"
         title="Open the AI generator for this image"
@@ -128,8 +128,8 @@
         </div>
         <div class="single-form__field">
           <div class="single-form__board-head">
-            <label class="single-form__label single-form__label--req">Pinterest boards</label>
-            <div class="single-form__board-actions">
+            <label class="single-form__label single-form__label--req">Pinterest board</label>
+            <div v-if="!readOnly" class="single-form__board-actions">
               <button
                 v-if="boards.length"
                 class="single-form__suggest-btn"
@@ -155,42 +155,14 @@
             </div>
           </div>
 
-          <div v-if="boards.length" ref="boardDropEl" class="single-form__board-drop">
-            <button
-              type="button"
-              class="single-form__board-trigger"
-              :class="{ 'single-form__board-trigger--open': boardDropOpen }"
-              @click="boardDropOpen = !boardDropOpen"
-            >
-              <span class="single-form__board-trigger-text">
-                <template v-if="selectedBoardIds.length === 0">Select boards</template>
-                <template v-else>{{ selectedBoardNames }}</template>
-              </span>
-              <svg class="single-form__board-trigger-chev" width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 5l4 4 4-4"/>
-              </svg>
-            </button>
-
-            <div v-if="boardDropOpen" class="single-form__board-menu">
-              <label
-                v-for="b in boardMenuList"
-                :key="b.id"
-                class="single-form__board-option"
-                :class="{ 'single-form__board-option--on': selectedBoardIds.includes(b.id) }"
-              >
-                <input
-                  type="checkbox"
-                  class="single-form__board-cb"
-                  :checked="selectedBoardIds.includes(b.id)"
-                  @change="toggleBoard(b.id)"
-                />
-                <span class="single-form__board-cb-box" aria-hidden="true">
-                  <svg v-if="selectedBoardIds.includes(b.id)" width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5l3.5 3.5L12 4"/></svg>
-                </span>
-                {{ b.name }}
-              </label>
-            </div>
-          </div>
+          <select v-if="boards.length"
+            class="single-form__select"
+            :value="draft.pinterest.boardId ?? ''"
+            @change="selectBoard($event.target.value)"
+          >
+            <option value="">— Select board —</option>
+            <option v-for="b in boards" :key="b.id" :value="b.id">{{ b.name }}</option>
+          </select>
           <p v-else class="single-form__board-empty">
             No boards yet — use "Manage boards" to add some.
           </p>
@@ -304,7 +276,7 @@
           </select>
         </div>
       </template>
-    </div>
+    </fieldset>
   </div>
 </template>
 
@@ -317,6 +289,7 @@ const props = defineProps({
   mode: { type: String, default: 'pinterest' },
   isDirty: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
+  readOnly: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update', 'save', 'discard', 'delete', 'open-ai', 'manage-boards', 'suggest-board'])
@@ -350,64 +323,14 @@ function updatePinterest(key, value) {
   emit('update', { ...props.draft, pinterest: { ...props.draft.pinterest, [key]: value } })
 }
 
-const boardDropEl   = ref(null)
-const boardDropOpen = ref(false)
-const boardMenuList = ref([])
-
-// Snapshot the sorted list on open (selected first, then rest).
-// While the menu is open the order stays frozen so items don't jump.
-watch(boardDropOpen, (open) => {
-  if (open) {
-    const sel = props.boards.filter(b => selectedBoardIds.value.includes(b.id))
-    const rest = props.boards.filter(b => !selectedBoardIds.value.includes(b.id))
-    boardMenuList.value = [...sel, ...rest]
-  }
-})
-
-onMounted(() => document.addEventListener('click', onDocClickBoard))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClickBoard))
-function onDocClickBoard(e) {
-  if (boardDropOpen.value && boardDropEl.value && !boardDropEl.value.contains(e.target)) {
-    boardDropOpen.value = false
-  }
-}
-
-const selectedBoardIds = computed(() => {
-  const ids = props.draft?.pinterest?.boardIds
-  if (Array.isArray(ids)) return ids
-  return props.draft?.pinterest?.boardId ? [props.draft.pinterest.boardId] : []
-})
-
-const selectedBoardNames = computed(() => {
-  if (!selectedBoardIds.value.length) return ''
-  return selectedBoardIds.value
-    .map(id => props.boards.find(b => b.id === id)?.name)
-    .filter(Boolean)
-    .join(', ')
-})
-
-function toggleBoard(boardId) {
-  const current = [...selectedBoardIds.value]
-  const idx = current.indexOf(boardId)
-  if (idx === -1) current.push(boardId)
-  else current.splice(idx, 1)
-
-  // Keep primary boardId/board (first) in sync for single-board displays.
-  const primary = current[0] ?? null
-  const primaryBoard = props.boards.find(b => b.id === primary)
-  const boardObjs = current
-    .map(id => props.boards.find(b => b.id === id))
-    .filter(Boolean)
-    .map(b => ({ id: b.id, name: b.name, color: b.color ?? null }))
-
+function selectBoard(boardId) {
+  const board = props.boards.find(b => b.id === boardId) || null
   emit('update', {
     ...props.draft,
     pinterest: {
       ...props.draft.pinterest,
-      boardIds: current,
-      boards: boardObjs,
-      boardId: primary,
-      board: primaryBoard?.name ?? '',
+      boardId: board?.id ?? null,
+      board: board?.name ?? '',
     },
   })
 }
@@ -549,7 +472,11 @@ function fmtDate(iso) {
     &--warn { background: #d97706; }
   }
 
-  &__body { display: flex; flex-direction: column; gap: 14px; }
+  &__body {
+    display: flex; flex-direction: column; gap: 14px;
+    // fieldset reset (used when readOnly=true)
+    border: none; padding: 0; margin: 0; min-width: 0;
+  }
 
   &__field { display: flex; flex-direction: column; gap: 5px; }
 
@@ -754,7 +681,8 @@ function fmtDate(iso) {
 
     &:focus { outline: none; border-color: $color-accent; }
 
-    &[readonly] { background: #f5f5f5; color: #6b7280; cursor: default; border-color: #d1d5db; }
+    &[readonly],
+    &:disabled { background: #f5f5f5; color: #6b7280; cursor: default; border-color: #d1d5db; opacity: 1; }
   }
 
   &__input--mono { font-family: monospace; font-size: 11px; }

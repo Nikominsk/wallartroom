@@ -8,22 +8,6 @@ function mapRow(row) {
   const p = (Array.isArray(row.pinterest_image) ? row.pinterest_image[0] : row.pinterest_image) ?? {}
   const a = (Array.isArray(row.adobe_image) ? row.adobe_image[0] : row.adobe_image) ?? {}
 
-  // Multi-board: the join table carries every board the pin belongs to. Each
-  // row embeds its pinterest_board (id, name, color). Falls back to the legacy
-  // single board_id/board on pinterest_image when the join data isn't present.
-  const boardLinks = Array.isArray(row.pinterest_image_board) ? row.pinterest_image_board : []
-  let boards = boardLinks
-    .map(l => {
-      const b = Array.isArray(l.pinterest_board) ? l.pinterest_board[0] : l.pinterest_board
-      if (b) return { id: b.id, name: b.name, color: b.color ?? null }
-      return l.board_id ? { id: l.board_id, name: '', color: null } : null
-    })
-    .filter(Boolean)
-  if (boards.length === 0 && p.board_id) {
-    boards = [{ id: p.board_id, name: p.board ?? '', color: null }]
-  }
-  const boardIds = boards.map(b => b.id)
-
   return {
     id: row.id,
     filename: row.filename,
@@ -38,12 +22,8 @@ function mapRow(row) {
       pinId: p.pin_id ?? null,
       title: p.title ?? '',
       description: p.description ?? '',
-      // Primary board (first) kept for backward-compatible single-board display.
-      boardId: boardIds[0] ?? null,
-      board: boards[0]?.name ?? p.board ?? '',
-      // Full multi-board set.
-      boardIds,
-      boards,
+      boardId: p.board_id ?? null,
+      board: p.board ?? '',
       link: p.link ?? '',
       publishDate: p.publish_date ?? null,
       exportedAt: p.exported_at ?? null,
@@ -75,7 +55,7 @@ const _reloadListeners = new Set()
 
 export function useMetadataImages() {
   const images = ref(_cachedImages ?? [])
-  const pending = ref(false)
+  const pending = ref(_cachedImages === null)
   const error = ref(null)
   const saving = ref(false)
   const saveError = ref(null)
@@ -232,7 +212,7 @@ export function useMetadataImages() {
   return {
     images, pending, error,
     saving, saveError,
-    loadImages, saveImage, saveImages, invalidateCache,
+    loadImages, saveImage, saveImages, invalidateCache, applyToCache,
     deleteImage, deleteImages, updateImageUrl,
     transferImages,
   }

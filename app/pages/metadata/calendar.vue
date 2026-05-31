@@ -75,6 +75,7 @@
             'cal__cell--today': cell.isToday,
           }"
           role="gridcell"
+          @click="openDay(cell)"
         >
           <div class="cal__date" :class="{ 'cal__date--today': cell.isToday }">
             {{ cell.day }}
@@ -86,9 +87,6 @@
               :key="pin.image_id"
               class="cal__chip"
               :style="{ '--bc': colorForBoard(pin.board) }"
-              @mouseenter="showTip($event, pin)"
-              @mouseleave="hideTip"
-              @click="openInSchedules(pin)"
             >
               <span class="cal__chip-time">{{ formatTime(pin.publish_date) }}</span>
             </div>
@@ -98,23 +96,6 @@
       </template>
 
     </div>
-
-    <!-- ── Floating tooltip (Teleport avoids overflow:hidden clipping) ────── -->
-    <Teleport to="body">
-      <div
-        v-if="tip.visible"
-        class="cal-tip"
-        :style="{ top: tip.y + 'px', left: tip.x + 'px' }"
-      >
-        <div class="cal-tip__title">{{ tip.title }}</div>
-        <div class="cal-tip__meta">
-          <span class="cal-tip__dot" :style="{ background: tip.color }" />
-          {{ tip.board }}
-          <span class="cal-tip__sep">·</span>
-          {{ tip.time }}
-        </div>
-      </div>
-    </Teleport>
 
   </div>
 </template>
@@ -136,7 +117,7 @@ const tz = computed(() => settings.value?.csv_timezone || DEFAULT_METADATA_TIMEZ
 
 // Use the shared boards composable so colors are stable across month changes
 const { chipStyleForName, loadBoards } = usePinterestBoards()
-onMounted(() => { loadSettings(); loadBoards() })
+const { activeProjectId } = useMetadataProject()
 
 const { data, status, refresh } = useAsyncData(
   'schedule-calendar',
@@ -145,10 +126,20 @@ const { data, status, refresh } = useAsyncData(
   }),
   {
     lazy:    true,
-    watch:   [currentYear, currentMonth],
+    // Watch activeProjectId so a project switch while on this page re-fetches.
+    watch:   [currentYear, currentMonth, activeProjectId],
     default: () => ({ pins: [] }),
   }
 )
+
+onMounted(() => {
+  loadSettings()
+  loadBoards()
+  // Always refresh on mount: Nuxt caches useAsyncData by key, so navigating
+  // back to /calendar after a project switch would serve the old project's
+  // payload without this call.
+  refresh()
+})
 
 const monthLabel = computed(() => {
   const d = new Date(currentYear.value, currentMonth.value - 1, 1)
@@ -229,29 +220,13 @@ const legendBoards = computed(() => {
   return [...seen.entries()].map(([name, color]) => ({ name, color }))
 })
 
-// ── Tooltip ───────────────────────────────────────────────────────────────
-const tip = reactive({ visible: false, x: 0, y: 0, title: '', board: '', time: '', color: '' })
-
-function showTip(event, pin) {
-  const r = event.currentTarget.getBoundingClientRect()
-  // Position above the chip, centered
-  tip.x     = Math.round(r.left + r.width / 2)
-  tip.y     = Math.round(r.top - 8)
-  tip.title = pin.title || 'Untitled'
-  tip.board = pin.board || 'No board'
-  tip.time  = formatTime(pin.publish_date)
-  tip.color = colorForBoard(pin.board)
-  tip.visible = true
-}
-function hideTip() {
-  tip.visible = false
-}
-
-function openInSchedules(pin) {
-  const filename = pin.filename?.replace(/\.[^.]+$/, '') || pin.title
-  if (!filename) return
-  hideTip()
-  window.open(`/metadata?search=${encodeURIComponent(filename)}`, '_blank')
+function openDay(cell) {
+  const params = new URLSearchParams({
+    dateFrom: cell.key,
+    dateTo:   cell.key,
+    exported: showOnlyExported.value ? 'exported' : 'all',
+  })
+  window.open(`/metadata?${params.toString()}`, '_blank')
 }
 </script>
 
@@ -459,11 +434,16 @@ function openInSchedules(pin) {
     background: #fff;
     padding: 5px 4px 6px;
     min-height: 90px;
+    cursor: pointer;
+    transition: background 0.1s;
 
-    &--other { background: #fafafa; }
+    &:hover { background: #f9fafb; }
+    &--other { background: #fafafa; &:hover { background: #f3f4f6; } }
     &--skel  {
       background: #f3f4f6;
+      cursor: default;
       animation: cal-pulse 1.6s ease-in-out infinite;
+      &:hover { background: #f3f4f6; }
     }
   }
 
@@ -496,7 +476,7 @@ function openInSchedules(pin) {
     gap: 2px;
   }
 
-  // ── Chip: board color bg + time only; tooltip via JS ─────────────
+  // ── Chip: board color bg + time only ─────────────────────────────
   &__chip {
     display: flex;
     align-items: center;
@@ -505,12 +485,8 @@ function openInSchedules(pin) {
     border-left: 2px solid var(--bc, #6366f1);
     background: color-mix(in srgb, var(--bc, #6366f1) 14%, transparent);
     overflow: hidden;
-    cursor: pointer;
     min-width: 0;
-
-    &:hover {
-      background: color-mix(in srgb, var(--bc, #6366f1) 26%, transparent);
-    }
+    pointer-events: none;
 
     &-time {
       flex-shrink: 0;
@@ -537,47 +513,3 @@ function openInSchedules(pin) {
 @keyframes cal-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 </style>
 
-<!-- Tooltip lives at body level so overflow:hidden never clips it -->
-<style lang="scss">
-.cal-tip {
-  position: fixed;
-  transform: translate(-50%, -100%);
-  z-index: 9999;
-  pointer-events: none;
-  background: #1f2937;
-  color: #f9fafb;
-  border-radius: 7px;
-  padding: 7px 10px 8px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
-  white-space: nowrap;
-  max-width: 260px;
-
-  &__title {
-    font-size: 12.5px;
-    font-weight: 600;
-    line-height: 1.35;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__meta {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    color: #9ca3af;
-    line-height: 1;
-  }
-
-  &__dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  &__sep { color: #4b5563; }
-}
-</style>

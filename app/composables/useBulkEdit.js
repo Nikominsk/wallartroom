@@ -6,9 +6,7 @@ function freshSpec() {
   return {
     pinterestTitle: bf(''),
     pinterestDescription: bf(''),
-    // boardIds = selected board UUIDs; boards = [{id,name}] for display. A pin
-    // can belong to multiple boards, so this applies the whole set.
-    pinterestBoard: { enabled: false, boardIds: [], boards: [], clear: false },
+    pinterestBoard: { enabled: false, boardId: null, boardName: '', clear: false },
     pinterestLink: bf(''),
     pinterestPublishDate: bf(''),
     pinterestStatus: bf(''),
@@ -36,12 +34,8 @@ export function useBulkEdit() {
       if (spec.pinterestDescription.enabled)
         p.description = spec.pinterestDescription.clear ? undefined : spec.pinterestDescription.value || undefined
       if (spec.pinterestBoard.enabled) {
-        const ids  = spec.pinterestBoard.clear ? [] : [...(spec.pinterestBoard.boardIds ?? [])]
-        const objs = spec.pinterestBoard.clear ? [] : [...(spec.pinterestBoard.boards ?? [])]
-        p.boardIds = ids
-        p.boards   = objs
-        p.boardId  = ids[0] ?? null
-        p.board    = objs[0]?.name ?? ''
+        p.boardId = spec.pinterestBoard.clear ? null : (spec.pinterestBoard.boardId ?? null)
+        p.board   = spec.pinterestBoard.clear ? '' : (spec.pinterestBoard.boardName ?? '')
       }
       if (spec.pinterestLink.enabled)
         p.link = spec.pinterestLink.clear ? undefined : spec.pinterestLink.value || undefined

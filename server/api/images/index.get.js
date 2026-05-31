@@ -21,26 +21,5 @@ export default defineEventHandler(async (event) => {
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })
 
-  // Multi-board memberships fetched separately (not embedded) so a missing
-  // migration / stale PostgREST cache can never take down the whole gallery.
-  // Degrades gracefully: if the join table isn't there yet, boards are empty.
-  try {
-    const { data: links } = await client
-      .from('pinterest_image_board')
-      .select('image_id, board_id, pinterest_board(id, name, color)')
-      .eq('project_id', projectId)
-
-    const byImage = new Map()
-    for (const l of links ?? []) {
-      if (!byImage.has(l.image_id)) byImage.set(l.image_id, [])
-      byImage.get(l.image_id).push({ board_id: l.board_id, pinterest_board: l.pinterest_board })
-    }
-    for (const img of data ?? []) {
-      img.pinterest_image_board = byImage.get(img.id) ?? []
-    }
-  } catch (e) {
-    console.warn('[images] could not load board memberships — run migration 019.', e?.message ?? e)
-  }
-
   return { data, count }
 })

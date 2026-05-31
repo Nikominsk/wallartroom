@@ -4,8 +4,9 @@
 definePageMeta({
   layout: 'metadata',
   gallery: {
-    viewLabel: 'Posted',
+    viewLabel: 'Exported',
     presetStatus: ['exported'],
+    emptyHint: 'No exported images yet.',
   },
 })
 </script>

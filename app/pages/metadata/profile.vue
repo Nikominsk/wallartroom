@@ -82,6 +82,36 @@
         Could not load plan usage.
       </div>
 
+      <!-- ── Beta notification card ──────────────────────────────────── -->
+      <div class="profile-card profile-card--beta">
+        <div class="profile-beta__head">
+          <div class="profile-beta__badge">Beta</div>
+          <div>
+            <h2 class="profile-beta__title">You're using WallArtRoom Beta</h2>
+            <p class="profile-beta__text">
+              The app is currently in beta. All features are free right now. Paid
+              subscription plans are coming soon. Check the box below to get one email
+              when they go live.
+            </p>
+          </div>
+        </div>
+        <label class="profile-beta__check" :class="{ 'profile-beta__check--disabled': savingNotify }">
+          <input
+            type="checkbox"
+            v-model="notifyPlans"
+            :disabled="savingNotify"
+            @change="saveNotifyPlans"
+          />
+          <span class="profile-beta__check-box" :class="{ 'profile-beta__check-box--on': notifyPlans }">
+            <svg v-if="notifyPlans" width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 7l3.5 3.5L12 4"/>
+            </svg>
+          </span>
+          <span class="profile-beta__check-label">Notify me when subscription plans launch</span>
+        </label>
+        <p v-if="notifySaved" class="profile-beta__saved">Preference saved.</p>
+      </div>
+
       <!-- ── Danger zone: delete account ───────────────────────────────── -->
       <div class="profile-card profile-card--danger">
         <div class="profile-danger__head">
@@ -183,6 +213,29 @@ const usageRows = computed(() => {
 
 function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
+}
+
+// ── Beta notification opt-in ─────────────────────────────────────────────────
+const notifyPlans = ref(false)
+const savingNotify = ref(false)
+const notifySaved = ref(false)
+
+watch(() => me.value, (v) => {
+  if (v) notifyPlans.value = v.notifyPlansLaunch ?? false
+}, { immediate: true })
+
+async function saveNotifyPlans() {
+  savingNotify.value = true
+  notifySaved.value = false
+  try {
+    await $fetch('/api/me/notify-plans', { method: 'PATCH', body: { notify: notifyPlans.value } })
+    notifySaved.value = true
+    setTimeout(() => { notifySaved.value = false }, 2500)
+  } catch {
+    notifyPlans.value = !notifyPlans.value
+  } finally {
+    savingNotify.value = false
+  }
 }
 
 // ── Delete account ────────────────────────────────────────────────────────────
@@ -588,4 +641,101 @@ async function handleDeleteAccount() {
 }
 
 @keyframes profile-danger-spin { to { transform: rotate(360deg); } }
+
+// ── Beta card ──────────────────────────────────────────────────────────────────
+.profile-card--beta {
+  border-color: color-mix(in srgb, #{$color-accent} 25%, #fff);
+  background: color-mix(in srgb, #{$color-accent} 4%, #fff);
+}
+
+.profile-beta {
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid color-mix(in srgb, #{$color-accent} 15%, #fff);
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: $color-accent;
+    color: #fff;
+    margin-top: 2px;
+  }
+
+  &__title {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: $color-primary;
+    letter-spacing: -0.01em;
+  }
+
+  &__text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #4b5563;
+  }
+
+  &__check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+
+    input[type='checkbox'] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    &--disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__check-box {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 2px solid color-mix(in srgb, #{$color-accent} 40%, #d1d5db);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+
+    &--on {
+      background: $color-accent;
+      border-color: $color-accent;
+      color: #fff;
+    }
+  }
+
+  &__check-label {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: $color-primary;
+    line-height: 1.4;
+  }
+
+  &__saved {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #16a34a;
+    font-weight: 500;
+  }
+}
 </style>

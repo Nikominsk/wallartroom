@@ -98,9 +98,9 @@
         </div>
 
         <button
-          v-if="viewCaps.ai"
+          v-if="viewCaps.ai && selectedCount > 0"
           class="meta-page__btn meta-page__btn--ai"
-          :disabled="aiTargetImages.length === 0 || saving"
+          :disabled="saving"
           :title="aiCtaTitle"
           @click="openAiModal"
         >
@@ -111,12 +111,24 @@
           <span class="meta-page__ai-count">{{ aiTargetImages.length }}</span>
         </button>
 
-        <span v-if="totalUnsavedCount > 0" class="meta-page__unsaved-pill">
+        <span v-if="!viewCaps.readOnly && totalUnsavedCount > 0" class="meta-page__unsaved-pill">
           {{ totalUnsavedCount }} unsaved
         </span>
       </div>
 
-      <div class="meta-page__actions-right">
+      <div v-if="viewCaps.readOnly" class="meta-page__actions-right">
+        <button
+          class="meta-page__btn"
+          :class="{ 'meta-page__btn--primary': selectedCount > 0 }"
+          :disabled="selectedCount === 0"
+          @click="openMoveToDrafts"
+        >
+          Restore to Drafts
+          <span v-if="selectedCount > 0" class="meta-page__ai-count">{{ selectedCount }}</span>
+        </button>
+      </div>
+
+      <div v-if="!viewCaps.readOnly" class="meta-page__actions-right">
         <button
           v-if="selectedCount > 0"
           class="meta-page__btn meta-page__btn--danger"
@@ -161,9 +173,22 @@
           </div>
         </div>
         <div v-else-if="error" class="meta-page__state meta-page__state--error">{{ error }}</div>
+        <div v-else-if="images.length === 0" class="meta-page__state">
+          <template v-if="emptyHint">{{ emptyHint }}</template>
+          <template v-else>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#d1d5db;margin-bottom:12px">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+            </svg>
+            <p>No images yet — upload some to get started.</p>
+            <button class="meta-page__upload-cta" @click="openUpload()">Upload images</button>
+          </template>
+        </div>
+        <div v-else-if="filteredImages.length === 0" class="meta-page__state">
+          {{ emptyHint ?? 'No images match the current filters.' }}
+        </div>
         <MetadataImageGrid
           v-else
-          :images="pagedImages"
+          :images="effectivePagedImages"
           :selected-ids="selectedIds"
           :active-id="activeId"
           :focused-id="focusedId"
@@ -213,6 +238,7 @@
               :mode="mode"
               :is-dirty="isDirty"
               :saving="saving"
+              :read-only="viewCaps.readOnly"
               @update="onDraftUpdate"
               @save="handleSaveSingle"
               @discard="discardDraft"
@@ -221,6 +247,20 @@
               @manage-boards="showBoardsManager = true"
               @suggest-board="handleSuggestBoard"
             />
+          </template>
+
+          <template v-else-if="selectedCount > 1 && viewCaps.readOnly">
+            <div class="meta-page__readonly-bulk-hint">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h10l3 3v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/>
+                <path d="M14 4v3h3"/>
+              </svg>
+              <p>
+                <strong>{{ selectedCount }} images selected.</strong>
+                These pins are already exported. If you want to work on them again, use
+                <em>Restore to Drafts</em> to move them back.
+              </p>
+            </div>
           </template>
 
           <template v-else-if="selectedCount > 1">
@@ -235,7 +275,7 @@
           </template>
         </div>
 
-        <div v-if="selectedCount > 1" class="meta-page__bulk-apply-bar">
+        <div v-if="selectedCount > 1 && !viewCaps.readOnly" class="meta-page__bulk-apply-bar">
           <span class="meta-page__bulk-apply-hint">
             {{ activeFieldCount === 0 ? 'Enable at least one field above' : `${activeFieldCount} field${activeFieldCount !== 1 ? 's' : ''} will be applied` }}
           </span>
@@ -302,6 +342,7 @@
       <MetadataPinterestBoardsManager
         :boards="boards"
         :loading="boardsLoading"
+        :images="images"
         :add-handler="handleAddBoard"
         :delete-handler="handleDeleteBoard"
         @close="showBoardsManager = false"
@@ -446,7 +487,7 @@
       :open="showAiModal"
       :options="aiOptions"
       :progress="aiProgress"
-      :image-count="aiTargetImages.length"
+      :image-count="aiTargetSnapshot.length"
       :board-count="boards.length"
       @generate="handleGenerate"
       @cancel="cancelAi"
@@ -710,6 +751,46 @@
       />
     </div>
 
+    <!-- ── Move to Drafts modal ──────────────────────────────────────────── -->
+    <div v-if="showMoveToDrafts" class="meta-page__overlay" @click.self="showMoveToDrafts = false">
+      <div class="meta-page__modal meta-page__modal--drafts">
+        <div class="meta-page__modal-header">
+          <h3>Restore {{ selectedCount }} image{{ selectedCount !== 1 ? 's' : '' }} to Drafts</h3>
+          <button class="meta-page__icon-btn" @click="showMoveToDrafts = false">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13" /></svg>
+          </button>
+        </div>
+        <div class="meta-page__modal-body">
+          <p>
+            The selected images will have their status reset to <strong>Draft</strong>. The export timestamp is always cleared.
+          </p>
+          <p class="meta-page__drafts-tip">
+            💡 Tip: Go to Drafts and sort by <em>Date updated</em> to find the restored images at the top.
+          </p>
+          <p class="meta-page__drafts-hint">Optionally clear these fields:</p>
+          <div class="meta-page__drafts-checks">
+            <label v-for="f in moveToDraftsFields" :key="f.key" class="meta-page__drafts-check">
+              <input type="checkbox" v-model="f.checked" />
+              <span class="meta-page__drafts-check-box" :class="{ 'meta-page__drafts-check-box--on': f.checked }">
+                <svg v-if="f.checked" width="9" height="9" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l3.5 3.5L12 4"/></svg>
+              </span>
+              <span>{{ f.label }}</span>
+            </label>
+          </div>
+        </div>
+        <div class="meta-page__modal-footer">
+          <button
+            class="meta-page__btn meta-page__btn--primary"
+            :disabled="movingToDrafts"
+            @click="handleMoveToDrafts"
+          >
+            {{ movingToDrafts ? 'Restoring…' : `Restore ${selectedCount} to Drafts` }}
+          </button>
+          <button class="meta-page__btn" @click="showMoveToDrafts = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Image lightbox popup ───────────────────────────────────────────── -->
     <Teleport to="body">
       <div
@@ -741,6 +822,13 @@ const props = defineProps({
   // the toolbar stays interactive — the preset is the *initial* state, not a
   // hard lock — so users can still drill in further (e.g. drafts → ready only).
   presetStatus: { type: Array, default: () => [] },
+  // Explicit initial value for the pinterestExported filter. null = infer from
+  // presetStatus (existing behaviour). '' = show all (Pins view). 'not-exported'
+  // or 'exported' = lock the initial filter to that value.
+  presetExported: { type: String, default: null },
+  // Custom message shown when there are no images (or no filtered results).
+  // When set, replaces the default "upload" CTA with a plain text hint.
+  emptyHint: { type: String, default: null },
   // Heading shown at the top of the workspace.
   viewLabel: { type: String, default: 'Pins' },
   // When true, only images with a Pinterest publish_date are kept (Schedules view).
@@ -753,20 +841,29 @@ const props = defineProps({
 const {
   images, pending, error,
   saving, saveError,
-  loadImages, saveImage, saveImages, invalidateCache,
+  loadImages, saveImage, saveImages, invalidateCache, applyToCache,
   deleteImage, deleteImages, updateImageUrl, transferImages,
 } = useMetadataImages()
 
 const route = useRoute()
 
 onMounted(() => {
-  loadImages(); loadBoards(); loadProjectMeta()
-  if (route.query.search) {
-    filters.search = String(route.query.search)
-    // Show all images so the target is visible regardless of its export status.
-    // applyRoutePreset has already run by the time onMounted fires, so this sticks.
-    filters.pinterestExported = ''
+  const hasCalendarLink = !!(route.query.dateFrom || route.query.dateTo)
+  if (hasCalendarLink) {
+    // Calendar deep-link: start with a clean slate (no saved state) and apply
+    // only the date + exported params from the URL. pinterestExported: ''
+    // means "all" so every pin on that day is visible regardless of status.
+    filters.pinterestDateFrom = String(route.query.dateFrom ?? '')
+    filters.pinterestDateTo   = String(route.query.dateTo   ?? '')
+    filters.pinterestExported = route.query.exported === 'exported' ? 'exported' : ''
+  } else {
+    restoreViewState()
+    if (route.query.search) {
+      filters.search = String(route.query.search)
+      filters.pinterestExported = ''
+    }
   }
+  loadImages(); loadBoards(); loadProjectMeta()
 })
 
 // CSV-history badge now lives in the sidebar; we just bump the shared count
@@ -792,6 +889,21 @@ async function handleAddBoard(name) {
 
 async function handleDeleteBoard(id) {
   await deleteBoard(id)
+  // Clear the stale boardId/board from every image that referenced this board
+  // so the select input and the card badge both reflect reality immediately.
+  const clearBoard = (img) => {
+    if (img.pinterest?.boardId !== id) return img
+    return { ...img, pinterest: { ...img.pinterest, boardId: null, board: '' } }
+  }
+  images.value = images.value.map(clearBoard)
+  applyToCache(arr => arr.map(clearBoard))
+  if (activeDraft.value?.pinterest?.boardId === id) {
+    activeDraft.value = {
+      ...activeDraft.value,
+      pinterest: { ...activeDraft.value.pinterest, boardId: null, board: '' },
+    }
+    isDirty.value = true
+  }
 }
 
 // ── Mode (Adobe Stock UI is hidden; the workspace is Pinterest-only for now) ──
@@ -808,7 +920,14 @@ const {
   filteredImages: baseFilteredImages, validImages, invalidImages,
   isPinterestComplete, isAdobeStockComplete,
   resetFilters, setSort,
-} = useGalleryFilters(images, selectedIds, mode)
+} = useGalleryFilters(images, selectedIds, mode, computed(() => {
+  if (props.presetExported !== null) return props.presetExported
+  if (props.presetStatus?.length) {
+    if (props.presetStatus.every(s => s === 'exported')) return 'exported'
+    if (props.presetStatus.every(s => s === 'draft')) return 'not-exported'
+  }
+  return 'not-exported'
+}))
 
 // Drafts/Posted/Schedules pre-select a sensible Pinterest "exported" filter so
 // the toolbar UI stays consistent with what the user sees. Multi-status
@@ -827,10 +946,12 @@ function applyRoutePreset() {
   // onMounted re-applies it from route.query.search on the initial load.
   filters.search = ''
 
-  // Default the Pinterest "exported" filter to whatever the preset implies so
-  // the toolbar UI matches the view (Drafts → hide exported, Posted → only
-  // exported, Pins → not-exported by default).
-  if (props.presetStatus?.length) {
+  // Default the Pinterest "exported" filter. presetExported wins when set
+  // explicitly; otherwise infer from presetStatus (Drafts → not-exported,
+  // Exported → exported, Pins/null → not-exported legacy default).
+  if (props.presetExported !== null) {
+    filters.pinterestExported = props.presetExported
+  } else if (props.presetStatus?.length) {
     const allExported = props.presetStatus.every(s => s === 'exported')
     const noneExported = props.presetStatus.every(s => s === 'draft')
     if (allExported) filters.pinterestExported = 'exported'
@@ -849,7 +970,7 @@ function applyRoutePreset() {
 }
 
 watch(
-  () => [props.presetStatus, props.requirePublishDate, props.defaultSortByPublishDate],
+  () => [props.presetStatus, props.presetExported, props.requirePublishDate, props.defaultSortByPublishDate],
   applyRoutePreset,
   { immediate: true },
 )
@@ -893,7 +1014,7 @@ const showImagePopup = ref(false)
 // Upload now lives in the sidebar (useMetadataUpload + the metadata layout).
 // Re-pull the gallery when an upload finishes so new images appear with their
 // joined Pinterest / Adobe rows.
-const { onUploaded } = useMetadataUpload()
+const { onUploaded, openUpload } = useMetadataUpload()
 let _offUploaded = null
 onMounted(() => {
   _offUploaded = onUploaded(async () => { invalidateCache(); await loadImages() })
@@ -1012,6 +1133,8 @@ watch(
     lastClickedIndex.value = -1
     focusedIndex.value = -1
     currentPage.value = 1
+    // Restore saved state for the new view after presets have settled.
+    nextTick(() => restoreViewState())
   },
   { flush: 'post' },
 )
@@ -1271,44 +1394,28 @@ function applyAiDefaults() {
 onMounted(async () => { await loadAiDefaults(); applyAiDefaults() })
 watch(aiDefaults, applyAiDefaults, { deep: true })
 
-const aiTargetImages = computed(() => {
-  // Always run AI generation against valid-URL images only.
-  if (selectedCount.value > 0) return validImages.value.filter(i => selectedIds.value.has(i.id))
-  if (activeId.value) return validImages.value.filter(i => i.id === activeId.value)
-  return filteredImages.value
-})
+const aiTargetImages = computed(() =>
+  validImages.value.filter(i => selectedIds.value.has(i.id))
+)
 
 async function handleGenerate() {
-  // Collect all non-active-image results during generation so we can flush
-  // them to the DB in one bulk request at the end instead of N individual ones.
+  if (aiProgress.status === 'running') return
+  if (!aiTargetSnapshot.value.length) return
   const batchedSaves = []
 
   await generate(
-    aiTargetImages.value,
+    aiTargetSnapshot.value,
     (updated) => {
-      // The AI returns the chosen board as a name string. Resolve it to a real
-      // board and merge it into the pin's board set (a pin can be on several
-      // boards, so we add rather than replace), then keep the primary in sync.
+      // The AI returns the chosen board as a name string. Resolve it to a board ID.
       if (updated.pinterest.board) {
         const match = boards.value.find(b => b.name === updated.pinterest.board)
         if (match) {
-          // singleBoardOnly: replace the entire board set with the AI pick.
-          // Otherwise: add the AI pick to whatever boards are already assigned.
-          const rawIds = aiOptions.singleBoardOnly
-            ? [match.id]
-            : [...new Set([...(updated.pinterest.boardIds ?? []), match.id])]
-          const boardObjs = rawIds
-            .map(id => boards.value.find(b => b.id === id))
-            .filter(Boolean)
-            .map(b => ({ id: b.id, name: b.name, color: b.color ?? null }))
           updated = {
             ...updated,
             pinterest: {
               ...updated.pinterest,
-              boardIds: rawIds,
-              boards: boardObjs,
-              boardId: rawIds[0] ?? null,
-              board: boardObjs[0]?.name ?? '',
+              boardId: match.id,
+              board: match.name,
             },
           }
         }
@@ -1360,8 +1467,16 @@ const aiCtaTitle = computed(() => {
   return `Generate metadata for all ${filteredImages.value.length} image${filteredImages.value.length !== 1 ? 's' : ''} in this view`
 })
 
+// Snapshot the target images when the modal opens — NOT when Generate is clicked.
+// aiTargetImages is reactive and could silently change if selection/activeId shifts
+// while the user is configuring options inside the modal (e.g. clicking a dropdown
+// triggers blur and clears the active panel), causing all filtered images to be
+// processed instead of the intended one.
+const aiTargetSnapshot = ref([])
+
 function openAiModal() {
   if (aiProgress.status === 'done' || aiProgress.status === 'cancelled') resetAiProgress()
+  aiTargetSnapshot.value = [...aiTargetImages.value]
   showAiModal.value = true
 }
 
@@ -1418,38 +1533,28 @@ async function applyBoardSuggestion() {
   if (!activeDraft.value) return
   applyingBoardSuggestion.value = true
   try {
-    const ids = new Set(activeDraft.value.pinterest.boardIds ?? [])
+    let boardId = null
+    let boardName = ''
 
-    // Apply user-selected existing boards.
-    for (const name of boardSuggestionChecked.value) {
-      const b = boards.value.find(b => b.name === name)
-      if (b) ids.add(b.id)
-    }
-
-    // Create and add new board if its checkbox is checked.
+    // Create new board if its checkbox is checked, otherwise take the first checked existing board.
     if (newBoardChecked.value && newBoardSuggestion.value) {
       const newB = await addBoard(newBoardSuggestion.value)
-      ids.add(newB.id)
+      boardId = newB.id
+      boardName = newB.name
+    } else if (boardSuggestionChecked.value.length > 0) {
+      const name = boardSuggestionChecked.value[0]
+      const b = boards.value.find(b => b.name === name)
+      if (b) { boardId = b.id; boardName = b.name }
     }
 
-    if (!ids.size) return
+    if (!boardId) return
 
-    const boardObjs = [...ids]
-      .map(id => boards.value.find(b => b.id === id))
-      .filter(Boolean)
-      .map(b => ({ id: b.id, name: b.name, color: b.color ?? null }))
-
-    if (!boardObjs.length) return
-
-    const boardIds = boardObjs.map(b => b.id)
     onDraftUpdate({
       ...activeDraft.value,
       pinterest: {
         ...activeDraft.value.pinterest,
-        boardIds,
-        boards: boardObjs,
-        boardId: boardIds[0] ?? null,
-        board: boardObjs[0]?.name ?? '',
+        boardId,
+        board: boardName,
       },
     })
     showBoardSuggestion.value = false
@@ -1518,17 +1623,65 @@ const sortedFreshness = computed(() =>
 // showing buttons that are confusing or irrelevant where you are.
 const viewCaps = computed(() => {
   const v = props.viewLabel
-  const isPosted = v === 'Posted'
-  const isSchedules = v === 'Schedules'
+  const isExported = v === 'Exported'
   return {
-    // AI generation is useful on every view (re-generate posted pins, fix
-    // scheduled ones, draft new ones) — always available.
-    ai: true,
-    exportCsv: !isPosted,
-    // Date assignment is irrelevant once everything is posted.
-    scheduling: !isPosted,
+    ai: !isExported,
+    exportCsv: !isExported,
+    scheduling: !isExported,
+    exportStatus: v === 'Pins',
+    checkLinks: !isExported,
+    scanDuplicates: !isExported,
+    readOnly: isExported,
   }
 })
+
+// ── Move to Drafts ────────────────────────────────────────────────────────────
+const showMoveToDrafts = ref(false)
+const movingToDrafts = ref(false)
+
+const MOVE_TO_DRAFTS_FIELDS = [
+  { key: 'title',       label: 'Title',        checked: false },
+  { key: 'description', label: 'Description',  checked: false },
+  { key: 'board',       label: 'Board',        checked: false },
+  { key: 'link',        label: 'Redirect URL', checked: false },
+  { key: 'publishDate', label: 'Publish date', checked: false },
+]
+const moveToDraftsFields = ref(MOVE_TO_DRAFTS_FIELDS.map(f => ({ ...f })))
+
+function openMoveToDrafts() {
+  moveToDraftsFields.value = MOVE_TO_DRAFTS_FIELDS.map(f => ({ ...f }))
+  showMoveToDrafts.value = true
+}
+
+async function handleMoveToDrafts() {
+  movingToDrafts.value = true
+  try {
+    const toClear = new Set(moveToDraftsFields.value.filter(f => f.checked).map(f => f.key))
+    const targets = validImages.value.filter(i => selectedIds.value.has(i.id))
+    const updated = targets.map(img => ({
+      ...img,
+      pinterest: {
+        ...img.pinterest,
+        status:     'draft',
+        exportedAt: null,
+        publishedAt: null,
+        ...(toClear.has('title')       && { title: '' }),
+        ...(toClear.has('description') && { description: '' }),
+        ...(toClear.has('board')       && { boardId: null, board: '' }),
+        ...(toClear.has('link')        && { link: '' }),
+        ...(toClear.has('publishDate') && { publishDate: null }),
+      },
+      updatedAt: new Date().toISOString(),
+    }))
+    await saveImages(updated)
+    if (!saveError.value) {
+      showMoveToDrafts.value = false
+      clearSelection()
+    }
+  } finally {
+    movingToDrafts.value = false
+  }
+}
 
 // ── Pinterest Bulk Scheduler ───────────────────────────────────────────────────
 const showPinterestScheduler = ref(false)
@@ -1674,6 +1827,15 @@ const pagedImages = computed(() => {
   return filteredImages.value.slice(start, start + pageSize.value)
 })
 
+// Merge pending/draft state into paged images so card indicators reflect what
+// the user is actively typing, not just what has been saved.
+const effectivePagedImages = computed(() =>
+  pagedImages.value.map(img => {
+    if (img.id === activeId.value && activeDraft.value) return activeDraft.value
+    return pendingChanges.value.get(img.id) ?? img
+  })
+)
+
 // When filters shrink the result set, clamp the current page so we never land
 // on an empty page past the end.
 watch(totalPages, (newTotal) => {
@@ -1703,6 +1865,49 @@ const pageNumbers = computed(() => {
   }
   return result
 })
+
+// ── View-state persistence ────────────────────────────────────────────────────
+// Saves/restores filters + sort + pagination to localStorage per view so a
+// page refresh doesn't wipe the user's last-used state.
+const LS_PAGE_SIZE_KEY = 'meta_page_size'
+const lsViewKey = computed(() => `meta_view_state_${props.viewLabel}`)
+
+function saveViewState() {
+  if (!process.client) return
+  try {
+    localStorage.setItem(LS_PAGE_SIZE_KEY, String(pageSize.value))
+    // Never persist date-range filters — they come from calendar deep-links and
+    // should not bleed into future normal visits to this page.
+    const { pinterestDateFrom, pinterestDateTo, ...persistedFilters } = filters
+    localStorage.setItem(lsViewKey.value, JSON.stringify({
+      currentPage: currentPage.value,
+      sortField: sortField.value,
+      sortDirection: sortDirection.value,
+      filters: persistedFilters,
+    }))
+  } catch {}
+}
+
+function restoreViewState() {
+  if (!process.client) return
+  try {
+    const savedSize = localStorage.getItem(LS_PAGE_SIZE_KEY)
+    if (savedSize) pageSize.value = Number(savedSize) || 25
+
+    const raw = localStorage.getItem(lsViewKey.value)
+    if (!raw) return
+    const state = JSON.parse(raw)
+    if (state.currentPage) currentPage.value = Math.max(1, state.currentPage)
+    if (state.sortField) sortField.value = state.sortField
+    if (state.sortDirection) sortDirection.value = state.sortDirection
+    if (state.filters) Object.assign(filters, state.filters)
+  } catch {}
+}
+
+watch(currentPage, saveViewState)
+watch(pageSize, saveViewState)
+watch([sortField, sortDirection], saveViewState)
+watch(filters, saveViewState, { deep: true })
 
 async function handleRefresh() {
   invalidateCache()
@@ -1948,8 +2153,32 @@ function goToPage(page) {
     text-align: center;
     color: #6b7280;
     font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+
+    p { margin: 0 0 16px; }
 
     &--error { color: #ef4444; }
+  }
+
+  &__upload-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border: none;
+    border-radius: 8px;
+    background: $color-accent;
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover { background: color-mix(in srgb, #{$color-accent} 85%, #000); }
   }
 
   // ── Skeleton loading grid ────────────────────────────────────────────────────
@@ -2330,6 +2559,84 @@ function goToPage(page) {
   }
 
   &__modal-footer { display: flex; gap: 8px; padding: 16px 20px; border-top: 1px solid #f3f4f6; }
+
+  &__readonly-bulk-hint {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 16px;
+    background: color-mix(in srgb, #{$color-accent} 8%, #fff);
+    border: 1px solid color-mix(in srgb, #{$color-accent} 30%, #fff);
+    border-radius: 10px;
+    margin: 16px;
+
+    svg { flex-shrink: 0; color: $color-accent; margin-top: 1px; }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #4b5563;
+
+      strong { color: $color-primary; font-weight: 600; }
+      em { font-style: normal; font-weight: 600; color: $color-accent; }
+    }
+  }
+
+  &__modal--drafts { max-width: 400px; }
+
+  &__drafts-tip {
+    font-size: 12px;
+    color: #6b7280;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    padding: 9px 12px;
+    margin: 0;
+    line-height: 1.5;
+
+    em { font-style: normal; font-weight: 600; color: $color-primary; }
+  }
+
+  &__drafts-hint {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  &__drafts-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__drafts-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    color: $color-primary;
+
+    input[type='checkbox'] { position: absolute; opacity: 0; width: 0; height: 0; }
+  }
+
+  &__drafts-check-box {
+    flex-shrink: 0;
+    width: 17px;
+    height: 17px;
+    border-radius: 4px;
+    border: 1.5px solid #d1d5db;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, border-color 0.12s;
+    color: #fff;
+
+    &--on { background: $color-accent; border-color: $color-accent; }
+  }
 
   &__sched-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 

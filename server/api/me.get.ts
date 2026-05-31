@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
 
   const [profileRes, walletRes, projectsRes] = await Promise.all([
     admin.from('app_user')
-      .select('id, email, name, role, plan, subscription_status, subscription_current_period_end, stripe_customer_id, created_at')
+      .select('id, email, name, role, plan, subscription_status, subscription_current_period_end, stripe_customer_id, notify_plans_launch, created_at')
       .eq('id', user.id)
       .single(),
     admin.from('credit_wallet')
@@ -64,6 +64,7 @@ export default defineEventHandler(async (event) => {
     name:    profileRes.data.name,
     role:    profileRes.data.role,
     plan:    profileRes.data.plan,
+    notifyPlansLaunch: profileRes.data.notify_plans_launch ?? false,
     subscription: {
       status:           profileRes.data.subscription_status,
       currentPeriodEnd: profileRes.data.subscription_current_period_end,

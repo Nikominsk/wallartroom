@@ -30,7 +30,9 @@
       <ul v-else class="boards-modal__list">
         <li v-for="board in boards" :key="board.id" class="boards-modal__item">
           <span class="boards-modal__name">{{ board.name }}</span>
+          <!-- Only boards added during this session can be deleted here -->
           <button
+            v-if="addedInSession.has(board.id)"
             class="boards-modal__delete"
             title="Delete board"
             :disabled="deleting === board.id"
@@ -54,6 +56,7 @@
 const props = defineProps({
   boards: { type: Array, required: true },
   loading: { type: Boolean, default: false },
+  images: { type: Array, default: () => [] },
   addHandler: { type: Function, required: true },
   deleteHandler: { type: Function, required: true },
 })
@@ -66,14 +69,23 @@ const addError = ref(null)
 const deleting = ref(null)
 const deleteErrors = reactive({})
 
+// Only boards added during this popup session can be deleted here.
+const addedInSession = ref(new Set())
+
 async function handleAdd() {
   const name = newName.value.trim()
   if (!name || adding.value) return
   adding.value = true
   addError.value = null
+  const idsBefore = new Set(props.boards.map(b => b.id))
   try {
     await props.addHandler(name)
     newName.value = ''
+    for (const b of props.boards) {
+      if (!idsBefore.has(b.id)) {
+        addedInSession.value = new Set([...addedInSession.value, b.id])
+      }
+    }
   } catch (e) {
     addError.value = e.data?.statusMessage ?? e.message ?? 'Failed to add board'
   } finally {
@@ -87,6 +99,9 @@ async function handleDelete(board) {
   delete deleteErrors[board.id]
   try {
     await props.deleteHandler(board.id)
+    const next = new Set(addedInSession.value)
+    next.delete(board.id)
+    addedInSession.value = next
   } catch (e) {
     deleteErrors[board.id] = e.data?.statusMessage ?? e.message ?? 'Delete failed'
   } finally {
@@ -249,6 +264,42 @@ async function handleDelete(board) {
 
     &:hover:not(:disabled) { background: #fef2f2; }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  &__usage {
+    font-size: 11px;
+    color: #9ca3af;
+    white-space: nowrap;
+  }
+
+  &__confirm {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 6px;
+  }
+
+  &__confirm-text {
+    margin: 0;
+    font-size: 12.5px;
+    color: #374151;
+    line-height: 1.5;
+  }
+
+  &__confirm-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  &__btn--danger {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+    font-weight: 600;
+
+    &:hover:not(:disabled) { background: #b91c1c; border-color: #b91c1c; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
   &__item-err {

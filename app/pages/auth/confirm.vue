@@ -24,13 +24,13 @@ onMounted(async () => {
 
   // Pinterest admin → legacy internal tool
   if (session.user.email === PINTEREST_ADMIN_EMAIL) {
-    window.location.href = '/metadata'
+    window.location.href = '/metadata/drafts'
     return
   }
 
   // Honour ?next= passed through OAuth state if present
   const next = typeof route.query.next === 'string' ? route.query.next : null
-  window.location.href = next && next.startsWith('/') ? next : '/metadata'
+  window.location.href = next && next.startsWith('/') ? next : '/metadata/drafts'
 })
 </script>
 

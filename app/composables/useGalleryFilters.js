@@ -22,7 +22,7 @@ function defaultFilters() {
 // `mode` is an optional Ref<'pinterest' | 'adobe'>. When provided, filters that
 // belong to the inactive platform are skipped so e.g. a "not-exported" Pinterest
 // filter doesn't bleed into Adobe view.
-export function useGalleryFilters(images, selectedIds, mode = ref('pinterest')) {
+export function useGalleryFilters(images, selectedIds, mode = ref('pinterest'), baselineExported = ref('not-exported')) {
   const filters = reactive(defaultFilters())
   const sortField = ref('createdAt')
   const sortDirection = ref('desc')
@@ -46,7 +46,8 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest')) 
     for (const key of Object.keys(defaultsSnapshot)) {
       if (isAdobeMode.value && PINTEREST_KEYS.has(key)) continue
       if (isPinterestMode.value && ADOBE_KEYS.has(key)) continue
-      if (filters[key] !== defaultsSnapshot[key]) return true
+      const baseline = key === 'pinterestExported' ? baselineExported.value : defaultsSnapshot[key]
+      if (filters[key] !== baseline) return true
     }
     return false
   })
@@ -117,11 +118,7 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest')) 
       }
 
       if (isPinterestMode.value && filters.pinterestBoard) {
-        // Match if the pin is assigned to the filtered board on ANY of its boards.
-        const ids = Array.isArray(img.pinterest.boardIds) && img.pinterest.boardIds.length
-          ? img.pinterest.boardIds
-          : (img.pinterest.boardId ? [img.pinterest.boardId] : [])
-        if (!ids.includes(filters.pinterestBoard)) return false
+        if (img.pinterest.boardId !== filters.pinterestBoard) return false
       }
 
       if (isPinterestMode.value && (filters.pinterestDateFrom || filters.pinterestDateTo)) {

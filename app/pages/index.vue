@@ -20,7 +20,7 @@
           <a href="#story">My story</a>
           <a href="#usecases">Use cases</a>
         </nav>
-        <a href="#waitlist" class="nav__cta">Join the waitlist</a>
+        <a href="/login" class="nav__cta">Start free →</a>
       </div>
     </header>
 
@@ -36,9 +36,7 @@
           <div class="hero__copy">
             <!-- Eyebrow badge -->
             <div class="hero__eyebrow hero-enter" style="--enter-delay:0ms">
-              <svg class="hero__eyebrow-pin" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-              </svg>
+              <span class="hero__beta-pill">Beta · Free</span>
               Built for Pinterest. Designed for scale.
             </div>
 
@@ -458,13 +456,77 @@
       </section>
 
 
+      <!-- ══ BETA FREE PLAN ════════════════════════════════════════════════════ -->
+      <section class="beta-plan" id="beta">
+        <div class="container">
+          <div class="beta-plan__inner">
+            <div class="beta-plan__kicker">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+              </svg>
+              Currently in Beta
+            </div>
+            <h2 class="beta-plan__title">Free while we're in beta.<br><em>No credit card. No catch.</em></h2>
+            <p class="beta-plan__lead">
+              WallArtRoom is in active development and open for beta testers.
+              Sign up today and get full access to all features — completely free.
+              Paid plans will launch later. Early users keep their free usage history.
+            </p>
+
+            <div class="beta-plan__perks">
+              <div class="beta-perk">
+                <span class="beta-perk__icon">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 16.5v-13A1.5 1.5 0 014.5 2h11A1.5 1.5 0 0117 3.5v13L10 18l-7-1.5z"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>200 image uploads</strong>
+                  <p>Bulk upload your art files, ready for Pinterest export</p>
+                </div>
+              </div>
+              <div class="beta-perk">
+                <span class="beta-perk__icon">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>500 AI generations</strong>
+                  <p>AI-written titles, descriptions, and board suggestions</p>
+                </div>
+              </div>
+              <div class="beta-perk">
+                <span class="beta-perk__icon">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 16V4l6 3 6-3v12l-6 3-6-3z"/>
+                  </svg>
+                </span>
+                <div>
+                  <strong>All tools unlocked</strong>
+                  <p>Board intelligence, CSV export, scheduler, analytics import</p>
+                </div>
+              </div>
+            </div>
+
+            <a href="/login" class="beta-plan__cta">
+              Start free — no card needed
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7h8m-3-3l3 3-3 3"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
+
       <!-- ══ FINAL CTA ════════════════════════════════════════════════════════ -->
       <section class="cta" id="waitlist">
         <div class="container">
           <div class="cta__inner">
-            <span class="kicker kicker--light">Get started</span>
-            <h2>Stop scheduling. Start <em>earning.</em></h2>
-            <p>14 days free, no credit card. See why creators are switching from generic schedulers to a Pinterest Revenue OS.</p>
+            <span class="kicker kicker--light">Get notified</span>
+            <h2>Get notified when <em>paid plans launch.</em></h2>
+            <p>Already using the free beta? Drop your email and we'll let you know the moment subscription plans go live — first access, no spam.</p>
 
             <form class="cta__form" @submit.prevent="handleSubmit">
               <input
@@ -486,15 +548,15 @@
                 aria-label="Email address"
               />
               <button type="submit" class="cta__btn" :disabled="submitting || submitted || !email">
-                <template v-if="submitted && alreadyJoined">Already in ✓</template>
-                <template v-else-if="submitted">You're in ✓</template>
+                <template v-if="submitted && alreadyJoined">Already registered ✓</template>
+                <template v-else-if="submitted">You're on the list ✓</template>
                 <template v-else-if="submitting">Saving…</template>
-                <template v-else>Join the free beta</template>
+                <template v-else>Notify me</template>
               </button>
             </form>
             <p class="cta__note" :class="{ 'cta__note--err': formError }">
               <template v-if="formError">{{ formError }}</template>
-              <template v-else>No credit card. Free plan during beta.</template>
+              <template v-else>One email when plans launch. No spam, ever.</template>
             </p>
           </div>
         </div>
@@ -1213,6 +1275,20 @@ h2 {
 
   &__eyebrow-pin {
     color: $color-accent;
+    flex-shrink: 0;
+  }
+
+  &__beta-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: $color-accent;
+    color: #fff;
     flex-shrink: 0;
   }
 
@@ -2011,6 +2087,124 @@ h2 {
   p { margin: 0; font-size: 13px; line-height: 1.55; color: $ink-3; }
 }
 
+// ── BETA FREE PLAN SECTION
+.beta-plan {
+  padding: 100px 0;
+  background: linear-gradient(180deg, #fff9f6 0%, #fff 100%);
+  border-top: 1px solid #f3ede8;
+
+  &__inner {
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  &__kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, #{$color-accent} 12%, #fff);
+    color: $color-accent;
+    border: 1px solid color-mix(in srgb, #{$color-accent} 25%, #fff);
+    margin-bottom: 28px;
+
+    svg { flex-shrink: 0; }
+  }
+
+  &__title {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: $ink-1;
+    margin: 0 0 20px;
+
+    em { font-style: normal; color: $color-accent; }
+  }
+
+  &__lead {
+    font-size: 17px;
+    line-height: 1.65;
+    color: $ink-3;
+    max-width: 580px;
+    margin: 0 auto 52px;
+  }
+
+  &__perks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 48px;
+    text-align: left;
+  }
+
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: $color-accent;
+    color: #fff;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 20px -4px rgba(255, 107, 53, 0.45);
+
+    &:hover {
+      background: #ff8451;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px -4px rgba(255, 107, 53, 0.5);
+    }
+  }
+}
+
+.beta-perk {
+  display: flex;
+  gap: 14px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #f0ece8;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);
+  align-items: flex-start;
+
+  &__icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: color-mix(in srgb, #{$color-accent} 10%, #fff);
+    color: $color-accent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: $ink-1;
+    margin-bottom: 4px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: $ink-3;
+  }
+}
+
 // ── FINAL CTA
 .cta {
   padding: 120px 0;
@@ -2301,7 +2495,8 @@ h2 {
   // section below it (the cream wash was clipping the image edge).
   .hero::after { height: 160px; }
 
-  .problem, .features, .how, .story, .cta, .usecases { padding: 80px 0 70px; }
+  .problem, .features, .how, .story, .cta, .usecases, .beta-plan { padding: 80px 0 70px; }
+  .beta-plan__perks { grid-template-columns: 1fr; }
   .problem__grid { grid-template-columns: 1fr; }
   .features__list { gap: 70px; }
   .feature__num { font-size: 38px; }

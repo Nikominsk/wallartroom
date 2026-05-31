@@ -12,10 +12,15 @@ export default defineEventHandler(async (event) => {
 
   if (fetchErr || !board) throw createError({ statusCode: 404, statusMessage: 'Board not found' })
 
-  // board_id on pinterest_image is ON DELETE SET NULL — affected images keep
-  // their cached board name text but lose the FK reference. Any tab still
-  // holding a stale boardId will get a 422 on next save, prompting the user
-  // to reassign the board.
+  // Clear board_id + board text from all images BEFORE deleting the board row.
+  // The FK ON DELETE SET NULL would handle board_id, but it never clears the
+  // denormalised `board` text column — leaving that set causes card indicators
+  // to stay lit even after the board is gone.
+  await client
+    .from('pinterest_image')
+    .update({ board_id: null, board: '' })
+    .eq('board_id', id)
+
   const { error: deleteErr } = await client
     .from('pinterest_board')
     .delete()
