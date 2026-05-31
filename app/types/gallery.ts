@@ -47,7 +47,9 @@ export interface GalleryImage {
 
 export interface FilterState {
   search: string
-  pinterestComplete: '' | 'complete' | 'incomplete'
+  pinterestTitle: '' | 'set' | 'missing'
+  pinterestDescription: '' | 'set' | 'missing'
+  pinterestLink: '' | 'set' | 'missing'
   adobeStockComplete: '' | 'complete' | 'incomplete'
   pinterestDate: '' | 'set' | 'missing'
   adobeStockDate: '' | 'set' | 'missing'

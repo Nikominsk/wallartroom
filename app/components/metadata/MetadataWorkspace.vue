@@ -476,72 +476,73 @@
 
         <!-- Body -->
         <div class="bi-modal__body">
-          <!-- Loading state -->
-          <div v-if="boardSuggestionLoading" class="bi-modal__loading">
+          <!-- Full loading spinner while existing-boards request is in flight -->
+          <div v-if="boardSuggestionLoading && !boardSuggestionResult" class="bi-modal__loading">
             <svg class="bi-modal__spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
             </svg>
             Analyzing pin against all boards…
           </div>
 
-          <template v-else-if="boardSuggestionResult">
+          <template v-else>
+            <!-- Reasoning -->
+            <p v-if="boardSuggestionResult?.reasoning" class="bi-modal__reason">
+              {{ boardSuggestionResult.reasoning }}
+            </p>
 
-            <!-- New-board alert: full-width, prominent -->
-            <div v-if="boardSuggestionResult.isNewBoard" class="bi-modal__alert">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M10 1l9 17H1L10 1z"/><path d="M10 8v4M10 15h.01"/>
-              </svg>
-              <div>
-                <strong>This is a new board.</strong>
-                Accepting will create it in WallArtRoom and assign it to this pin. Remember to also create it in Pinterest with the same name before importing the CSV.
-              </div>
-            </div>
-
-            <!-- Primary suggestion card -->
-            <div class="bi-modal__card">
-              <div class="bi-modal__card-eyebrow">Best match</div>
-              <div class="bi-modal__card-row">
-                <span class="bi-modal__board-name">{{ boardSuggestionResult.suggestedBoard }}</span>
-                <span
-                  class="bi-modal__badge"
-                  :class="{
-                    'bi-modal__badge--good': boardSuggestionResult.relevanceScore >= 75,
-                    'bi-modal__badge--ok':   boardSuggestionResult.relevanceScore >= 50 && boardSuggestionResult.relevanceScore < 75,
-                    'bi-modal__badge--poor': boardSuggestionResult.relevanceScore < 50,
-                  }"
-                >{{ boardSuggestionResult.relevanceScore }}% match</span>
-              </div>
-              <p class="bi-modal__reason">{{ boardSuggestionResult.reasoning }}</p>
-            </div>
-
-            <!-- Alternative boards list -->
-            <div v-if="boardSuggestionResult.alternativeBoards?.length" class="bi-modal__alts">
-              <div class="bi-modal__alts-label">{{ boardSuggestionResult.isNewBoard ? 'Best existing boards' : 'Alternatives' }}</div>
-              <div
-                v-for="alt in boardSuggestionResult.alternativeBoards"
-                :key="alt.name"
-                class="bi-modal__alt"
+            <!-- Existing boards checklist -->
+            <div v-if="boardSuggestionResult?.recommendedBoards?.length" class="bi-modal__checklist">
+              <div class="bi-modal__checklist-label">Select boards to apply</div>
+              <label
+                v-for="name in boardSuggestionResult.recommendedBoards"
+                :key="name"
+                class="bi-modal__check-row"
               >
-                <span class="bi-modal__alt-name">{{ alt.name }}</span>
-                <span v-if="alt.score > 0" class="bi-modal__alt-score">{{ alt.score }}%</span>
-                <button class="bi-modal__alt-btn" :disabled="applyingBoardSuggestion" @click="applyBoardSuggestion(alt.name)">Use this</button>
+                <input
+                  type="checkbox"
+                  :checked="boardSuggestionChecked.includes(name)"
+                  @change="toggleBoardSuggestionCheck(name)"
+                />
+                <span>{{ name }}</span>
+              </label>
+            </div>
+            <div v-else-if="boardSuggestionResult && !boardSuggestionResult.recommendedBoards?.length" class="bi-modal__empty">
+              No suitable boards found for this pin.
+            </div>
+
+            <!-- New board suggestion (parallel request) — shown as a checkbox -->
+            <div v-if="boardSuggestionLoadingNew || newBoardSuggestion" class="bi-modal__new-section">
+              <div v-if="boardSuggestionLoadingNew" class="bi-modal__loading-new">
+                <svg class="bi-modal__spinner bi-modal__spinner--sm" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+                Finding new board name…
               </div>
+              <template v-else-if="newBoardSuggestion">
+                <div class="bi-modal__checklist-label">Potential new board</div>
+                <label class="bi-modal__check-row bi-modal__check-row--new">
+                  <input
+                    type="checkbox"
+                    :checked="newBoardChecked"
+                    @change="newBoardChecked = !newBoardChecked"
+                  />
+                  <span>{{ newBoardSuggestion }}</span>
+                  <span class="bi-modal__new-badge">New</span>
+                </label>
+              </template>
             </div>
 
             <!-- Actions -->
-            <div class="bi-modal__footer">
+            <div v-if="boardSuggestionResult || newBoardSuggestion" class="bi-modal__footer">
               <button
                 class="meta-page__btn meta-page__btn--primary"
-                :disabled="applyingBoardSuggestion"
-                @click="applyBoardSuggestion('suggested')"
+                :disabled="applyingBoardSuggestion || !canApplyBoardSuggestion"
+                @click="applyBoardSuggestion()"
               >
-                {{ applyingBoardSuggestion
-                  ? 'Applying…'
-                  : (boardSuggestionResult.isNewBoard ? 'Create & apply board' : 'Apply board') }}
+                {{ applyingBoardSuggestion ? 'Applying…' : 'Apply' }}
               </button>
               <button class="meta-page__btn" :disabled="applyingBoardSuggestion" @click="showBoardSuggestion = false">Cancel</button>
             </div>
-
           </template>
         </div>
 
@@ -1330,6 +1331,7 @@ async function handleGenerate() {
         method: 'POST',
         body: {
           filename:          img.filename,
+          imageUrl:          img.thumbnailUrl || img.mediaUrl || null,
           prompt:            img.prompt,
           colors:            img.colors,
           additionalContext: opts.additionalContext,
@@ -1369,52 +1371,77 @@ function closeAiModal() {
 }
 
 // ── Board Intelligence ───────────────────────────────────────────────────────
-const { suggestion: boardSuggestionResult, loading: boardSuggestionLoading, suggestBoard } = useBoardIntelligence()
+const { suggestion: boardSuggestionResult, newBoardSuggestion, loading: boardSuggestionLoading, loadingNew: boardSuggestionLoadingNew, suggestBoard } = useBoardIntelligence()
 const showBoardSuggestion = ref(false)
+const boardSuggestionChecked = ref([]) // names of existing recommended boards the user has ticked
+const newBoardChecked = ref(false)     // whether the parallel new-board suggestion is ticked
+
+// Pre-tick all recommended existing boards when a result arrives.
+watch(boardSuggestionResult, (result) => {
+  boardSuggestionChecked.value = result?.recommendedBoards ? [...result.recommendedBoards] : []
+})
+
+// New board suggestion always arrives unchecked.
+watch(newBoardSuggestion, () => {
+  newBoardChecked.value = false
+})
+
+function toggleBoardSuggestionCheck(name) {
+  const idx = boardSuggestionChecked.value.indexOf(name)
+  if (idx === -1) boardSuggestionChecked.value = [...boardSuggestionChecked.value, name]
+  else boardSuggestionChecked.value = boardSuggestionChecked.value.filter(n => n !== name)
+}
+
+const canApplyBoardSuggestion = computed(() => {
+  const hasCheckedExisting = boardSuggestionChecked.value.length > 0
+  const hasCheckedNew = newBoardChecked.value && !!newBoardSuggestion.value
+  return hasCheckedExisting || hasCheckedNew
+})
 
 async function handleSuggestBoard() {
   if (!activeDraft.value) return
   showBoardSuggestion.value = true
-  await suggestBoard(
+  suggestBoard(
     {
       title: activeDraft.value.pinterest?.title || '',
       description: activeDraft.value.pinterest?.description || '',
       filename: activeDraft.value.filename || '',
     },
     boards.value,
+    { withNewBoard: true },
   )
 }
 
 const applyingBoardSuggestion = ref(false)
 
-async function applyBoardSuggestion(nameOrWhich = 'suggested') {
-  if (!boardSuggestionResult.value || !activeDraft.value) return
-  // 'suggested' is the magic token for the primary pick; anything else is a
-  // direct board name coming from the alternatives list.
-  const name = nameOrWhich === 'suggested'
-    ? boardSuggestionResult.value.suggestedBoard
-    : nameOrWhich
-  if (!name) return
-
+async function applyBoardSuggestion() {
+  if (!activeDraft.value) return
   applyingBoardSuggestion.value = true
   try {
-    let boardObj = boards.value.find(b => b.name === name)
+    const ids = new Set(activeDraft.value.pinterest.boardIds ?? [])
 
-    // New-board suggestion (only ever for the primary pick): create it so it's
-    // saved and reusable, then use its real id.
-    if (!boardObj && nameOrWhich === 'suggested' && boardSuggestionResult.value.isNewBoard) {
-      boardObj = await addBoard(name)
+    // Apply user-selected existing boards.
+    for (const name of boardSuggestionChecked.value) {
+      const b = boards.value.find(b => b.name === name)
+      if (b) ids.add(b.id)
     }
-    if (!boardObj) return
 
-    // Add the chosen board to the pin's existing board set (don't replace).
-    const ids = new Set([...(activeDraft.value.pinterest.boardIds ?? []), boardObj.id])
-    const boardIds = [...ids]
-    const boardObjs = boardIds
+    // Create and add new board if its checkbox is checked.
+    if (newBoardChecked.value && newBoardSuggestion.value) {
+      const newB = await addBoard(newBoardSuggestion.value)
+      ids.add(newB.id)
+    }
+
+    if (!ids.size) return
+
+    const boardObjs = [...ids]
       .map(id => boards.value.find(b => b.id === id))
       .filter(Boolean)
       .map(b => ({ id: b.id, name: b.name, color: b.color ?? null }))
 
+    if (!boardObjs.length) return
+
+    const boardIds = boardObjs.map(b => b.id)
     onDraftUpdate({
       ...activeDraft.value,
       pinterest: {
@@ -2926,80 +2953,6 @@ function goToPage(page) {
     to { transform: rotate(360deg); }
   }
 
-  // Alert banner (new board)
-  &__alert {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 12px 14px;
-    background: #fef2f2;
-    border: 1px solid #fca5a5;
-    border-radius: 9px;
-    font-size: 12px;
-    line-height: 1.55;
-    color: #b91c1c;
-
-    svg { color: #ef4444; flex-shrink: 0; margin-top: 1px; }
-
-    strong {
-      display: block;
-      font-size: 12.5px;
-      font-weight: 700;
-      color: #991b1b;
-      margin-bottom: 2px;
-    }
-  }
-
-  // Primary suggestion card
-  &__card {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 14px 16px;
-  }
-
-  &__card-eyebrow {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #9ca3af;
-    margin-bottom: 8px;
-  }
-
-  &__card-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-
-  &__board-name {
-    font-size: 17px;
-    font-weight: 700;
-    color: #111827;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__badge {
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 20px;
-    flex-shrink: 0;
-    letter-spacing: 0.01em;
-
-    &--good { background: #dcfce7; color: #15803d; }
-    &--ok   { background: #fef9c3; color: #92400e; }
-    &--poor { background: #fee2e2; color: #b91c1c; }
-  }
-
   &__reason {
     font-size: 12.5px;
     color: #6b7280;
@@ -3007,66 +2960,92 @@ function goToPage(page) {
     margin: 0;
   }
 
-  // Alternatives section
-  &__alts {
+  // Checklist of recommended existing boards
+  &__checklist {
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
 
-  &__alts-label {
+  &__checklist-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #9ca3af;
+    margin-bottom: 2px;
+  }
+
+  &__check-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #111827;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    user-select: none;
+
+    input[type='checkbox'] { accent-color: $color-accent; flex-shrink: 0; cursor: pointer; }
+
+    &:hover { background: #f3f4f6; border-color: #d1d5db; }
+  }
+
+  // Parallel new-board suggestion section
+  &__new-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  // Inline loading state while the new-board request is in-flight
+  &__loading-new {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+    padding: 6px 0 2px;
+  }
+
+  &__spinner--sm {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
+
+  // "New" badge on the new-board checkbox row
+  &__new-badge {
+    margin-left: auto;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #9ca3af;
-  }
-
-  // Alternative row
-  &__alt {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 12.5px;
-  }
-
-  &__alt-name {
-    font-weight: 600;
-    color: #374151;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__alt-score {
-    font-size: 11px;
-    font-weight: 600;
-    color: #9ca3af;
-    background: #f3f4f6;
-    padding: 2px 8px;
-    border-radius: 10px;
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 4px;
+    padding: 1px 6px;
     flex-shrink: 0;
   }
 
-  &__alt-btn {
-    font-size: 11.5px;
-    font-weight: 600;
-    color: #374151;
-    background: #f3f4f6;
-    border: none;
-    border-radius: 6px;
-    padding: 4px 10px;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background 0.15s, color 0.15s;
+  &__check-row--new {
+    background: #fffbeb;
+    border-color: #fde68a;
 
-    &:hover { background: #e5e7eb; color: #111827; }
+    &:hover { background: #fef9e7; border-color: #fcd34d; }
+  }
+
+  &__empty {
+    font-size: 13px;
+    color: #9ca3af;
+    text-align: center;
+    padding: 16px 0;
   }
 
   // Footer buttons

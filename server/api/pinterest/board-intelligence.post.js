@@ -2,10 +2,22 @@
 // with their REAL Pinterest performance (imported via the analytics CSV) and
 // the account's strongest themes — the model then prefers proven, relevant
 // boards instead of routing a strong pin into a dead board.
+// A board is "catch-all" when its name signals it collects everything rather
+// than a specific topic. We use this to decide whether to also auto-suggest a
+// new specific board name even when existing boards were recommended.
+function isCatchAll(name) {
+  const l = String(name ?? '').toLowerCase().trim()
+  const exact = new Set(['all', 'everything', 'all pins', 'my pins', 'general', 'misc', 'other', 'pins'])
+  if (exact.has(l)) return true
+  // "all <anything>" or "<anything> all"
+  if (l.startsWith('all ') || l.endsWith(' all')) return true
+  return false
+}
+
 export default defineEventHandler(async (event) => {
   const { projectId, user } = await requireMetadataProject(event)
   const body = await readBody(event)
-  const { title, description, keywords, filename, boards } = body
+  const { title, description, keywords, filename, boards, forceNewSuggestion } = body
 
   if (!boards?.length) {
     throw createError({ statusCode: 400, statusMessage: 'No boards provided' })
@@ -16,7 +28,54 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: 'OPENAI_API_KEY is not configured' })
   }
 
-  await assertQuota(event, user.id, 'aiGenerations', 1)
+  // forceNewSuggestion is always fired in parallel with the main board-matching
+  // request — both together count as one AI action, so only the main call charges.
+  if (!forceNewSuggestion) {
+    await assertQuota(event, user.id, 'aiGenerations', 1)
+  }
+
+  // ── Fast path: user clicked "Suggest a new board name" ────────────────────
+  // Skip board-list analysis entirely and just ask the model to invent a
+  // specific new board name for this pin.
+  if (forceNewSuggestion) {
+    const pinLines = [
+      title       ? `Title: "${title}"`       : '',
+      description ? `Description: "${description}"` : '',
+      filename    ? `Filename: ${filename}`   : '',
+    ].filter(Boolean).join('\n')
+
+    const resp = await $fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a Pinterest board naming expert. Given a pin's text data, suggest ONE specific, topical Pinterest board name that would be the ideal home for this pin. The name should be 2–4 words, Title Case, and describe a precise niche (e.g. "Minimalist Office Decor", "Botanical Wall Art"). Do NOT suggest generic catch-all names like "All", "Everything", "My Pins". Respond with JSON: {"newBoard": "Board Name Here", "reasoning": "one sentence"}`,
+          },
+          { role: 'user', content: pinLines || 'No text data provided.' },
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 100,
+        temperature: 0.5,
+      }),
+    }).catch((e) => {
+      throw createError({ statusCode: 502, statusMessage: e?.data?.error?.message ?? 'OpenAI API error' })
+    })
+
+    let p
+    try { p = JSON.parse(resp.choices[0].message.content) } catch {
+      throw createError({ statusCode: 502, statusMessage: 'Could not parse AI response' })
+    }
+
+    const suggested = String(p.newBoard ?? '').trim()
+    return {
+      recommendedBoards: [],
+      newBoard: suggested || null,
+      reasoning: p.reasoning || '',
+    }
+  }
 
   const admin = serverSupabaseAdmin(event)
 
@@ -62,33 +121,36 @@ export default defineEventHandler(async (event) => {
   })
   const hasStats = statByName.size > 0
 
-  const systemPrompt = `You are a Pinterest marketing strategist. Given pin content and a list of available boards, determine the best board placement.
+  const systemPrompt = `You are a Pinterest board placement assistant. Go through every board in the list and decide which ones this pin belongs on.
 
-Pinterest SEO works best when a pin sits on a SPECIFIC, topical board — narrow boards rank better in search and reach the right audience. A pin on a precise board ("Botanical Wall Art", "Minimalist Floral Prints") performs far better than the same pin dumped on a generic catch-all board.
+You only have text to work with (title, description, filename, keywords). You cannot see the image. This means:
+- You MUST base every recommendation on words that are explicitly present in the provided text.
+- You MUST NOT infer what the image might contain beyond what the text states.
+- If the text is sparse or ambiguous, make fewer recommendations — do not guess.
 
-Analyze the pin's topic, keywords, and visual theme, then score each board:
-- Topical relevance: does the board's theme specifically match the pin's subject?
-- Specificity: SPECIFIC boards are strongly preferred. Treat generic catch-all boards (names like "All", "General", "Misc", "Other", "Everything", "Pins", a brand name alone) as a POOR fit — never score them above 40, because they give the pin no search context.
-- Keyword & audience alignment: would someone browsing that board expect this exact pin?${hasStats ? `
-- Real performance: each board is tagged with its actual Pinterest traffic. When two SPECIFIC boards are similarly relevant, prefer the higher-performing one. Never force a pin onto a generic board just because it has traffic.` : ''}
+Apply these two rules:
 
-IMPORTANT RULES:
-- Prefer an EXACT board name copied from the "Available boards" list when a SPECIFIC board genuinely fits (score 50+). Set "isNewBoard" to false.
-- If the only fitting boards are generic catch-alls (or nothing fits well), propose a brand-new SPECIFIC board: put a concise, descriptive Pinterest-style name (2–4 words, Title Case, e.g. "Botanical Wall Art") in "suggestedBoard" and set "isNewBoard" to true.
-- "alternativeBoards" MUST list the 2–3 next-best SPECIFIC boards from the "Available boards" list, ranked by score. When "isNewBoard" is true these are the user's best existing options. Never include generic catch-all boards unless no specific board exists. Omit the primary suggestedBoard from this list. If fewer than 2 alternatives exist return as many as you can (can be empty array).
-- All score fields are integers 0–100.
-- "reasoning" MUST be one short, CONCRETE sentence (max 18 words) that names the pin's actual subject and why the board fits it. Do not use vague filler like "aligns with the themes".
+RULE 1 — Catch-all boards (always include):
+If a board name clearly signals it collects everything ("All", "Everything", "All Pins", "My Pins", a bare shop or brand name, etc.), always include it regardless of content.
 
-Respond with JSON:
+RULE 2 — Topical boards (evidence required):
+A topical board has a specific theme. Only include it when you can point to a specific word or phrase in the provided text that directly matches that theme.
+- "directly matches" means the text explicitly mentions the topic — not that the topic could be inferred, imagined, or assumed.
+- Example: text says "floral wall art print" → "Botanical Wall Art" board ✓; "Pets" board ✗ (no mention of animals).
+- If you cannot find an explicit textual match, do NOT include the board.${hasStats ? `
+- When multiple topical boards have explicit support, prefer higher-traffic ones.` : ''}
+
+RULE 3 — Auto-suggest a new specific board when only catch-alls match:
+If your "recommendedBoards" list contains ONLY catch-all boards (no topical board fits), ALSO populate "newBoard" with one specific topical board name (2–4 words, Title Case) that would suit this pin — give the user a concrete themed option alongside their catch-all collection. If at least one topical board is already in "recommendedBoards", set "newBoard" to null.
+
+Only leave "recommendedBoards" entirely empty AND use "newBoard" when no board at all (not even a catch-all) fits.
+"reasoning" must be one short concrete sentence (max 15 words) naming the specific text evidence. No vague filler.
+
+Respond with JSON only:
 {
-  "suggestedBoard": "exact board name from the list, OR a new specific board name when isNewBoard is true",
-  "relevanceScore": 85,
-  "reasoning": "Concrete one-liner naming the pin's subject and the specific fit.",
-  "alternativeBoards": [
-    {"name": "second best board name from the list", "score": 70},
-    {"name": "third best board name from the list", "score": 55}
-  ],
-  "isNewBoard": false
+  "recommendedBoards": ["Exact board name from list", "Another exact name"],
+  "newBoard": null,
+  "reasoning": "Concrete one-liner citing the evidence."
 }`
 
   const userPrompt = [
@@ -100,7 +162,7 @@ Respond with JSON:
     '',
     `Available boards: ${annotated.join('; ')}`,
     '',
-    'Which board is the best fit for this pin? Return the board NAME exactly as written before any [brackets].',
+    'Return board names exactly as written before any [brackets].',
   ].filter(Boolean).join('\n')
 
   const response = await $fetch('https://api.openai.com/v1/chat/completions', {
@@ -110,7 +172,7 @@ Respond with JSON:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -130,9 +192,8 @@ Respond with JSON:
     throw createError({ statusCode: 502, statusMessage: 'Could not parse AI response' })
   }
 
-  // The model may echo the "[tier: …]" annotation — strip it back to the bare
-  // name, then resolve to a REAL board name from the list (exact, then
-  // case-insensitive).
+  // Strip any "[tier: …]" annotations the model may echo back, then resolve
+  // each name to the exact canonical string from the boards list.
   const cleanName = (v) => String(v ?? '').replace(/\s*\[.*$/, '').trim()
   const resolve = (v) => {
     const name = cleanName(v)
@@ -141,48 +202,33 @@ Respond with JSON:
     return boards.find(b => b === name) ?? boards.find(b => String(b).trim().toLowerCase() === want) ?? null
   }
 
-  const rawSuggested = cleanName(parsed.suggestedBoard)
-  const matched = resolve(parsed.suggestedBoard)
-
-  // It's a new board only if the model flagged it AND the name isn't already
-  // one of the user's boards. Otherwise resolve to the matching board (or, as
-  // a last resort, the first board so we never return an empty suggestion).
-  const isNewBoard = !!parsed.isNewBoard && !matched && !!rawSuggested
-  const suggested = isNewBoard ? rawSuggested : (matched ?? boards[0] ?? null)
-
-  // Build the ranked alternative list. Each entry must resolve to a real board
-  // name from the user's list and must differ from the primary suggestion.
-  const rawAlts = Array.isArray(parsed.alternativeBoards) ? parsed.alternativeBoards : []
-  const seen = new Set([suggested?.toLowerCase()])
-  const alternativeBoards = []
-
-  for (const entry of rawAlts) {
-    const name = resolve(typeof entry === 'string' ? entry : entry?.name)
-    if (!name) continue
-    if (seen.has(name.toLowerCase())) continue
+  // Deduplicate and resolve all recommended existing boards.
+  const rawRecs = Array.isArray(parsed.recommendedBoards) ? parsed.recommendedBoards : []
+  const seen = new Set()
+  const recommendedBoards = []
+  for (const entry of rawRecs) {
+    const name = resolve(entry)
+    if (!name || seen.has(name.toLowerCase())) continue
     seen.add(name.toLowerCase())
-    const score = Math.min(100, Math.max(0, Number(entry?.score ?? 0)))
-    alternativeBoards.push({ name, score })
-    if (alternativeBoards.length >= 3) break
+    recommendedBoards.push(name)
   }
 
-  // If the model returned nothing useful, fill with the next best boards from
-  // the list so the section is never empty when alternatives exist.
-  if (alternativeBoards.length === 0 && boards.length) {
-    for (const b of boards) {
-      if (seen.has(b.toLowerCase())) continue
-      alternativeBoards.push({ name: b, score: 0 })
-      if (alternativeBoards.length >= 2) break
-    }
-  }
+  // New-board suggestion is valid when:
+  //   a) No existing boards were recommended at all, OR
+  //   b) Every recommended board is a catch-all (the model should also have
+  //      provided a specific topical option per RULE 3)
+  // Either way, the suggested name must not already exist in the board list.
+  const rawNew = cleanName(parsed.newBoard)
+  const allCatchAll = recommendedBoards.length > 0 && recommendedBoards.every(isCatchAll)
+  const newBoard = (rawNew && !resolve(rawNew) && (recommendedBoards.length === 0 || allCatchAll))
+    ? rawNew
+    : null
 
   await recordUsage(event, user.id, { aiGenerations: 1 })
 
   return {
-    suggestedBoard: suggested,
-    relevanceScore: Math.min(100, Math.max(0, Number(parsed.relevanceScore) || 0)),
+    recommendedBoards,
+    newBoard,
     reasoning: parsed.reasoning || '',
-    alternativeBoards,
-    isNewBoard,
   }
 })

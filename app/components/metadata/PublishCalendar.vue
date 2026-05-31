@@ -102,7 +102,7 @@
               :key="item.image_id"
               class="pub-cal__item pub-cal__item--link"
               :style="{ '--item-color': itemColor(item.board) }"
-              :title="`${formatTime(item.publish_date)} · ${item.title ?? item.image_id}${item.board ? ' · ' + item.board : ''}\nClick to open in Schedules`"
+              :title="`${formatTime(item.publish_date)} · ${item.title ?? item.image_id}${item.board ? ' · ' + item.board : ''}\nClick to open in Drafts`"
               @click="openInSchedules(item)"
             >
               <span class="pub-cal__item-time">{{ formatTime(item.publish_date) }}</span>
@@ -199,7 +199,7 @@ onMounted(() => { loadSettings(); load() })
 function openInSchedules(item) {
   const filename = item.image?.filename
   if (!filename) return
-  window.open(`/metadata/schedules?search=${encodeURIComponent(filename)}`, '_blank')
+  window.open(`/metadata/drafts?search=${encodeURIComponent(filename)}`, '_blank')
 }
 
 // ── Colours ─────────────────────────────────────────────────────────────────

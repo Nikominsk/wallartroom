@@ -3,7 +3,9 @@ import { isInvalidImage } from './useImageUrlValidation.js'
 function defaultFilters() {
   return {
     search: '',
-    pinterestComplete: '',
+    pinterestTitle: '',
+    pinterestDescription: '',
+    pinterestLink: '',
     adobeStockComplete: '',
     pinterestDate: '',
     adobeStockDate: '',
@@ -38,7 +40,7 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest')) 
   // Filters belonging to the inactive mode are ignored — they're hidden in the
   // UI for that mode, so showing a non-default state would be misleading.
   const defaultsSnapshot = defaultFilters()
-  const PINTEREST_KEYS = new Set(['pinterestComplete', 'pinterestDate', 'pinterestExported', 'pinterestBoard', 'pinterestDateFrom', 'pinterestDateTo'])
+  const PINTEREST_KEYS = new Set(['pinterestTitle', 'pinterestDescription', 'pinterestLink', 'pinterestDate', 'pinterestExported', 'pinterestBoard', 'pinterestDateFrom', 'pinterestDateTo'])
   const ADOBE_KEYS = new Set(['adobeStockComplete', 'adobeStockDate'])
   const hasFilters = computed(() => {
     for (const key of Object.keys(defaultsSnapshot)) {
@@ -71,10 +73,22 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest')) 
         if (!hay.includes(q)) return false
       }
 
-      if (isPinterestMode.value && filters.pinterestComplete) {
-        const c = isPinterestComplete(img)
-        if (filters.pinterestComplete === 'complete' && !c) return false
-        if (filters.pinterestComplete === 'incomplete' && c) return false
+      if (isPinterestMode.value && filters.pinterestTitle) {
+        const has = !!img.pinterest.title
+        if (filters.pinterestTitle === 'set' && !has) return false
+        if (filters.pinterestTitle === 'missing' && has) return false
+      }
+
+      if (isPinterestMode.value && filters.pinterestDescription) {
+        const has = !!img.pinterest.description
+        if (filters.pinterestDescription === 'set' && !has) return false
+        if (filters.pinterestDescription === 'missing' && has) return false
+      }
+
+      if (isPinterestMode.value && filters.pinterestLink) {
+        const has = !!img.pinterest.link
+        if (filters.pinterestLink === 'set' && !has) return false
+        if (filters.pinterestLink === 'missing' && has) return false
       }
 
       if (isAdobeMode.value && filters.adobeStockComplete) {

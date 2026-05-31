@@ -1,11 +1,9 @@
 export default defineEventHandler(async (event) => {
-  // Require login + enforce the free-plan AI generation cap (402 when exhausted).
-  // Pro users are unlimited (assertQuota returns without throwing).
   const user = await requireUser(event)
   await assertQuota(event, user.id, 'aiGenerations', 1)
 
   const body = await readBody(event)
-  const { filename, prompt, colors, additionalContext, accountContext, options, boards, existingTitles } = body
+  const { filename, imageUrl, prompt, colors, additionalContext, accountContext, options, boards, existingTitles } = body
 
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -17,148 +15,190 @@ export default defineEventHandler(async (event) => {
     .filter(Boolean)
     .join(', ')
 
+  // Creation prompt is the richest subject signal — put it before the filename.
   const contextLines = []
   if (options?.usePromptAsContext && prompt) contextLines.push(`Image creation prompt: "${prompt}"`)
-  if (additionalContext?.trim()) contextLines.push(`Additional context: ${additionalContext.trim()}`)
+  if (colorList) contextLines.push(`Dominant colors: ${colorList}`)
+  // additionalContext is intentionally NOT added to contextLines — it goes into
+  // the system prompt as override instructions so the model treats it as rules,
+  // not passive background. A user instruction like "add hashtags" must win over
+  // the default "end with a CTA" rule.
+  const userInstructions = additionalContext?.trim() || ''
 
   const includeKw = options?.includeKeywords?.trim()
   const excludeKw = options?.excludeKeywords?.trim()
 
-  // Database CHECK constraints from migration 001 — title <= 100, description
-  // <= 500. We never truncate based on the *user setting* (that would chop
-  // text mid-sentence at e.g. 300 chars and read unprofessionally). The user
-  // setting is the AI's instruction; this DB cap is a silent last-resort so
-  // a runaway response can't break the save.
   const TITLE_DB_MAX = 100
-  const DESC_DB_MAX = 500
+  const DESC_DB_MAX  = 500
 
-  // The user's configured max is the AI target ceiling — only fed into the
-  // prompt, NOT used to slice the response. If the user setting is missing or
-  // invalid we fall back to a sensible default.
-  const titleMax = clampInt(options?.maxPinterestTitleLength, 30, TITLE_DB_MAX, TITLE_DB_MAX)
+  const titleMax      = clampInt(options?.maxPinterestTitleLength,       30, TITLE_DB_MAX, TITLE_DB_MAX)
   const titleTargetMin = Math.max(20, Math.floor(titleMax * 0.8))
 
-  const descMax = clampInt(options?.maxPinterestDescriptionLength, 50, DESC_DB_MAX, 300)
+  const descMax       = clampInt(options?.maxPinterestDescriptionLength, 50, DESC_DB_MAX, 300)
   const descTargetMin = Math.max(200, Math.floor(descMax * 0.6))
 
-  // Trim and cap to avoid runaway prompt size when the run already has hundreds
-  // of titles — the most recent N are the ones most likely to collide.
   const recentExistingTitles = Array.isArray(existingTitles)
     ? existingTitles.filter(t => typeof t === 'string' && t.trim()).slice(-80)
     : []
 
-  const systemPrompt = `You are an SEO expert specializing in Pinterest marketing for digital wall art prints sold on platforms like Etsy or a personal shop.
+  const hasImage  = typeof imageUrl === 'string' && imageUrl.startsWith('http')
+  const wantsBoard = Array.isArray(boards) && boards.length > 0
 
-Your task: generate highly optimized Pinterest metadata (title + description) that maximizes search discoverability, click-through rate, and conversion.${accountContext?.trim() ? `\n\nACCOUNT PERFORMANCE CONTEXT (real data from this Pinterest account — use it to pick proven, high-traffic angles and keywords; do not contradict the image itself): ${accountContext.trim()}` : ''}
+  // ── Call 1: generate title + description ──────────────────────────────────
+  // Board names are intentionally absent here. The content must be driven
+  // purely by the image, not by how the user named their boards.
 
-Pinterest title rules:
-- Hard maximum: ${titleMax} characters. NEVER exceed this — the title will be saved exactly as you return it, no truncation.
-- Target length: ${titleTargetMin}–${titleMax} characters. Use as much of this range as possible — do NOT default to short titles.
-- The title must end with a complete word and proper punctuation. No mid-word cut-offs.
-- The primary search keyword MUST appear within the first 3 words of the title — this is the single biggest Pinterest SEO factor.
-- Every title in this batch MUST be unique. Do not reuse, paraphrase lightly, or simply re-order words from any of the titles below.
+  const systemPrompt = `You are a Pinterest SEO specialist writing metadata for a digital wall art print listing.${hasImage ? `
 
-Pinterest description rules:
-- Hard maximum: ${descMax} characters. NEVER exceed this — the description will be saved exactly as you return it, no truncation.
-- Target length: ${descTargetMin}–${descMax} characters. Aim for at least 200 characters — short descriptions rank poorly.
-- The description must end with a complete sentence and proper punctuation. No mid-sentence cut-offs.
-- Put the primary keyword and 2–3 related keywords in the first sentence for maximum search weight.
-- Write naturally, not keyword-stuffed — aim for a keyword density of 1–3%.
-- End with a clear call-to-action (e.g. "Shop now", "Save for later", "Click to shop", "Order yours today").
+## Your #1 job: describe what you SEE in the image
 
-CRITICAL formatting rules (no exceptions):
-- Forbidden characters anywhere in the title or description: hyphen "-", pipe "|", semicolon ";". Treat these as banned — they break the downstream Pinterest CSV import.
-- Use spaces or commas instead of those characters.
-- Stay within the character limits above — going over WILL get cut.
+An image is attached. Look at it carefully. Your title and description must describe the specific visual content — the subject, mood, colours, style. Do NOT write generic copy that fits any product.
 
-Additional guidelines:
-- Language: ${options?.language ?? 'English'}
-- Tone/style: ${options?.tone?.trim() || 'inspiring, elegant, modern'}
-- Target audience: ${options?.targetAudience?.trim() || 'home decorators, interior design lovers'}
-- Niche: ${options?.niche?.trim() || 'wall art, home decor, printable art'}${includeKw ? `\n- You MUST include these keywords naturally: ${includeKw}` : ''}${excludeKw ? `\n- You MUST NOT use these words: ${excludeKw}` : ''}${boards?.length ? `\n- Pinterest board: choose the single MOST SPECIFIC, topically-fitting board from this list and return its exact name as the "board" field. Specific boards rank better on Pinterest, so prefer a precise match (e.g. "Botanical Wall Art") over a generic catch-all board (names like "All", "General", "Misc", "Other", "Everything"). Only fall back to a generic board if no specific board fits at all. Boards: ${boards.join(', ')}` : ''}${recentExistingTitles.length ? `\n\nTitles ALREADY used in this run (your new title must NOT match or be a trivial variation of any of these):\n${recentExistingTitles.map(t => `- ${t}`).join('\n')}` : ''}
+SUBJECT ACCURACY (overrides everything):
+- Title MUST open with what is actually shown: flowers, a mountain, an abstract pattern, a portrait — whatever you see.
+  ✓ "Pink Cherry Blossom Print Floral Wall Art Botanical Style"
+  ✓ "Mountain Sunset Landscape Printable Art Watercolour Style"
+  ✓ "Abstract Blue Geometric Shapes Minimalist Print"
+- These openers are BANNED — they describe nothing specific:
+  ✗ "Stunning Modern Digital Wall Art…"
+  ✗ "Beautiful Home Decor Print…"
+  ✗ "Vibrant Digital Art Print…"
+  ✗ Any phrase that could describe ANY wall art product
+- The description's first sentence must name the specific subject and visual style you observe.` : `
 
-Respond with a JSON object containing the keys "title" (string)${boards?.length ? ', "description" (string) and "board" (string — the EXACT board name you picked from the list above)' : ' and "description" (string)'}. No markdown.`
+## Your #1 job: describe the specific image subject
 
-  const userPrompt = [
-    `Filename: ${filename}`,
+You cannot see the image. Extract every clue from the filename, creation prompt, and colours provided. The title and description MUST reflect this specific image, not generic wall art copy.
+
+SUBJECT ACCURACY (overrides everything):
+- Title MUST open with the specific subject in the first 3 words.
+- BANNED openers: "Stunning Modern Digital Wall Art", "Beautiful Home Decor Print", "Vibrant Digital Art Print", or any phrase that fits ANY product.
+- The description's first sentence must name the specific subject.`}${accountContext?.trim() ? `\n\n## Account context\n${accountContext.trim()}` : ''}
+
+## Title rules
+- Hard maximum: ${titleMax} characters. NEVER exceed — saved exactly as returned.
+- Target: ${titleTargetMin}–${titleMax} characters. Fill this range.
+- End on a complete word. No mid-word cut-offs.
+- Subject keyword MUST appear in the first 3 words.
+- Every title in this batch must be unique — no reuse from the list below.
+
+## Description rules
+- Hard maximum: ${descMax} characters. NEVER exceed.
+- Target: ${descTargetMin}–${descMax} characters. Minimum 200 — short descriptions rank poorly.
+- End with a complete sentence.
+- First sentence: subject keyword + 2–3 related search terms.
+- Natural prose, keyword density 1–3%.
+- End with a call-to-action ("Shop now", "Save for later", "Click to shop", "Order yours today").
+
+## Formatting
+- Forbidden anywhere: hyphen "-", pipe "|", semicolon ";". Use a space or comma instead.
+
+## Style
+- Language: ${options?.language ?? 'English'}${options?.tone?.trim() ? `\n- Tone: ${options.tone.trim()}` : ''}${options?.targetAudience?.trim() ? `\n- Audience: ${options.targetAudience.trim()}` : ''}${options?.niche?.trim() ? `\n- Niche: ${options.niche.trim()}` : ''}${includeKw ? `\n- MUST include naturally: ${includeKw}` : ''}${excludeKw ? `\n- MUST NOT use: ${excludeKw}` : ''}${recentExistingTitles.length ? `\n\n## Already-used titles — do NOT reuse or trivially vary\n${recentExistingTitles.map(t => `- ${t}`).join('\n')}` : ''}${userInstructions ? `\n\n## User instructions — these override any conflicting default rules above\n${userInstructions}` : ''}
+
+Respond with JSON only — keys "title" (string) and "description" (string). No markdown.`
+
+  const textLines = [
     ...contextLines,
+    `Filename: ${filename}`,
     '',
-    `Generate the Pinterest metadata now. Title MUST be ${titleTargetMin}–${titleMax} characters, MUST be unique vs. the list above.`,
-  ].join('\n')
+    `Write the Pinterest title (${titleTargetMin}–${titleMax} chars) and description (${descTargetMin}–${descMax} chars).${hasImage ? ' Base everything on what you can see in the image.' : ' The title must open with the specific image subject.'}`,
+  ].join('\n').trim()
 
-  const openAiBody = {
-    model: 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
+  const userMessage = hasImage
+    ? {
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: imageUrl, detail: 'low' } },
+          { type: 'text', text: textLines },
+        ],
+      }
+    : { role: 'user', content: textLines }
+
+  const contentResponse = await openAiCall(apiKey, {
+    model: 'gpt-4o',
+    messages: [{ role: 'system', content: systemPrompt }, userMessage],
     response_format: { type: 'json_object' },
     max_tokens: 600,
-    temperature: 0.8,
-  }
-
-  // Retry with exponential backoff when OpenAI rate-limits (429).
-  // This keeps multi-user traffic transparent — the request retries server-side
-  // rather than surfacing a failure to the client.
-  const response = await (async function callOpenAI(attempt) {
-    try {
-      return await $fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(openAiBody),
-      })
-    } catch (e) {
-      const status = e?.response?.status ?? e?.status ?? 0
-      if (status === 429 && attempt < 4) {
-        await new Promise(r => setTimeout(r, (2 ** attempt) * 1000))
-        return callOpenAI(attempt + 1)
-      }
-      const msg = e?.data?.error?.message ?? e?.data?.message ?? e?.message ?? JSON.stringify(e?.data ?? e ?? 'unknown')
-      throw createError({ statusCode: 502, statusMessage: `OpenAI: ${msg}` })
-    }
-  })(0)
+    temperature: 0.6,
+  })
 
   let parsed
   try {
-    parsed = JSON.parse(response.choices[0].message.content)
+    parsed = JSON.parse(contentResponse.choices[0].message.content)
   } catch {
     throw createError({ statusCode: 502, statusMessage: 'Could not parse OpenAI response' })
   }
 
   const clean = str => String(str ?? '').replace(/[-|;]/g, ' ').replace(/\s{2,}/g, ' ').trim()
+  const title       = trimToLimit(clean(parsed.title),       titleMax, { sentenceAware: false })
+  const description = trimToLimit(clean(parsed.description), descMax,  { sentenceAware: true  })
 
-  // Match the AI's board choice back to a real board name. Exact match first,
-  // then case-insensitive/trimmed so a minor formatting difference from the
-  // model still resolves to the canonical name (returned exactly as stored).
+  // ── Call 2: board picking ─────────────────────────────────────────────────
+  // Separate call so board names never contaminate the title/description above.
+  // Uses gpt-4o-mini — this is pure classification, no creativity needed.
   let pickedBoard = null
-  if (boards?.length && parsed.board) {
-    const want = String(parsed.board).trim().toLowerCase()
-    pickedBoard = boards.find(b => b === parsed.board)
-      ?? boards.find(b => String(b).trim().toLowerCase() === want)
-      ?? null
+  if (wantsBoard) {
+    const boardResponse = await openAiCall(apiKey, {
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a Pinterest board classifier. Given a pin title and description, pick the single most relevant board from the provided list. Return the exact board name with no changes. Respond with JSON: {"board": "exact board name"}`,
+        },
+        {
+          role: 'user',
+          content: `Title: "${title}"\nDescription: "${description}"\n\nBoards: ${boards.join(', ')}\n\nWhich single board fits best?`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 60,
+      temperature: 0,
+    }).catch(() => null)
+
+    if (boardResponse) {
+      try {
+        const bp = JSON.parse(boardResponse.choices[0].message.content)
+        const want = String(bp.board ?? '').trim().toLowerCase()
+        pickedBoard = boards.find(b => b === bp.board)
+          ?? boards.find(b => String(b).trim().toLowerCase() === want)
+          ?? null
+      } catch { /* board picking failure is non-fatal */ }
+    }
   }
 
-  // The AI is told the limit but doesn't always respect it. We enforce the
-  // user-configured max in code — but instead of a dumb mid-word slice, we cut
-  // at the last full sentence (or failing that, the last word) so the text
-  // still reads cleanly.
-  // Count this successful generation against the user's plan quota (no-op for pro).
   await recordUsage(event, user.id, { aiGenerations: 1 })
 
   return {
     pinterest: {
-      title: trimToLimit(clean(parsed.title), titleMax, { sentenceAware: false }),
-      description: trimToLimit(clean(parsed.description), descMax, { sentenceAware: true }),
+      title,
+      description,
       ...(pickedBoard ? { board: pickedBoard } : {}),
     },
     adobeStock: {},
   }
 })
 
-// Truncates `text` so its length never exceeds `max`. Prefers a sentence
-// boundary (when sentenceAware), then a word boundary, then a hard cut as a
-// last resort. The 70% floor keeps us from cutting aggressively short when an
-// early sentence/word boundary would chop off most of the content.
+async function openAiCall(apiKey, body) {
+  return (async function attempt(n) {
+    try {
+      return await $fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch (e) {
+      const status = e?.response?.status ?? e?.status ?? 0
+      if (status === 429 && n < 4) {
+        await new Promise(r => setTimeout(r, (2 ** n) * 1000))
+        return attempt(n + 1)
+      }
+      const msg = e?.data?.error?.message ?? e?.data?.message ?? e?.message ?? JSON.stringify(e?.data ?? e ?? 'unknown')
+      throw createError({ statusCode: 502, statusMessage: `OpenAI: ${msg}` })
+    }
+  })(0)
+}
+
 function trimToLimit(text, max, { sentenceAware = false } = {}) {
   const t = String(text ?? '')
   if (t.length <= max) return t
@@ -168,17 +208,13 @@ function trimToLimit(text, max, { sentenceAware = false } = {}) {
 
   if (sentenceAware) {
     const match = slice.match(/^[\s\S]*[.!?](?=\s|$)/)
-    if (match && match[0].length >= minAcceptable) {
-      return match[0].trim()
-    }
+    if (match && match[0].length >= minAcceptable) return match[0].trim()
   }
 
   const lastSpace = slice.lastIndexOf(' ')
   if (lastSpace >= minAcceptable) {
     const out = slice.slice(0, lastSpace).trim()
     if (!sentenceAware) return out
-    // Add a period so the description ends on a complete sentence even when we
-    // couldn't reach an existing one. Keep the total within `max`.
     if (/[.!?]$/.test(out)) return out
     return out.length + 1 <= max ? `${out}.` : out
   }

@@ -1,31 +1,59 @@
 export function useBoardIntelligence() {
   const suggestion = ref(null)
+  const newBoardSuggestion = ref(null)
   const loading = ref(false)
+  const loadingNew = ref(false)
   const error = ref(null)
   const health = ref(null)
   const healthLoading = ref(false)
 
-  async function suggestBoard(pinData, boards) {
+  // Fires two parallel requests:
+  //   1. existing board matching (always)
+  //   2. new board name suggestion (skipped when withNewBoard=false, e.g. bulk AI flow)
+  async function suggestBoard(pinData, boards, { withNewBoard = true } = {}) {
     if (!boards?.length) return
     loading.value = true
     error.value = null
     suggestion.value = null
-    try {
-      const result = await $fetch('/api/pinterest/board-intelligence', {
+    newBoardSuggestion.value = null
+
+    const boardNames = boards.map(b => typeof b === 'string' ? b : b.name)
+
+    $fetch('/api/pinterest/board-intelligence', {
+      method: 'POST',
+      body: {
+        title: pinData.title || '',
+        description: pinData.description || '',
+        keywords: pinData.keywords || '',
+        filename: pinData.filename || '',
+        boards: boardNames,
+      },
+    }).then(result => {
+      suggestion.value = { recommendedBoards: result.recommendedBoards, reasoning: result.reasoning }
+    }).catch(e => {
+      error.value = e?.data?.statusMessage || e?.message || 'Board suggestion failed'
+    }).finally(() => {
+      loading.value = false
+    })
+
+    if (withNewBoard) {
+      loadingNew.value = true
+      $fetch('/api/pinterest/board-intelligence', {
         method: 'POST',
         body: {
           title: pinData.title || '',
           description: pinData.description || '',
-          keywords: pinData.keywords || '',
           filename: pinData.filename || '',
-          boards: boards.map(b => typeof b === 'string' ? b : b.name),
+          boards: boardNames,
+          forceNewSuggestion: true,
         },
+      }).then(result => {
+        newBoardSuggestion.value = result.newBoard || null
+      }).catch(() => {
+        // non-critical — new board suggestion failing doesn't block the flow
+      }).finally(() => {
+        loadingNew.value = false
       })
-      suggestion.value = result
-    } catch (e) {
-      error.value = e?.data?.statusMessage || e?.message || 'Board suggestion failed'
-    } finally {
-      loading.value = false
     }
   }
 
@@ -42,8 +70,9 @@ export function useBoardIntelligence() {
 
   function clear() {
     suggestion.value = null
+    newBoardSuggestion.value = null
     error.value = null
   }
 
-  return { suggestion, loading, error, health, healthLoading, suggestBoard, loadBoardHealth, clear }
+  return { suggestion, newBoardSuggestion, loading, loadingNew, error, health, healthLoading, suggestBoard, loadBoardHealth, clear }
 }

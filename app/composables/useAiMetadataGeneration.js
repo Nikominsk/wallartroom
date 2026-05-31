@@ -44,6 +44,30 @@ function norm(t) {
   return String(t ?? '').trim().toLowerCase()
 }
 
+// Only keep fields from the AI's pinterest partial that:
+//   a) were actually requested via generateFor, AND
+//   b) are allowed to overwrite given overwriteMode
+//      ('missing-only' → only write to empty fields; 'replace' → write everything)
+function filterPartialPinterest(existing, partial, { generateFor, overwriteMode }) {
+  const result = {}
+  if (!partial) return result
+
+  if (generateFor.pinterestTitle && partial.title) {
+    if (overwriteMode !== 'missing-only' || !existing?.title)
+      result.title = partial.title
+  }
+  if (generateFor.pinterestDescription && partial.description) {
+    if (overwriteMode !== 'missing-only' || !existing?.description)
+      result.description = partial.description
+  }
+  if (generateFor.pinterestBoard && partial.board) {
+    const alreadyHasBoard = !!(existing?.board || existing?.boardIds?.length)
+    if (overwriteMode !== 'missing-only' || !alreadyHasBoard)
+      result.board = partial.board
+  }
+  return result
+}
+
 // When the model keeps returning duplicates despite the prompt warning, force
 // uniqueness in code by appending a small disambiguator (or as a last resort,
 // a numeric suffix). Stays within maxLen.
@@ -152,12 +176,16 @@ export function useAiMetadataGeneration() {
           const prior = norm(img?.pinterest?.title)
           if (prior) usedTitles.delete(prior)
 
-          const newTitle = partial?.pinterest?.title
+          // Only track the new title in usedTitles when title generation was requested.
+          const newTitle = options.generateFor.pinterestTitle ? partial?.pinterest?.title : null
           if (newTitle) usedTitles.add(norm(newTitle))
+
+          // Apply only the fields that were requested and allowed to overwrite.
+          const filteredPinterest = filterPartialPinterest(img.pinterest, partial.pinterest, options)
 
           const updated = {
             ...img,
-            pinterest:  { ...img.pinterest,  ...partial.pinterest  },
+            pinterest:  { ...img.pinterest,  ...filteredPinterest },
             adobeStock: { ...img.adobeStock, ...partial.adobeStock },
             updatedAt:  new Date().toISOString(),
           }

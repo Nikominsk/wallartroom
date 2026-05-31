@@ -173,7 +173,7 @@
 
             <div v-if="boardDropOpen" class="single-form__board-menu">
               <label
-                v-for="b in boards"
+                v-for="b in boardMenuList"
                 :key="b.id"
                 class="single-form__board-option"
                 :class="{ 'single-form__board-option--on': selectedBoardIds.includes(b.id) }"
@@ -352,6 +352,17 @@ function updatePinterest(key, value) {
 
 const boardDropEl   = ref(null)
 const boardDropOpen = ref(false)
+const boardMenuList = ref([])
+
+// Snapshot the sorted list on open (selected first, then rest).
+// While the menu is open the order stays frozen so items don't jump.
+watch(boardDropOpen, (open) => {
+  if (open) {
+    const sel = props.boards.filter(b => selectedBoardIds.value.includes(b.id))
+    const rest = props.boards.filter(b => !selectedBoardIds.value.includes(b.id))
+    boardMenuList.value = [...sel, ...rest]
+  }
+})
 
 onMounted(() => document.addEventListener('click', onDocClickBoard))
 onBeforeUnmount(() => document.removeEventListener('click', onDocClickBoard))

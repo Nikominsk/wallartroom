@@ -1,33 +1,42 @@
 <template>
   <div class="gallery-toolbar">
     <div class="gallery-toolbar__row gallery-toolbar__row--main">
-      <!-- Sort -->
-      <select
-        :value="sortField"
-        class="gallery-toolbar__select"
-        @change="emit('update:sort-field', $event.target.value)"
-      >
-        <option value="createdAt">Date created</option>
-        <option value="updatedAt">Date updated</option>
-        <option value="filename">Filename</option>
-        <template v-if="mode === 'pinterest'">
-          <option value="pinterestStatus">Pinterest status</option>
-          <option value="pinterestPublishDate">Pinterest date</option>
-        </template>
-        <template v-else>
-          <option value="adobeStockStatus">Adobe status</option>
-          <option value="adobeStockPublishDate">Adobe date</option>
-        </template>
-      </select>
+      <!-- Sort group: direction toggle + category select fused as one control -->
+      <div class="gallery-toolbar__sort-group">
+        <button class="gallery-toolbar__sort-btn" :title="sortDirection === 'asc' ? 'Ascending' : 'Descending'" @click="emit('toggle-sort-dir')">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <template v-if="sortDirection === 'asc'">
+              <text x="1" y="7" font-size="5.5" font-family="sans-serif" font-weight="700" fill="currentColor" stroke="none">A</text>
+              <text x="1" y="14" font-size="5.5" font-family="sans-serif" font-weight="700" fill="currentColor" stroke="none">Z</text>
+              <path d="M11 2v11M8.5 10.5l2.5 2.5 2.5-2.5" />
+            </template>
+            <template v-else>
+              <text x="1" y="7" font-size="5.5" font-family="sans-serif" font-weight="700" fill="currentColor" stroke="none">Z</text>
+              <text x="1" y="14" font-size="5.5" font-family="sans-serif" font-weight="700" fill="currentColor" stroke="none">A</text>
+              <path d="M11 13V2M8.5 5.5L11 3l2.5 2.5" />
+            </template>
+          </svg>
+        </button>
+        <select
+          :value="sortField"
+          class="gallery-toolbar__select"
+          @change="emit('update:sort-field', $event.target.value)"
+        >
+          <option value="createdAt">Date created</option>
+          <option value="updatedAt">Date updated</option>
+          <option value="filename">Filename</option>
+          <template v-if="mode === 'pinterest'">
+            <option value="pinterestStatus">Pinterest status</option>
+            <option value="pinterestPublishDate">Scheduled date</option>
+          </template>
+          <template v-else>
+            <option value="adobeStockStatus">Adobe status</option>
+            <option value="adobeStockPublishDate">Adobe date</option>
+          </template>
+        </select>
+      </div>
 
-      <button class="gallery-toolbar__sort-btn" :title="sortDirection === 'asc' ? 'Ascending' : 'Descending'" @click="emit('toggle-sort-dir')">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-          <path v-if="sortDirection === 'asc'" d="M2 10l4-7 4 7M4 7h4" />
-          <path v-else d="M2 4l4 7 4-7M4 7h4" />
-        </svg>
-      </button>
-
-      <!-- Filters toggle -->
+      <!-- Filters toggle + reset -->
       <button
         class="gallery-toolbar__btn"
         :class="{ 'gallery-toolbar__btn--active': showFilters }"
@@ -39,14 +48,24 @@
         Filters
         <span v-if="hasFilters" class="gallery-toolbar__filter-badge" />
       </button>
-
-      <!-- Export CSV — only where preparing/exporting makes sense -->
-      <button v-if="mode === 'pinterest' && caps.exportCsv" class="gallery-toolbar__btn gallery-toolbar__btn--accent" @click="emit('export-csv')">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-          <path d="M8 1v8M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" />
-        </svg>
-        Export CSV
+      <button v-if="hasFilters" class="gallery-toolbar__reset" @click="emit('reset-filters')">
+        Reset
       </button>
+
+      <!-- Export CSV + Scheduling + More dropdown pushed to the far right -->
+      <div class="gallery-toolbar__right">
+        <button v-if="mode === 'pinterest' && caps.scheduling" class="gallery-toolbar__btn" @click="emit('pinterest-schedule')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
+          </svg>
+          Scheduling
+        </button>
+        <button v-if="mode === 'pinterest' && caps.exportCsv" class="gallery-toolbar__btn gallery-toolbar__btn--accent" @click="emit('export-csv')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M8 1v8M5 6l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" />
+          </svg>
+          Export CSV
+        </button>
 
       <!-- More dropdown: less-frequent actions live here -->
       <div ref="moreEl" class="gallery-toolbar__more">
@@ -64,16 +83,6 @@
         </button>
 
         <div v-if="moreOpen" class="gallery-toolbar__menu">
-          <button
-            v-if="mode === 'pinterest' && caps.scheduling"
-            class="gallery-toolbar__menu-item"
-            @click="emit('pinterest-schedule'); moreOpen = false"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
-            </svg>
-            Pinterest Scheduling
-          </button>
           <button
             v-if="mode === 'pinterest'"
             class="gallery-toolbar__menu-item"
@@ -123,54 +132,55 @@
           </div>
         </div>
       </div>
+      </div><!-- /.gallery-toolbar__right -->
     </div>
 
     <div v-if="showFilters" class="gallery-toolbar__filters">
       <template v-if="mode === 'pinterest'">
+
+        <!-- Title -->
         <div class="gallery-toolbar__filter-group">
-          <label class="gallery-toolbar__filter-label">Pinterest metadata</label>
-          <select
-            :value="filters.pinterestComplete"
-            class="gallery-toolbar__select gallery-toolbar__select--sm"
-            @change="updateFilter('pinterestComplete', $event.target.value)"
-          >
-            <option value="">Any</option>
-            <option value="complete">Complete</option>
-            <option value="incomplete">Incomplete</option>
-          </select>
+          <div class="gallery-toolbar__filter-head">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 2.5h9M6 2.5v7"/></svg>
+            <span class="gallery-toolbar__filter-label">Title</span>
+          </div>
+          <div class="gallery-toolbar__pills">
+            <button :class="['gallery-toolbar__pill', !filters.pinterestTitle && 'gallery-toolbar__pill--active']" title="Any" @click="updateFilter('pinterestTitle', '')">All</button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestTitle === 'set' && 'gallery-toolbar__pill--active']" title="Has title" @click="updateFilter('pinterestTitle', 'set')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l2.5 2.5 5.5-5.5"/></svg>
+            </button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestTitle === 'missing' && 'gallery-toolbar__pill--active']" title="Missing title" @click="updateFilter('pinterestTitle', 'missing')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+            </button>
+          </div>
         </div>
 
+        <!-- Description -->
         <div class="gallery-toolbar__filter-group">
-          <label class="gallery-toolbar__filter-label">Pinterest date</label>
-          <select
-            :value="filters.pinterestDate"
-            class="gallery-toolbar__select gallery-toolbar__select--sm"
-            @change="updateFilter('pinterestDate', $event.target.value)"
-          >
-            <option value="">Any</option>
-            <option value="set">Date set</option>
-            <option value="missing">Missing date</option>
-          </select>
+          <div class="gallery-toolbar__filter-head">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 3h9M1.5 6h9M1.5 9h6"/></svg>
+            <span class="gallery-toolbar__filter-label">Description</span>
+          </div>
+          <div class="gallery-toolbar__pills">
+            <button :class="['gallery-toolbar__pill', !filters.pinterestDescription && 'gallery-toolbar__pill--active']" title="Any" @click="updateFilter('pinterestDescription', '')">All</button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestDescription === 'set' && 'gallery-toolbar__pill--active']" title="Has description" @click="updateFilter('pinterestDescription', 'set')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l2.5 2.5 5.5-5.5"/></svg>
+            </button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestDescription === 'missing' && 'gallery-toolbar__pill--active']" title="Missing description" @click="updateFilter('pinterestDescription', 'missing')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+            </button>
+          </div>
         </div>
 
-        <div class="gallery-toolbar__filter-group">
-          <label class="gallery-toolbar__filter-label">Pinterest export</label>
-          <select
-            :value="filters.pinterestExported"
-            class="gallery-toolbar__select gallery-toolbar__select--sm"
-            @change="updateFilter('pinterestExported', $event.target.value)"
-          >
-            <option value="">Any</option>
-            <option value="exported">Exported</option>
-            <option value="not-exported">Not exported</option>
-          </select>
-        </div>
-
+        <!-- Board -->
         <div v-if="boards.length" class="gallery-toolbar__filter-group">
-          <label class="gallery-toolbar__filter-label">Pinterest board</label>
+          <div class="gallery-toolbar__filter-head">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1a2.5 2.5 0 012.5 2.5C8.5 5.5 6 10 6 10S3.5 5.5 3.5 3.5A2.5 2.5 0 016 1z"/><circle cx="6" cy="3.5" r="1" fill="currentColor" stroke="none"/></svg>
+            <span class="gallery-toolbar__filter-label">Board</span>
+          </div>
           <select
             :value="filters.pinterestBoard"
-            class="gallery-toolbar__select gallery-toolbar__select--sm"
+            class="gallery-toolbar__select gallery-toolbar__select--sm gallery-toolbar__select--narrow"
             @change="updateFilter('pinterestBoard', $event.target.value)"
           >
             <option value="">Any</option>
@@ -178,31 +188,69 @@
           </select>
         </div>
 
-        <div class="gallery-toolbar__filter-group gallery-toolbar__filter-group--daterange">
-          <label class="gallery-toolbar__filter-label">Publish date range</label>
-          <div class="gallery-toolbar__daterange">
-            <input
-              type="date"
-              class="gallery-toolbar__date-input"
-              :value="filters.pinterestDateFrom"
-              title="From"
-              @change="updateFilter('pinterestDateFrom', $event.target.value)"
-            />
-            <span class="gallery-toolbar__daterange-sep">–</span>
-            <input
-              type="date"
-              class="gallery-toolbar__date-input"
-              :value="filters.pinterestDateTo"
-              title="To"
-              @change="updateFilter('pinterestDateTo', $event.target.value)"
-            />
+        <!-- Redirect URL -->
+        <div class="gallery-toolbar__filter-group">
+          <div class="gallery-toolbar__filter-head">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2H2.5A1 1 0 001.5 3v6.5A1 1 0 002.5 10.5H9A1 1 0 0010 9.5V7.5"/><path d="M7 1.5h3.5V5M10.5 1.5L6 6"/></svg>
+            <span class="gallery-toolbar__filter-label">URL</span>
+          </div>
+          <div class="gallery-toolbar__pills">
+            <button :class="['gallery-toolbar__pill', !filters.pinterestLink && 'gallery-toolbar__pill--active']" title="Any" @click="updateFilter('pinterestLink', '')">All</button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestLink === 'set' && 'gallery-toolbar__pill--active']" title="Has redirect URL" @click="updateFilter('pinterestLink', 'set')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l2.5 2.5 5.5-5.5"/></svg>
+            </button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestLink === 'missing' && 'gallery-toolbar__pill--active']" title="Missing redirect URL" @click="updateFilter('pinterestLink', 'missing')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+            </button>
           </div>
         </div>
+
+        <!-- Scheduled date + date range (grouped, no second label) -->
+        <div class="gallery-toolbar__filter-group">
+          <div class="gallery-toolbar__filter-head">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="10" height="9" rx="1.5"/><path d="M1 5h10M4 1v2M8 1v2"/></svg>
+            <span class="gallery-toolbar__filter-label">Scheduled</span>
+          </div>
+          <div class="gallery-toolbar__pills">
+            <button :class="['gallery-toolbar__pill', !filters.pinterestDate && 'gallery-toolbar__pill--active']" title="Any" @click="updateFilter('pinterestDate', '')">All</button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestDate === 'set' && 'gallery-toolbar__pill--active']" title="Date set" @click="updateFilter('pinterestDate', 'set')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l2.5 2.5 5.5-5.5"/></svg>
+            </button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestDate === 'missing' && 'gallery-toolbar__pill--active']" title="Missing date" @click="updateFilter('pinterestDate', 'missing')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+            </button>
+            <span class="gallery-toolbar__daterange gallery-toolbar__daterange--inline">
+              <input type="date" class="gallery-toolbar__date-input" :value="filters.pinterestDateFrom" title="From" @change="updateFilter('pinterestDateFrom', $event.target.value)" />
+              <span class="gallery-toolbar__daterange-sep">–</span>
+              <input type="date" class="gallery-toolbar__date-input" :value="filters.pinterestDateTo" title="To" @change="updateFilter('pinterestDateTo', $event.target.value)" />
+            </span>
+          </div>
+        </div>
+
+        <!-- Export -->
+        <div class="gallery-toolbar__filter-group">
+          <div class="gallery-toolbar__filter-head">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8.5l3 3 6-6"/></svg>
+            <span class="gallery-toolbar__filter-label">Export</span>
+          </div>
+          <div class="gallery-toolbar__pills">
+            <button :class="['gallery-toolbar__pill', !filters.pinterestExported && 'gallery-toolbar__pill--active']" title="Any" @click="updateFilter('pinterestExported', '')">All</button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestExported === 'exported' && 'gallery-toolbar__pill--active']" title="Exported" @click="updateFilter('pinterestExported', 'exported')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l2.5 2.5 5.5-5.5"/></svg>
+            </button>
+            <button :class="['gallery-toolbar__pill', filters.pinterestExported === 'not-exported' && 'gallery-toolbar__pill--active']" title="Not exported" @click="updateFilter('pinterestExported', 'not-exported')">
+              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+            </button>
+          </div>
+        </div>
+
       </template>
 
       <template v-else>
         <div class="gallery-toolbar__filter-group">
-          <label class="gallery-toolbar__filter-label">Adobe metadata</label>
+          <div class="gallery-toolbar__filter-head">
+            <span class="gallery-toolbar__filter-label">Adobe metadata</span>
+          </div>
           <select
             :value="filters.adobeStockComplete"
             class="gallery-toolbar__select gallery-toolbar__select--sm"
@@ -215,7 +263,9 @@
         </div>
 
         <div class="gallery-toolbar__filter-group">
-          <label class="gallery-toolbar__filter-label">Adobe date</label>
+          <div class="gallery-toolbar__filter-head">
+            <span class="gallery-toolbar__filter-label">Adobe date</span>
+          </div>
           <select
             :value="filters.adobeStockDate"
             class="gallery-toolbar__select gallery-toolbar__select--sm"
@@ -228,16 +278,6 @@
         </div>
       </template>
 
-      <div class="gallery-toolbar__filter-group gallery-toolbar__filter-group--check">
-        <label class="gallery-toolbar__check-label">
-          <input type="checkbox" :checked="filters.onlySelected" @change="updateFilter('onlySelected', $event.target.checked)" />
-          Show selected only
-        </label>
-      </div>
-
-      <button v-if="hasFilters" class="gallery-toolbar__reset" @click="emit('reset-filters')">
-        Reset filters
-      </button>
     </div>
   </div>
 </template>
@@ -309,6 +349,13 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
     &--main { flex-wrap: wrap; }
   }
 
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
   // ── Mode dropdown ─────────────────────────────────────────────────────────
 
   &__mode { flex-shrink: 0; }
@@ -371,7 +418,10 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
 
     &:hover { background: #f3f4f6; border-color: #d1d5db; }
 
-    &--active { background: #fef3c7; border-color: #fbbf24; color: #92400e; }
+    &--active {
+      background: #7c2d12; border-color: #7c2d12; color: #fff;
+      &:hover { background: #6b2410; border-color: #6b2410; }
+    }
 
     &--icon { padding: 0 8px; }
 
@@ -386,7 +436,20 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
 
   }
 
-  &__sort-btn { padding: 0 9px; }
+  &__sort-group {
+    display: inline-flex;
+    align-items: center;
+
+    .gallery-toolbar__sort-btn {
+      border-right: none;
+      border-radius: 7px 0 0 7px;
+      padding: 0 9px;
+    }
+
+    .gallery-toolbar__select {
+      border-radius: 0 7px 7px 0;
+    }
+  }
 
   &__filter-badge {
     width: 6px;
@@ -458,8 +521,8 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
   &__filters {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    align-items: flex-end;
+    gap: 12px;
+    align-items: flex-start;
     padding-top: 10px;
     margin-top: 10px;
     border-top: 1px solid #f3f4f6;
@@ -468,26 +531,62 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
   &__filter-group {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
+  }
 
-    &--check { justify-content: flex-end; padding-bottom: 2px; }
+  &__filter-head {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #6b7280;
   }
 
   &__filter-label {
     font-size: 11px;
     color: #6b7280;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
   }
 
-  &__check-label {
-    display: flex;
+  &__pills {
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
+
+    .gallery-toolbar__pill {
+      border-radius: 0;
+      border-right: none;
+
+      &:first-child { border-radius: 6px 0 0 6px; }
+      // last-of-type targets the last button even when a span (daterange) follows it
+      &:last-of-type { border-radius: 0 6px 6px 0; border-right: 1px solid #e5e7eb; }
+    }
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    width: 28px;
+    padding: 0;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #6b7280;
     cursor: pointer;
-    user-select: none;
+    white-space: nowrap;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+    &:hover:not(&--active) { background: #f3f4f6; border-color: #d1d5db; color: $color-primary; }
+
+    &--active {
+      background: #7c2d12;
+      border-color: #7c2d12;
+      color: #fff;
+    }
   }
 
   &__reset {
@@ -508,6 +607,10 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
     display: flex;
     align-items: center;
     gap: 5px;
+
+    &--inline {
+      margin-left: 6px;
+    }
   }
 
   &__daterange-sep {
@@ -518,7 +621,7 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
 
   &__date-input {
     height: 28px;
-    padding: 0 6px;
+    padding: 0 4px;
     border: 1px solid #e5e7eb;
     border-radius: 7px;
     font: inherit;
@@ -526,9 +629,13 @@ onUnmounted(() => document.removeEventListener('mousedown', handleDocMouseDown))
     background: #f9fafb;
     color: $color-primary;
     cursor: pointer;
-    width: 126px;
+    width: 94px;
 
     &:focus { outline: none; border-color: $color-accent; background: #fff; }
+  }
+
+  &__select--narrow {
+    max-width: 130px;
   }
 }
 </style>
