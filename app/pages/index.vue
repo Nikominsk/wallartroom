@@ -1,65 +1,107 @@
 <template>
   <div class="lp" id="top">
 
-    <!-- ── Cursor follower (hidden on touch/coarse pointer) ────────────────── -->
-    <div ref="cursorRef" class="cursor" aria-hidden="true">
-      <div class="cursor__inner" />
-    </div>
-
-
-    <!-- ── Nav ─────────────────────────────────────────────────────────────── -->
+    <!-- ── Nav ──────────────────────────────────────────────────────────────── -->
     <header class="nav">
       <div class="nav__inner">
-        <a class="nav__brand" href="#top">
-          <img class="nav__mark" src="/favicon.ico" alt="" aria-hidden="true" width="28" height="28" />
-          <span class="nav__word">Wall<i>Art</i>Room</span>
+        <a class="nav__brand" href="#top" aria-label="WallArtRoom home">
+          <img class="nav__mark" src="/favicon.ico" alt="" aria-hidden="true" width="26" height="26" />
+          <span class="nav__name">Wall<em>Art</em>Room</span>
         </a>
-        <nav class="nav__links">
+        <nav class="nav__links" aria-label="Site navigation">
           <a href="#features">Features</a>
-          <a href="#how">How it works</a>
-          <a href="#story">My story</a>
-          <a href="#usecases">Use cases</a>
+          <a href="#story">Story</a>
+          <a href="#pricing">Pricing</a>
         </nav>
-        <a href="/login" class="nav__cta">Start free →</a>
+        <a href="#waitlist" class="btn btn--ghost-nav">Join waitlist</a>
       </div>
     </header>
 
     <main>
 
-      <!-- ══ HERO ═════════════════════════════════════════════════════════════ -->
+      <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
       <section class="hero">
-        <div class="hero__glow" aria-hidden="true" />
-        <div class="hero__rays" aria-hidden="true" />
 
-        <div class="hero__inner">
+        <!-- Scrolling gallery wall — your Pinterest art, live -->
+        <div class="hero-gallery" aria-hidden="true">
+          <div class="hero-gallery__col hero-gallery__col--1">
+            <img
+              v-for="(img, i) in [...galleryCol1, ...galleryCol1]"
+              :key="'c1-' + i"
+              :src="img"
+              alt=""
+              class="hero-gallery__img"
+              loading="eager"
+              decoding="async"
+              draggable="false"
+            />
+          </div>
+          <div class="hero-gallery__col hero-gallery__col--2">
+            <img
+              v-for="(img, i) in [...galleryCol2, ...galleryCol2]"
+              :key="'c2-' + i"
+              :src="img"
+              alt=""
+              class="hero-gallery__img"
+              loading="eager"
+              decoding="async"
+              draggable="false"
+            />
+          </div>
+          <div class="hero-gallery__col hero-gallery__col--3">
+            <img
+              v-for="(img, i) in [...galleryCol3, ...galleryCol3]"
+              :key="'c3-' + i"
+              :src="img"
+              alt=""
+              class="hero-gallery__img"
+              loading="eager"
+              decoding="async"
+              draggable="false"
+            />
+          </div>
+        </div>
 
+        <!-- App screenshot — floats over the gallery like a featured pin -->
+        <div class="hero-app" aria-hidden="true">
+          <img
+            :src="heroLaptopImg"
+            alt=""
+            class="hero-app__img"
+            loading="eager"
+            decoding="async"
+            draggable="false"
+          />
+        </div>
+
+        <!-- Copy panel: left-aligned, above gallery -->
+        <div class="container hero__inner">
           <div class="hero__copy">
-            <!-- Eyebrow badge -->
-            <div class="hero__eyebrow hero-enter" style="--enter-delay:0ms">
-              <span class="hero__beta-pill">Beta · Free</span>
-              Built for Pinterest. Designed for scale.
+
+            <div class="hero__eyebrow">
+              <!-- Pinterest brand badge — instantly recognisable red P logo -->
+              <span class="badge badge--pinterest">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-label="Pinterest" role="img">
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
+                </svg>
+                For Pinterest
+              </span>
+              <span class="badge">Beta · Free</span>
             </div>
 
-            <!-- Headline -->
-            <h1 class="hero__title hero-enter" style="--enter-delay:80ms">
-              From raw<br>
-              images<br>
-              to <em>published pins</em><br>
-              in minutes.
+            <h1 class="hero__title">
+              From images<br>to <em>published pins</em><br>in minutes.
             </h1>
 
-            <!-- Lead -->
-            <p class="hero__lead hero-enter" style="--enter-delay:160ms">
-              Bulk uploads, AI optimization, board intelligence,
-              validation checks, and automated Pinterest workflows,
-              without the manual chaos.
+            <p class="hero__lead">
+              Bulk upload your artwork, generate AI-optimized titles and descriptions,
+              validate before you publish, and export a Pinterest-ready CSV in one click.
             </p>
 
-            <!-- Email form -->
             <form
-              class="hero__form hero-enter"
-              style="--enter-delay:240ms"
+              class="wl-form"
               @submit.prevent="handleSubmit"
+              aria-label="Join the waitlist"
             >
               <input
                 v-model="honeypot"
@@ -70,465 +112,317 @@
                 aria-hidden="true"
                 class="hp-field"
               />
-              <div class="hero__form-row">
+              <div class="wl-form__row">
+                <label for="hero-email" class="sr-only">Email address</label>
                 <input
+                  id="hero-email"
                   v-model="email"
                   type="email"
                   required
                   placeholder="Enter your email"
-                  class="hero__input"
+                  class="hero-input"
                   :disabled="submitting || submitted"
-                  aria-label="Email address"
                 />
                 <button
                   type="submit"
-                  class="hero__btn"
+                  class="btn btn--accent"
                   :disabled="submitting || submitted || !email"
                 >
                   <template v-if="submitted && alreadyJoined">Already in ✓</template>
                   <template v-else-if="submitted">You're in ✓</template>
                   <template v-else-if="submitting">Saving…</template>
-                  <template v-else>
-                    Join the waitlist
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M3 7h8m-3-3l3 3-3 3" />
-                    </svg>
-                  </template>
+                  <template v-else>Get early access</template>
                 </button>
               </div>
-              <p class="hero__form-note" :class="{ 'hero__form-note--err': formError }">
+              <p class="wl-form__note" :class="{ 'wl-form__note--error': formError }">
                 <template v-if="formError">{{ formError }}</template>
-                <template v-else-if="submitted && alreadyJoined">Welcome back. We'll let you know.</template>
-                <template v-else-if="submitted">We'll send one email when we open the doors.</template>
-                <template v-else>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="color:#e56b3a;vertical-align:-1px;margin-right:5px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                  Be first to access the Pinterest Revenue OS.
-                </template>
+                <template v-else-if="submitted && alreadyJoined">Welcome back. We'll let you know when plans launch.</template>
+                <template v-else-if="submitted">We'll send one email when paid plans go live.</template>
+                <template v-else>Free during beta. No credit card needed.</template>
               </p>
             </form>
 
-            <!-- Feature pills -->
-            <div class="hero__feat-cards hero-enter" style="--enter-delay:320ms">
-              <div class="hero__feat-card">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            <ul class="hero__trust" aria-label="Key promises">
+              <li v-for="t in trustItems" :key="t">
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 7l3.5 3.5L12 4" />
                 </svg>
-                <span>Bulk Uploads</span>
-              </div>
-              <div class="hero__feat-card">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 3l1.6 3.4 3.4 1.6-3.4 1.6L12 13l-1.6-3.4L7 8l3.4-1.6z"/><path d="M19 17l.7 1.5 1.3.5-1.3.5-.7 1.5-.7-1.5-1.3-.5 1.3-.5z"/>
-                </svg>
-                <span>AI Pin Optimization</span>
-              </div>
-              <div class="hero__feat-card">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M2 9h20M8 3v6"/>
-                </svg>
-                <span>Board Intelligence</span>
-              </div>
-              <div class="hero__feat-card">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>
-                </svg>
-                <span>Pinterest Validation</span>
-              </div>
-            </div>
-          </div>
+                <span>{{ t }}</span>
+              </li>
+            </ul>
 
+          </div>
         </div>
-
-        <!-- Laptop + floating cards: full hero height, pinned top-right,
-             behind the copy so the headline stays fully readable. -->
-        <div class="hero__preview hero-enter" style="--enter-delay:100ms">
-            <!-- Floating card: pins ready (top-left of image) -->
-            <div class="hero__float hero__float--tl hero__float--stat">
-              <div class="hero__float-icon hero__float-icon--orange">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-              </div>
-              <div class="hero__float-body">
-                <strong>96</strong>
-                <span>Pins Ready</span>
-                <p>Ready to publish</p>
-              </div>
-            </div>
-
-            <!-- Floating card: validation passed (top-right) -->
-            <div class="hero__float hero__float--tr">
-              <div class="hero__float-icon hero__float-icon--green">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-              </div>
-              <div class="hero__float-body">
-                <strong>Pinterest</strong>
-                <span>validation passed</span>
-                <p>All good to go!</p>
-              </div>
-            </div>
-
-            <!-- Laptop image -->
-            <img
-              :src="heroLaptopImg"
-              alt="WallArtRoom Pinterest workspace showing bulk pin management"
-              class="hero__img"
-              loading="eager"
-              decoding="async"
-              draggable="false"
-            />
-
-            <!-- Floating card: AI titles (bottom-right) -->
-            <div class="hero__float hero__float--br1">
-              <div class="hero__float-icon hero__float-icon--orange">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 3.4 3.4 1.6-3.4 1.6L12 13l-1.6-3.4L7 8l3.4-1.6z"/></svg>
-              </div>
-              <div class="hero__float-body">
-                <strong>AI titles</strong>
-                <span>generated</span>
-                <p>96 optimized</p>
-              </div>
-            </div>
-
-            <!-- Floating card: CSV export (bottom-right-lower) -->
-            <div class="hero__float hero__float--br2">
-              <div class="hero__float-icon hero__float-icon--blue">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              </div>
-              <div class="hero__float-body">
-                <strong>CSV export</strong>
-                <span>ready</span>
-                <p>Download now</p>
-              </div>
-            </div>
-          </div>
 
       </section>
 
 
-      <!-- ══ MY STORY ════════════════════════════════════════════════════════ -->
-      <section class="story" id="story">
-        <div class="container story__inner">
-          <div class="story__head">
-            <span class="kicker">My story</span>
-            <h2>From a personal hack to a tool <em>anyone can use.</em></h2>
-            <p class="story__lead">
-              WallArtRoom didn't start as a product. It started as my own
-              workflow, built to save myself hours every week.
-            </p>
-          </div>
-
-          <ol class="story__points">
-            <li>
-              <span class="story__num">1</span>
-              <div>
-                <strong>It began with MidJourney.</strong>
-                I generated a large set of images and needed a faster way to
-                turn them into publish-ready pins.
-              </div>
-            </li>
-            <li>
-              <span class="story__num">2</span>
-              <div>
-                <strong>Then I wrote my own Python program.</strong>
-                It already automated around 75% of the workflow. The tedious,
-                repetitive parts I never wanted to do by hand.
-              </div>
-            </li>
-            <li>
-              <span class="story__num">3</span>
-              <div>
-                <strong>Even then, it already felt amazing.</strong>
-                It saved so much time that I knew the idea was worth pushing
-                much further.
-              </div>
-            </li>
-            <li>
-              <span class="story__num">4</span>
-              <div>
-                <strong>Over the years, I turned it into a service.</strong>
-                What worked for me should work for everyone facing the same
-                Pinterest grind.
-              </div>
-            </li>
-            <li>
-              <span class="story__num">5</span>
-              <div>
-                <strong>The goal: a platform anyone can use.</strong>
-                Easy to use, with a clean and intuitive interface. No scripts,
-                no setup, no technical background required.
-              </div>
-            </li>
-          </ol>
-        </div>
-      </section>
-
-
-      <!-- ══ PROOF / SOCIAL PROOF ════════════════════════════════════════════ -->
-      <section class="proof">
-        <div class="container proof__grid">
-
-          <div class="proof__visual">
-            <img
-              :src="exampleStatsImg"
-              alt="Pinterest analytics from a real creator account showing impressions, saves, and outbound clicks"
-              class="proof__img"
-              loading="lazy"
-              decoding="async"
-              draggable="false"
-            />
-            <a
-              class="proof__credit"
-              href="https://de.pinterest.com/DigiDesignArt/"
-              target="_blank"
-              rel="noopener"
-            >
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6" />
-                <path d="M10 2H7M10 2v3M10 2L5 7" />
+      <!-- ══ STATS STRIP ════════════════════════════════════════════════════════ -->
+      <div class="stats-bar">
+        <div class="container stats-bar__inner">
+          <div class="stat" v-for="s in stats" :key="s.label">
+            <div class="stat__value-row">
+              <svg v-if="s.pinterest" width="18" height="18" viewBox="0 0 24 24" fill="#E60023" aria-hidden="true">
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
               </svg>
-              View live account
-            </a>
+              <span class="stat__value">{{ s.value }}</span>
+            </div>
+            <span class="stat__label">{{ s.label }}</span>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ══ FEATURES ══════════════════════════════════════════════════════════ -->
+      <section class="features" id="features">
+        <div class="container">
+
+          <div class="features__head">
+            <span class="kicker">The workflow</span>
+            <h2>Upload to publish,<br>on <em>autopilot.</em></h2>
           </div>
 
-          <div class="proof__copy">
-            <span class="kicker">Real results</span>
-            <h2>Built by a creator who <em>does this daily.</em></h2>
-            <p class="proof__lead">
-              This is a real Pinterest account run by one person using the exact workflow
-              WallArtRoom is built around. No team. No agency. Just smart tooling.
-            </p>
+          <!-- Pinterest-style pin card grid -->
+          <div class="pin-grid" role="list" aria-label="Key features">
+            <article
+              v-for="(f, i) in featureList"
+              :key="f.title"
+              class="pin-card"
+              role="listitem"
+            >
+              <img
+                :src="featureImages[i]"
+                :alt="f.title"
+                class="pin-card__img"
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              />
+              <div class="pin-card__overlay" aria-hidden="true" />
 
-            <ul class="proof__points">
-              <li>
-                <span class="proof__bullet-icon">
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 7l3.5 3.5L12 4" />
-                  </svg>
-                </span>
-                <div>
-                  <strong>Pinterest-first, not an afterthought.</strong>
-                  Every feature exists because Pinterest-specific problems demanded it.
+              <span class="pin-card__num" aria-hidden="true">0{{ i + 1 }}</span>
+
+              <div class="pin-card__caption">
+                <div class="pin-card__icon" v-html="f.icon" aria-hidden="true" />
+                <div class="pin-card__text">
+                  <h3>{{ f.title }}</h3>
+                  <p>{{ f.line }}</p>
                 </div>
+              </div>
+            </article>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ══ SCHEDULING CALLOUT ════════════════════════════════════════════════ -->
+      <section class="scheduling" id="scheduling">
+        <div class="container scheduling__inner">
+
+          <div class="scheduling__copy">
+            <span class="kicker">Publish on your schedule</span>
+            <h2>Set a date.<br><em>Pinterest does the rest.</em></h2>
+            <p>Every pin in your CSV export comes with a scheduled publish date attached. Upload once to Pinterest and your content goes live automatically, exactly when you planned it. No manual posting. No missed slots.</p>
+            <ul class="scheduling__perks">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7l3.5 3.5L12 4"/></svg>
+                Schedule weeks of pins in one export
               </li>
               <li>
-                <span class="proof__bullet-icon">
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 7l3.5 3.5L12 4" />
-                  </svg>
-                </span>
-                <div>
-                  <strong>API-compliant, no risky scraping.</strong>
-                  We follow Pinterest's official API guidelines. Your account stays safe.
-                </div>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7l3.5 3.5L12 4"/></svg>
+                Precise publish time per pin
               </li>
               <li>
-                <span class="proof__bullet-icon">
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 7l3.5 3.5L12 4" />
-                  </svg>
-                </span>
-                <div>
-                  <strong>Revenue-focused, not vanity-focused.</strong>
-                  Track which pins drive clicks, which boards convert, and which links earn.
-                </div>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7l3.5 3.5L12 4"/></svg>
+                Pinterest reads the dates on import automatically
               </li>
             </ul>
           </div>
 
-        </div>
-      </section>
-
-
-      <!-- ══ DIFFERENTIATOR STRIP ════════════════════════════════════════════ -->
-      <section class="diff">
-        <div class="container">
-          <div class="diff__inner">
-            <div class="diff__item" v-for="d in differentiators" :key="d.label">
-              <span class="diff__number">{{ d.number }}</span>
-              <span class="diff__label">{{ d.label }}</span>
+          <!-- CSS-built CSV preview — no image needed -->
+          <div class="csv-card" aria-label="Example scheduled CSV export">
+            <div class="csv-card__topbar">
+              <span class="csv-card__filename">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                pinterest-export.csv
+              </span>
+              <span class="csv-card__ready">Ready to import</span>
             </div>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ══ PROBLEM ══════════════════════════════════════════════════════════ -->
-      <section class="problem">
-        <div class="container">
-          <div class="problem__head">
-            <span class="kicker">The problem</span>
-            <h2>Generic schedulers treat Pinterest like an afterthought.</h2>
-            <p>Buffer, Hootsuite, and Later are built for Twitter-era cross-posting. Pinterest needs board strategy, keyword depth, and link trust. Not another queue.</p>
-          </div>
-
-          <div class="problem__grid">
-            <div
-              v-for="p in painPoints"
-              :key="p.title"
-              class="pain"
-            >
-              <div class="pain__icon" v-html="p.icon" />
-              <h3>{{ p.title }}</h3>
-              <p>{{ p.body }}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ══ FEATURES ════════════════════════════════════════════════════════ -->
-      <section class="features" id="features">
-        <div class="container">
-          <div class="features__head">
-            <span class="kicker">The Pinterest Revenue OS</span>
-            <h2>Four layers that turn pins into <em>revenue.</em></h2>
-            <p>Not just posting. From upload to ROI, every step is Pinterest-first.</p>
-          </div>
-
-          <div class="features__list">
-            <div
-              v-for="(f, i) in featureList"
-              :key="f.title"
-              class="feature"
-              :class="{ 'feature--reverse': i % 2 === 1 }"
-            >
-              <div class="feature__copy">
-                <span class="feature__num">0{{ i + 1 }}</span>
-                <h3>{{ f.title }}</h3>
-                <p>{{ f.body }}</p>
-                <ul class="feature__bullets">
-                  <li v-for="b in f.bullets" :key="b">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M2 7l3.5 3.5L12 4" />
-                    </svg>
-                    {{ b }}
-                  </li>
-                </ul>
+            <div class="csv-card__table">
+              <div class="csv-card__thead">
+                <span>Pin title</span>
+                <span>Board</span>
+                <span>Publish date</span>
               </div>
-
-              <div class="feature__visual">
-                <component :is="f.visual" />
+              <div class="csv-card__row" v-for="row in schedRows" :key="row.title">
+                <span class="csv-card__pin">{{ row.title }}</span>
+                <span class="csv-card__board">{{ row.board }}</span>
+                <span class="csv-card__date">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  {{ row.date }}
+                </span>
               </div>
             </div>
+            <div class="csv-card__footer">
+              <span>48 pins total</span>
+              <span class="csv-card__count">Jun 14 – Jul 2</span>
+            </div>
           </div>
+
         </div>
       </section>
 
 
-      <!-- ══ HOW IT WORKS ═════════════════════════════════════════════════════ -->
-      <section class="how" id="how">
-        <div class="container">
-          <div class="how__head">
-            <span class="kicker">The flow</span>
-            <h2>From upload to tracked revenue in four steps.</h2>
-          </div>
+      <!-- ══ STORY ══════════════════════════════════════════════════════════════ -->
+      <section class="story" id="story">
 
-          <div class="how__steps">
-            <div class="how__line" aria-hidden="true" />
-            <div
-              v-for="(s, idx) in steps"
-              :key="s.title"
-              class="step"
+        <!-- Analytics screenshot: fills the section as atmospheric proof -->
+        <img
+          :src="exampleStatsImg"
+          alt=""
+          aria-hidden="true"
+          class="story__bg"
+          loading="lazy"
+          decoding="async"
+          draggable="false"
+        />
+        <!-- Warm dark overlay — darker left for text, lighter right for laptop -->
+        <div class="story__overlay" aria-hidden="true" />
+
+        <div class="container story__inner">
+
+          <!-- Left: personal story text -->
+          <div class="story__copy">
+            <span class="kicker kicker--dim">Why I built this</span>
+            <h2 class="story__heading">
+              From a personal hack<br>to a tool <em>anyone can use.</em>
+            </h2>
+
+            <p>WallArtRoom didn't start as a product. I generated images with MidJourney and needed a faster way to turn them into publish-ready Pinterest pins. So I wrote my own Python script. It automated 75% of the work instantly. I knew the idea was worth taking further.</p>
+            <p>Over time I turned it into this: what worked for me should work for every creator facing the same grind. No scripts. No setup. No technical knowledge required.</p>
+
+            <a
+              class="story__link"
+              href="https://de.pinterest.com/DigiDesignArt/"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <div class="step__num">{{ idx + 1 }}</div>
-              <h3>{{ s.title }}</h3>
-              <p>{{ s.body }}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ══ USE CASES ════════════════════════════════════════════════════════ -->
-      <section class="usecases">
-        <div class="container">
-          <div class="usecases__head">
-            <span class="kicker">Built for</span>
-            <h2>Whether you pin 10 or 10,000 a month.</h2>
-          </div>
-
-          <div class="usecases__grid">
-            <div v-for="uc in useCases" :key="uc.title" class="usecase">
-              <div class="usecase__icon" v-html="uc.icon" />
-              <h3>{{ uc.title }}</h3>
-              <p>{{ uc.body }}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ══ BETA FREE PLAN ════════════════════════════════════════════════════ -->
-      <section class="beta-plan" id="beta">
-        <div class="container">
-          <div class="beta-plan__inner">
-            <div class="beta-plan__kicker">
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 2H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6" />
+                <path d="M10 2H7M10 2v3M10 2L5 7" />
               </svg>
-              Currently in Beta
-            </div>
-            <h2 class="beta-plan__title">Free while we're in beta.<br><em>No credit card. No catch.</em></h2>
-            <p class="beta-plan__lead">
-              WallArtRoom is in active development and open for beta testers.
-              Sign up today and get full access to all features — completely free.
-              Paid plans will launch later. Early users keep their free usage history.
-            </p>
-
-            <div class="beta-plan__perks">
-              <div class="beta-perk">
-                <span class="beta-perk__icon">
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 16.5v-13A1.5 1.5 0 014.5 2h11A1.5 1.5 0 0117 3.5v13L10 18l-7-1.5z"/>
-                  </svg>
-                </span>
-                <div>
-                  <strong>200 image uploads</strong>
-                  <p>Bulk upload your art files, ready for Pinterest export</p>
-                </div>
-              </div>
-              <div class="beta-perk">
-                <span class="beta-perk__icon">
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
-                  </svg>
-                </span>
-                <div>
-                  <strong>500 AI generations</strong>
-                  <p>AI-written titles, descriptions, and board suggestions</p>
-                </div>
-              </div>
-              <div class="beta-perk">
-                <span class="beta-perk__icon">
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 16V4l6 3 6-3v12l-6 3-6-3z"/>
-                  </svg>
-                </span>
-                <div>
-                  <strong>All tools unlocked</strong>
-                  <p>Board intelligence, CSV export, scheduler, analytics import</p>
-                </div>
-              </div>
-            </div>
-
-            <a href="/login" class="beta-plan__cta">
-              Start free — no card needed
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 7h8m-3-3l3 3-3 3"/>
-              </svg>
+              See the live Pinterest account
             </a>
           </div>
+
+          <!-- Right: laptop app screenshot — the tool that produced those stats -->
+          <div class="story__visual">
+            <img
+              :src="heroLaptopImg"
+              alt="WallArtRoom dashboard showing the tool behind the analytics results"
+              class="story__laptop"
+              loading="lazy"
+              decoding="async"
+              draggable="false"
+            />
+            <p class="story__caption">Real results. Real account. Built with this tool.</p>
+          </div>
+
         </div>
       </section>
 
 
-      <!-- ══ FINAL CTA ════════════════════════════════════════════════════════ -->
-      <section class="cta" id="waitlist">
+      <!-- ══ PRICING ════════════════════════════════════════════════════════════ -->
+      <section class="pricing" id="pricing">
         <div class="container">
-          <div class="cta__inner">
-            <span class="kicker kicker--light">Get notified</span>
-            <h2>Get notified when <em>paid plans launch.</em></h2>
-            <p>Already using the free beta? Drop your email and we'll let you know the moment subscription plans go live — first access, no spam.</p>
+          <div class="section-head">
+            <span class="kicker">Pricing</span>
+            <h2>Pick your plan. Scale when you're ready.</h2>
+            <p>All features are free during beta. Paid plans launch later. Waitlist members get first access and keep their history.</p>
+          </div>
 
-            <form class="cta__form" @submit.prevent="handleSubmit">
+          <div class="pricing__grid">
+            <div
+              v-for="plan in plans"
+              :key="plan.name"
+              class="plan"
+              :class="{ 'plan--featured': plan.featured }"
+            >
+              <div v-if="plan.badge" class="plan__badge">{{ plan.badge }}</div>
+              <div class="plan__head">
+                <div class="plan__name">{{ plan.name }}</div>
+                <div class="plan__price">
+                  <span class="plan__amount">{{ plan.price }}</span>
+                  <span v-if="plan.period" class="plan__period">{{ plan.period }}</span>
+                </div>
+                <p v-if="plan.tagline" class="plan__tagline">{{ plan.tagline }}</p>
+              </div>
+              <ul class="plan__features" :aria-label="plan.name + ' plan features'">
+                <li v-for="f in plan.features" :key="f">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 7l3.5 3.5L12 4" />
+                  </svg>
+                  <span>{{ f }}</span>
+                </li>
+              </ul>
+              <a
+                :href="plan.isFree ? '/login' : '#waitlist'"
+                class="btn btn--full"
+                :class="plan.featured ? 'btn--accent' : 'btn--outline'"
+              >{{ plan.cta }}</a>
+            </div>
+          </div>
+
+          <p class="pricing__footnote">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            All tiers are available at no cost during the beta period. The prices above reflect future plans after launch.
+          </p>
+        </div>
+      </section>
+
+
+      <!-- ══ FINAL CTA ══════════════════════════════════════════════════════════ -->
+      <section class="cta-dark" id="waitlist">
+
+        <!-- Top marquee strip: artwork streaming right -->
+        <div class="cta-marquee" aria-hidden="true">
+          <div class="cta-marquee__track">
+            <img
+              v-for="(img, i) in [...ctaImages, ...ctaImages]"
+              :key="'mt-' + i"
+              :src="img"
+              alt=""
+              class="cta-marquee__img"
+              loading="lazy"
+              decoding="async"
+              draggable="false"
+            />
+          </div>
+        </div>
+
+        <!-- Center: inspiring copy + form -->
+        <div class="container">
+          <div class="cta-dark__inner">
+
+            <span class="cta-dark__label">
+              <span class="cta-dark__dot" aria-hidden="true" />
+              Beta · Free to join
+            </span>
+
+            <h2 class="cta-dark__title">
+              Your art deserves<br>to be <em>everywhere.</em>
+            </h2>
+
+            <p class="cta-dark__lead">
+              Join creators already on the waitlist. Free during beta, no card needed.
+            </p>
+
+            <form
+              class="cta-form"
+              @submit.prevent="handleSubmit"
+              aria-label="Join the waitlist"
+            >
               <input
                 v-model="honeypot"
                 type="text"
@@ -538,40 +432,46 @@
                 aria-hidden="true"
                 class="hp-field"
               />
+              <label for="cta-email" class="sr-only">Email address</label>
               <input
+                id="cta-email"
                 v-model="email"
                 type="email"
                 required
                 placeholder="you@studio.com"
-                class="cta__input"
+                class="cta-form__input"
                 :disabled="submitting || submitted"
-                aria-label="Email address"
               />
-              <button type="submit" class="cta__btn" :disabled="submitting || submitted || !email">
-                <template v-if="submitted && alreadyJoined">Already registered ✓</template>
-                <template v-else-if="submitted">You're on the list ✓</template>
+              <button
+                type="submit"
+                class="btn btn--accent cta-form__btn"
+                :disabled="submitting || submitted || !email"
+              >
+                <template v-if="submitted">You're on the list ✓</template>
                 <template v-else-if="submitting">Saving…</template>
-                <template v-else>Notify me</template>
+                <template v-else>Get early access →</template>
               </button>
+              <p class="cta-form__note" :class="{ 'cta-form__note--error': formError }">
+                <template v-if="formError">{{ formError }}</template>
+                <template v-else>One email when paid plans launch. No spam, ever.</template>
+              </p>
             </form>
-            <p class="cta__note" :class="{ 'cta__note--err': formError }">
-              <template v-if="formError">{{ formError }}</template>
-              <template v-else>One email when plans launch. No spam, ever.</template>
-            </p>
+
           </div>
         </div>
+
       </section>
 
 
-      <!-- ══ FOOTER ══════════════════════════════════════════════════════════ -->
+      <!-- ══ FOOTER ──────────────────────────────────────────────────────────── -->
       <footer class="footer">
         <div class="container footer__inner">
-          <a class="footer__brand" href="#top">Wall<span>Art</span>Room</a>
-          <p class="footer__copy">© {{ year }} · The Pinterest Revenue OS · API-compliant, no risky scraping.</p>
-          <div class="footer__links">
+          <span class="footer__brand">Wall<em>Art</em>Room</span>
+          <p class="footer__copy">© {{ year }} · The Pinterest Revenue OS</p>
+          <nav class="footer__links" aria-label="Footer links">
             <NuxtLink to="/privacy">Privacy</NuxtLink>
             <a href="mailto:hello@wallartroom.com">Contact</a>
-          </div>
+          </nav>
         </div>
       </footer>
 
@@ -581,132 +481,46 @@
 
 
 <script setup>
-import { defineComponent, h } from 'vue'
-import heroLaptopImg from '@@/assets/images/herolaptop.png'
+import heroLaptopImg   from '@@/assets/images/herolaptop.png'
 import exampleStatsImg from '@@/assets/images/examplestatistic.png'
 
-// ── Feature visuals ───────────────────────────────────────────────────────────
+// Gallery wall — all 14 artwork images
+import galImg01 from '@@/assets/images/random/A_cyan_gun_barrel_in_digital_environment_illustrates_power_an_917c10c5-d2fb-4478-ac80-56d091d776d9_1.png'
+import galImg02 from '@@/assets/images/random/A_desolate_wasteland_fiery_reds_and_black_shows_consequences__8ca71e6f-c6c7-4685-9441-123b7bc02a9f_1.png'
+import galImg03 from '@@/assets/images/random/A_glittering_moon_illuminating_a_tranquil_forest_casting_a_ma_2f8dc470-f8e9-4004-b9d5-1360a71c99b9_0.png'
+import galImg04 from '@@/assets/images/random/A_shooting_star_on_a_holiday_card_capturing_the_magic_of_Chri_688247db-cccf-4569-9880-03e4798f0e6d_0.png'
+import galImg05 from '@@/assets/images/random/A_shooting_star_on_a_holiday_card_capturing_the_magic_of_Chri_688247db-cccf-4569-9880-03e4798f0e6d_3.png'
+import galImg06 from '@@/assets/images/random/A_vibrant_Earth_sunrise_revealing_hope_and_beauty_in_space_--_8361f16c-0472-4da3-bc67-c1495895cc7d_0.png'
+import galImg07 from '@@/assets/images/random/A_vibrant_gateway_unveiling_limitless_horizons_in_majestic_bl_5eda492b-c6ef-4433-b15e-3b48d9aa28b3_3.png'
+import galImg08 from '@@/assets/images/random/A_vibrant_sunrise_on_an_alien_world_illuminating_a_new_beginn_7c47fac9-4e4a-4652-a2e9-486520ed1b6a_0.png'
+import galImg09 from '@@/assets/images/random/Abstract_chaos_of_swirling_colors_on_textured_backdrop_evokes_bae5ebc6-14ca-4abc-adaf-52003e4caa4f_3.png'
+import galImg10 from '@@/assets/images/random/An_intense_burst_of_flames_fills_the_sky_with_vibrant_red_and_7819d011-bd82-4b05-87a7-f48fa75efe8e_0.png'
+import galImg11 from '@@/assets/images/random/Astronaut_floating_in_endless_universe_vibrant_colors_symboli_eb6b5411-9e78-4782-a509-c0c653e8904c_3.png'
+import galImg12 from '@@/assets/images/random/Bright_airy_space_with_minimalist_aesthetic_showcasing_sleek__8cb2ff96-7ea6-4f05-a44d-6faafd292bc4_1.png'
+import galImg13 from '@@/assets/images/random/Bright_orange_meteor_blazing_against_dark_space._Intense_ener_d1b94b6c-a580-415d-9f77-e26b7ebe69ef_2.png'
+import galImg14 from '@@/assets/images/random/Capture_stunning_celestial_beauty_with_highresolution_moon_mo_f7139598-847c-42ac-a9ee-c80bf9675653_0.png'
 
-const FeatureBoardIntel = defineComponent({
-  setup: () => () => h('div', { class: 'vis vis--ai' }, [
-    h('div', { class: 'vis__panel' }, [
-      h('div', { class: 'vis__panel-head' }, [h('span', 'Board Intelligence'), h('span', { class: 'vis__pill' }, 'AI')]),
-      h('div', { class: 'vis__row' }, [
-        h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#fde68a,#f59e0b);' }),
-        h('div', { class: 'vis__row-body' }, [
-          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'Coastal Prints'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Relevance: 94%. Topical match + keyword overlap'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--ai' }, '94%'),
-      ]),
-      h('div', { class: 'vis__row' }, [
-        h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#bbf7d0,#22c55e);' }),
-        h('div', { class: 'vis__row-body' }, [
-          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'Minimalist Home'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Relevance: 71%. Partial keyword match'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--gen' }, '71%'),
-      ]),
-      h('div', { class: 'vis__row' }, [
-        h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#fecaca,#ef4444);' }),
-        h('div', { class: 'vis__row-body' }, [
-          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'DIY Projects'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Low relevance. Board health: critical (3 pins)'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--pending' }, '22%'),
-      ]),
-    ]),
-  ]),
-})
-
-
-const FeatureDuplicateGuard = defineComponent({
-  setup: () => () => h('div', { class: 'vis vis--ai' }, [
-    h('div', { class: 'vis__panel' }, [
-      h('div', { class: 'vis__panel-head' }, [h('span', 'Duplicate Guard'), h('span', { class: 'vis__pill' }, '3 warnings')]),
-      h('div', { class: 'vis__row' }, [
-        h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#fecaca,#f87171);' }),
-        h('div', { class: 'vis__row-body' }, [
-          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'Near-duplicate: 92% match'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, '"Minimalist Art Print" vs "Minimalist Art Prints"'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--broken' }, 'Dupe'),
-      ]),
-      h('div', { class: 'vis__row' }, [
-        h('div', { class: 'vis__row-img', style: 'background: linear-gradient(135deg,#fef3c7,#f59e0b);' }),
-        h('div', { class: 'vis__row-body' }, [
-          h('div', { class: 'vis__type-line vis__type-line--strong' }, 'Stale pin (112 days old)'),
-          h('div', { class: 'vis__type-line vis__type-line--text' }, 'Create a fresh variant with updated keywords'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--gen' }, 'Refresh'),
-      ]),
-    ]),
-  ]),
-})
-
-const FeatureBulk = defineComponent({
-  setup: () => () => h('div', { class: 'vis vis--bulk' }, [
-    h('div', { class: 'vis__panel' }, [
-      h('div', { class: 'vis__panel-head' }, [h('span', 'Bulk edit · 42 selected')]),
-      h('div', { class: 'vis__field' }, [
-        h('label', null, [h('span', { class: 'vis__check vis__check--on' }), 'Apply Pinterest board']),
-        h('div', { class: 'vis__input' }, 'Coastal Prints'),
-      ]),
-      h('div', { class: 'vis__field' }, [
-        h('label', null, [h('span', { class: 'vis__check vis__check--on' }), 'Apply UTM preset']),
-        h('div', { class: 'vis__input' }, 'Summer Sale 2026 (pinterest/social)'),
-      ]),
-      h('div', { class: 'vis__field' }, [
-        h('label', null, [h('span', { class: 'vis__check vis__check--on' }), 'Apply redirect URL']),
-        h('div', { class: 'vis__input' }, 'https://shop.studio.com/collection/coastal'),
-      ]),
-      h('div', { class: 'vis__applybar' }, [
-        h('span', { class: 'vis__hint' }, '3 fields will be applied'),
-        h('span', { class: 'vis__btn' }, 'Apply to 42 →'),
-      ]),
-    ]),
-  ]),
-})
-
-const FeatureCsv = defineComponent({
-  setup: () => () => h('div', { class: 'vis vis--csv' }, [
-    h('div', { class: 'vis__panel' }, [
-      h('div', { class: 'vis__panel-head' }, [h('span', 'CSV Studio'), h('span', { class: 'vis__pill vis__pill--accent' }, 'Validated')]),
-      h('div', { class: 'vis__csv-row' }, [
-        h('div', { class: 'vis__csv-icon' }, '✓'),
-        h('div', { class: 'vis__csv-body' }, [
-          h('div', { class: 'vis__csv-name' }, '120 pins validated · 0 errors'),
-          h('div', { class: 'vis__csv-meta' }, 'All links healthy · no duplicates · 0 errors'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--ok' }, 'Ready'),
-      ]),
-      h('div', { class: 'vis__csv-modes' }, [
-        h('div', { class: 'vis__csv-mode' }, [
-          h('span', '↓'), h('span', 'Export Pinterest-ready CSV'),
-        ]),
-      ]),
-      h('div', { class: 'vis__csv-row' }, [
-        h('div', { class: 'vis__csv-icon' }, '📄'),
-        h('div', { class: 'vis__csv-body' }, [
-          h('div', { class: 'vis__csv-name' }, 'pinterest-export-2026-05-14.csv'),
-          h('div', { class: 'vis__csv-meta' }, '120 pins · May 14 → May 28 · UTMs attached'),
-        ]),
-        h('span', { class: 'vis__chip vis__chip--ok' }, '✓ Exported'),
-      ]),
-    ]),
-  ]),
-})
+// Feature pin cards (still used in features section)
+const pinImg2 = galImg03
+const pinImg3 = galImg11
+const pinImg4 = galImg09
 
 useHead({
-  title: 'WallArtRoom. The Pinterest Revenue OS for Creators & Shops',
+  title: 'WallArtRoom: Pinterest AI Workflow for Creators',
   meta: [
-    { name: 'description', content: 'Not another scheduler. WallArtRoom is a Pinterest Revenue OS with Board Intelligence, Duplicate Guard, Pinterest-specific AI, and validated CSV exports. Built for creators who want traffic and sales, not vanity metrics.' },
-    { name: 'theme-color', content: '#1a1714' },
+    {
+      name: 'description',
+      content: 'Bulk upload images, generate AI-optimized Pinterest metadata, validate before publishing, and export a Pinterest-ready CSV. Free during beta.',
+    },
+    { name: 'theme-color', content: '#fafaf8' },
   ],
   link: [
     { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
     { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-    { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap' },
+    {
+      rel: 'stylesheet',
+      href: 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap',
+    },
   ],
 })
 
@@ -714,32 +528,32 @@ definePageMeta({ layout: false })
 
 const year = new Date().getFullYear()
 
-// ── Waitlist form ──────────────────────────────────────────────────────────
-const email = ref('')
-const submitting = ref(false)
-const submitted = ref(false)
+// ── Waitlist form ─────────────────────────────────────────────────────────────
+const email         = ref('')
+const honeypot      = ref('')
+const submitting    = ref(false)
+const submitted     = ref(false)
 const alreadyJoined = ref(false)
-const formError = ref('')
+const formError     = ref('')
+const mountedAt     = ref(0)
 
-const honeypot = ref('')
-const mountedAt = ref(0)
 onMounted(() => { mountedAt.value = Date.now() })
 
 async function handleSubmit() {
   if (!email.value || submitting.value || submitted.value) return
   submitting.value = true
-  formError.value = ''
+  formError.value  = ''
   try {
     const res = await $fetch('/api/waitlist/join', {
       method: 'POST',
       body: {
-        email: email.value,
-        source: 'landing-hero',
+        email:   email.value,
+        source:  'landing',
         company: honeypot.value,
-        delay: mountedAt.value ? Date.now() - mountedAt.value : 0,
+        delay:   mountedAt.value ? Date.now() - mountedAt.value : 0,
       },
     })
-    submitted.value = true
+    submitted.value     = true
     alreadyJoined.value = !!res.alreadyJoined
   } catch (e) {
     formError.value = e?.data?.statusMessage || e?.message || 'Could not save your email. Try again.'
@@ -748,159 +562,131 @@ async function handleSubmit() {
   }
 }
 
-
-// ── Cursor follower ──────────────────────────────────────────────────────────
-const cursorRef = ref(null)
-const INTERACTIVE_SEL = 'a, button, input, textarea, select, label, [data-cursor]'
-
-const cursorState = { x: -100, y: -100, tx: -100, ty: -100 }
-let cursorRaf = null
-let cursorActive = false
-
-function onMouseMove(e) {
-  cursorState.tx = e.clientX
-  cursorState.ty = e.clientY
-  if (!cursorActive && cursorRef.value) {
-    cursorRef.value.classList.add('cursor--ready')
-    cursorActive = true
-  }
-  if (!cursorRaf) cursorRaf = requestAnimationFrame(cursorLoop)
-}
-
-function onMouseOver(e) {
-  if (!cursorRef.value) return
-  const isHover = !!(e.target?.closest && e.target.closest(INTERACTIVE_SEL))
-  cursorRef.value.classList.toggle('cursor--hover', isHover)
-}
-
-function cursorLoop() {
-  const dx = cursorState.tx - cursorState.x
-  const dy = cursorState.ty - cursorState.y
-  if (Math.abs(dx) < 0.4 && Math.abs(dy) < 0.4) {
-    cursorRaf = null
-    return
-  }
-  cursorState.x += dx * 0.2
-  cursorState.y += dy * 0.2
-  if (cursorRef.value) {
-    cursorRef.value.style.transform =
-      `translate3d(${cursorState.x - 18}px, ${cursorState.y - 18}px, 0)`
-  }
-  cursorRaf = requestAnimationFrame(cursorLoop)
-}
-
-
-onMounted(() => {
-  if (typeof window === 'undefined') return
-  if (window.matchMedia('(pointer: fine)').matches) {
-    window.addEventListener('mousemove', onMouseMove, { passive: true })
-    document.addEventListener('mouseover', onMouseOver, { passive: true })
-  }
-})
-
-onBeforeUnmount(() => {
-  if (typeof window === 'undefined') return
-  window.removeEventListener('mousemove', onMouseMove)
-  document.removeEventListener('mouseover', onMouseOver)
-  if (cursorRaf) cancelAnimationFrame(cursorRaf)
-})
-
-
-// ── Differentiator strip ──────────────────────────────────────────────────────
-const differentiators = [
-  { number: '4', label: 'intelligent layers beyond scheduling' },
-  { number: '100%', label: 'Pinterest-native workflow' },
-  { number: '3x', label: 'faster than spreadsheet workflows' },
+// ── Content ───────────────────────────────────────────────────────────────────
+const trustItems = [
+  'API-compliant, no risky scraping',
+  'Pinterest-native workflow',
+  'No setup or technical knowledge needed',
 ]
 
-
-// ── Pain points ─────────────────────────────────────────────────────────────
-const painPoints = [
-  {
-    title: 'Wrong board = invisible pin',
-    body: 'Pinterest ranks pins by board relevance. A misplaced pin gets zero distribution, and generic tools never warn you.',
-    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>`,
-  },
-  {
-    title: 'Duplicate pins trigger spam flags',
-    body: 'Posting the same title twice tanks your reach. Pinterest penalizes repeat content, but no scheduler flags it before you publish.',
-    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><rect x="4" y="6" width="12" height="16" rx="2"/></svg>`,
-  },
-  {
-    title: 'No duplicate or freshness detection',
-    body: "Pinterest penalizes repetitive content. Other tools let you repost duplicate pin titles without a warning, and never tell you when pins go stale and lose reach.",
-    icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M13 7h4v4"/></svg>`,
-  },
+const stats = [
+  { value: '100%', label: 'Pinterest-native', pinterest: true },
+  { value: '3×',   label: 'faster than spreadsheets' },
+  { value: '0',    label: 'technical setup required' },
 ]
 
+// pinImg1 was merged into galImg08 — update featureImages to use gallery refs
+const pinImg1 = galImg08
+const featureImages = [pinImg1, pinImg2, pinImg3, pinImg4]
 
-// ── Vs comparison ──────────────────────────────────────────────────────��───
-const vsRows = [
-  { feature: 'Board Intelligence (AI)', them: 'No', us: 'Per-pin suggestions with relevance %' },
-  { feature: 'Duplicate Guard', them: 'No', us: 'Warns before you damage reach' },
-  { feature: 'Pinterest-specific AI', them: 'Generic copy', us: 'Board-aware, keyword-optimized, unique' },
+// Gallery wall columns — all 14 images per column, each in a shifted rotation
+// so columns look distinct. More images = taller column = reset is invisible.
+const galleryCol1 = [galImg06, galImg09, galImg11, galImg13, galImg02, galImg08, galImg07, galImg03, galImg04, galImg14, galImg10, galImg12, galImg01, galImg05]
+const galleryCol2 = [galImg08, galImg07, galImg03, galImg04, galImg14, galImg10, galImg12, galImg01, galImg05, galImg06, galImg09, galImg11, galImg13, galImg02]
+const galleryCol3 = [galImg10, galImg12, galImg01, galImg05, galImg06, galImg09, galImg11, galImg13, galImg02, galImg08, galImg07, galImg03, galImg04, galImg14]
+
+// Scheduling section — CSV preview rows
+const schedRows = [
+  { title: 'Coastal Sunset Print', board: 'Coastal Art',    date: 'Jun 14 · 14:00' },
+  { title: 'Abstract Nebula',      board: 'Space Prints',   date: 'Jun 15 · 09:00' },
+  { title: 'Forest Mist',          board: 'Nature Prints',  date: 'Jun 16 · 11:00' },
+  { title: 'Minimalist Moon',      board: 'Minimalist',     date: 'Jun 17 · 08:00' },
 ]
 
+// CTA marquee — all images, ordered for colour variety
+const ctaImages = [galImg06, galImg08, galImg10, galImg11, galImg13, galImg07, galImg03, galImg09, galImg14, galImg02, galImg04, galImg12, galImg01, galImg05]
 
-// ── Features ──────────────────────────────────────────────────────────────
 const featureList = [
   {
-    title: 'Board Intelligence. Know where every pin belongs',
-    body: 'AI analyzes your pin content against your boards and tells you exactly which one will get the best distribution. Board health scores flag dead boards before they hurt you.',
-    bullets: ['Relevance score per board', 'Board health monitoring', 'Dead-board warnings', 'Auto-suggest for bulk uploads'],
-    visual: FeatureBoardIntel,
+    title: 'AI Metadata',
+    line:  'Titles, descriptions & keywords in seconds.',
+    icon:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 3.4 3.4 1.6-3.4 1.6L12 13l-1.6-3.4L7 8l3.4-1.6z"/><path d="M19 17l.7 1.5 1.3.5-1.3.5-.7 1.5-.7-1.5-1.3-.5 1.3-.5z"/></svg>`,
   },
   {
-    title: 'Duplicate & Freshness Guard. Protect your reach',
-    body: "Pinterest penalizes duplicate content. Our guard scans your entire workspace for near-duplicate titles and flags stale pins that should be refreshed with new variants.",
-    bullets: ['Title similarity detection (92% match)', 'Freshness warnings (90+ days)', 'Variant suggestions', 'Spam-flag prevention'],
-    visual: FeatureDuplicateGuard,
+    title: 'Board Intelligence',
+    line:  'Every pin lands in exactly the right place.',
+    icon:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M2 9h20M8 3v6"/></svg>`,
   },
   {
-    title: 'Bulk operations with safety rails',
-    body: "Change boards, URLs, UTM presets, and publish dates across hundreds of pins. With validation that catches errors before they go live, not after.",
-    bullets: ['Selective field updates', 'UTM preset bulk-apply', 'Board Intelligence in bulk', 'Undo until you save'],
-    visual: FeatureBulk,
+    title: 'Duplicate Guard',
+    line:  'Protect your reach before a pin goes live.',
+    icon:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>`,
   },
   {
-    title: 'CSV Studio. Validated export, dual publish',
-    body: "Not just export. Full validation before download: link health, duplicate checks. Then choose: publish directly via API or export a Pinterest-ready CSV that imports cleanly the first time.",
-    bullets: ['Pre-export validation', 'Dual mode: API direct or CSV', 'Pinterest-exact format', 'Export history with audit trail'],
-    visual: FeatureCsv,
+    title: 'CSV Export',
+    line:  'Validated. Pinterest-ready. First time, every time.',
+    icon:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>`,
   },
 ]
 
-
-// ── Step-by-step ────────────────────────────────────────────────────────────
-const steps = [
-  { title: 'Upload & generate', body: 'Drop your images. AI writes Pinterest-optimized titles, descriptions, and keyword sets. Board Intelligence picks the best board.' },
-  { title: 'Validate & optimize', body: 'Duplicate Guard flags near-identical titles and stale pins. Board Intelligence confirms the best placement. Fix issues before they go live.' },
-  { title: 'Publish with confidence', body: 'Schedule directly via API or export a validated CSV. UTM presets auto-attach so every click is attributed.' },
-  { title: 'Track & refresh', body: 'See which boards perform. Get freshness alerts on aging pins. Create variants to keep reach growing, not decaying.' },
-]
-
-
-// ── Use cases ──────────────────────────────────────────────────────────────
-const useCases = [
+const plans = [
   {
-    title: 'Bloggers & Publishers',
-    body: 'Turn every post into a pin automatically. Board Intelligence picks placement. AI writes discovery-optimized metadata.',
-    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg>`,
+    name:     'Free',
+    price:    '$0',
+    period:   '/ forever',
+    tagline:  'Try the tool at your own pace.',
+    isFree:   true,
+    features: [
+      '10 image uploads',
+      '25 AI generations',
+      '1 project',
+      'CSV export',
+      'Board intelligence',
+    ],
+    cta:      'Join waitlist',
+    featured: false,
+    badge:    null,
   },
   {
-    title: 'E-Commerce & Shopify',
-    body: 'Product pins with tracked links, UTM governance, and revenue attribution. Know which pin sold which item.',
-    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`,
+    name:     'Starter',
+    price:    '$9.99',
+    period:   '/ mo',
+    tagline:  '~2 new images every day of the month.',
+    isFree:   false,
+    features: [
+      '50 image uploads / month',
+      '200 AI generations / month',
+      '1 project',
+      'CSV export + scheduling',
+      'Priority board intelligence',
+    ],
+    cta:      'Join waitlist',
+    featured: false,
+    badge:    null,
   },
   {
-    title: 'Pinterest VAs & Agencies',
-    body: 'Multi-account workspaces, approval queues, white-label exports. Manage 10 clients from one dashboard with confidence.',
-    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,
+    name:     'Plus',
+    price:    '$19.99',
+    period:   '/ mo',
+    tagline:  '~6 images a day. Ideal for active stores.',
+    isFree:   false,
+    features: [
+      '200 image uploads / month',
+      '1,000 AI generations / month',
+      '3 projects',
+      'Duplicate & freshness guard',
+      'Priority support',
+    ],
+    cta:      'Join waitlist',
+    featured: true,
+    badge:    'Most popular',
   },
   {
-    title: 'Etsy & Amazon Sellers',
-    body: 'Pin your listings with proper link governance. UTM tracking shows exactly which pins drive marketplace sales.',
-    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+    name:     'Studio',
+    price:    '$79.99',
+    period:   '/ mo',
+    tagline:  '50 images a day. Built for agencies and power creators.',
+    isFree:   false,
+    features: [
+      '1,500 image uploads / month',
+      '5,000 AI generations / month',
+      '10 projects',
+      'All features included',
+      'Dedicated support',
+    ],
+    cta:      'Join waitlist',
+    featured: false,
+    badge:    null,
   },
 ]
 </script>
@@ -908,467 +694,500 @@ const useCases = [
 
 <style scoped lang="scss">
 
-$ink-1: #1a1714;
-$ink-2: #2d2926;
-$ink-3: #6b5e52;
-$ink-4: #8a7a6e;
-$cream: #faf7f2;
-$paper: #ffffff;
-$line:  #ede0d0;
-$gold:  #c5a059;
+// ── Design tokens ─────────────────────────────────────────────────────────────
+$bg:            #fafaf8;
+$surface:       #ffffff;
+$ink:           #111110;
+$ink-2:         #3d3c3a;
+$ink-muted:     #6b6860;
+$ink-subtle:    #9d9a96;
+$accent:        #e25f2c;
+$accent-hover:  #c94e1e;
+$accent-tint:   #fff4ee;
+$border:        #e8e3dc;
+$border-strong: #cdc7bf;
+$dark:          #111110;
+$dark-raised:   #1c1b19;
 
+// ── Base ──────────────────────────────────────────────────────────────────────
 .lp {
-  background: $cream;
+  background: $bg;
   color: $ink-2;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-feature-settings: 'cv11', 'ss01';
-  font-synthesis: none;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  // Belt-and-braces against horizontal scroll on phones: child SVG/figure
-  // panels are wider than 320px viewports and can leak past their grids
-  // when box-sizing is content-box. This stops it at the page boundary.
   overflow-x: clip;
 
   *, *::before, *::after { box-sizing: border-box; }
 }
 
-@keyframes heroEnter {
-  from { opacity: 0; transform: translate3d(0, 24px, 0); }
-  to { opacity: 1; transform: none; }
-}
-
-.hero-enter {
-  opacity: 0;
-  animation: heroEnter 800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: var(--enter-delay, 0ms);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-enter { opacity: 1; animation: none; }
-  .hero__float { opacity: 1; animation: none; transform: none; }
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hp-field {
   position: absolute !important;
   left: -10000px !important;
-  top: auto !important;
-  width: 1px !important;
-  height: 1px !important;
+  width: 1px !important; height: 1px !important;
   opacity: 0 !important;
-  overflow: hidden !important;
   pointer-events: none !important;
 }
 
-.cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 36px;
-  height: 36px;
-  pointer-events: none;
-  z-index: 9998;
-  opacity: 0;
-  transform: translate3d(-100px, -100px, 0);
-  will-change: transform;
-  transition: opacity 0.3s ease;
-  &--ready { opacity: 1; }
-  @media (pointer: coarse), (hover: none) { display: none; }
-}
-
-.cursor__inner {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255, 107, 53, 0.65);
-  background: rgba(255, 107, 53, 0.04);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4) inset;
-  transform: scale(1);
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.22s ease, border-color 0.22s ease;
-}
-
-.cursor--hover .cursor__inner {
-  transform: scale(1.8);
-  background: rgba(255, 107, 53, 0.14);
-  border-color: rgba(255, 107, 53, 0.9);
-}
-
 .container {
-  max-width: 1240px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 0 32px;
+
+  @media (max-width: 480px) { padding: 0 20px; }
 }
 
-// Anchored sections clear the now-fixed header when jumped to via nav links.
-.lp section[id] { scroll-margin-top: 92px; }
+.lp section[id],
+.lp div[id] { scroll-margin-top: 80px; }
 
+// ── Global type ───────────────────────────────────────────────────────────────
 .kicker {
   display: inline-block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: $gold;
-  margin-bottom: 18px;
-  &--light { color: rgba(255, 255, 255, 0.6); }
+  color: $accent;
+  margin-bottom: 16px;
+
+  &--dim { color: rgba(255,255,255,0.45); }
 }
 
 h2 {
-  margin: 0 0 18px;
-  font-size: clamp(32px, 4.4vw, 52px);
+  margin: 0 0 16px;
+  font-size: clamp(26px, 3.4vw, 44px);
   font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.05;
-  color: $ink-1;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: $ink;
+  text-wrap: balance;
+
   em {
-    font-family: 'Instrument Serif', 'Times New Roman', serif;
+    font-family: 'Instrument Serif', 'Georgia', serif;
     font-style: italic;
     font-weight: 400;
+    color: $accent;
     letter-spacing: -0.01em;
-    color: $color-accent;
   }
 }
 
-// ── Nav
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 22px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1.5px solid transparent;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.12s ease,
+    opacity 0.15s;
+  white-space: nowrap;
+  min-height: 44px; // touch target
+
+  &:focus-visible {
+    outline: 2px solid $accent;
+    outline-offset: 2px;
+  }
+
+  &--accent {
+    background: $accent;
+    color: #fff;
+    border-color: $accent;
+
+    &:hover:not(:disabled) {
+      background: $accent-hover;
+      border-color: $accent-hover;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px -4px rgba(226,95,44,0.45);
+    }
+    &:active:not(:disabled) { transform: none; box-shadow: none; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &--outline {
+    background: transparent;
+    color: $ink;
+    border-color: $border-strong;
+
+    &:hover:not(:disabled) { background: $surface; border-color: $ink-muted; }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  &--ghost-nav {
+    background: transparent;
+    color: $ink;
+    border-color: $border;
+    font-size: 13.5px;
+    padding: 9px 18px;
+    min-height: 40px;
+
+    &:hover { background: $surface; border-color: $border-strong; }
+  }
+
+  &--full { width: 100%; }
+}
+
+// ── Badge ─────────────────────────────────────────────────────────────────────
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: $accent;
+  color: #fff;
+  flex-shrink: 0;
+
+  &--pinterest {
+    background: #E60023;
+    gap: 6px;
+  }
+}
+
+// ── Section head ──────────────────────────────────────────────────────────────
+.section-head {
+  max-width: 600px;
+  margin: 0 auto 56px;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.65;
+    color: $ink-muted;
+    text-wrap: pretty;
+  }
+}
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
 .nav {
-  height: 77px;
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   z-index: 50;
-  background: rgba(250, 247, 242, 0.72);
-  backdrop-filter: saturate(160%) blur(14px);
-  -webkit-backdrop-filter: saturate(160%) blur(14px);
-  border-bottom: 1px solid rgba(237, 224, 208, 0.6);
+  height: 68px;
+  background: rgba(250,250,248,0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid $border;
 
   &__inner {
-    max-width: 1240px;
+    max-width: 1180px;
     margin: 0 auto;
-    padding: 18px 32px;
+    padding: 0 32px;
+    height: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 32px;
   }
 
   &__brand {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 10px;
-    font-weight: 800;
-    font-size: 18px;
-    letter-spacing: -0.04em;
-    color: $ink-1;
+    gap: 9px;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.03em;
+    color: $ink;
     text-decoration: none;
+    flex-shrink: 0;
+
+    em { font-style: normal; color: $accent; }
   }
 
   &__mark {
-    display: block;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
+    width: 26px; height: 26px;
+    border-radius: 6px;
     object-fit: cover;
-  }
-
-  &__word i {
-    font-style: normal;
-    color: $color-accent;
+    flex-shrink: 0;
   }
 
   &__links {
     display: flex;
     align-items: center;
-    gap: 32px;
+    gap: 28px;
+    margin-left: auto;
+
     a {
       font-size: 14px;
       font-weight: 500;
-      color: $ink-3;
+      color: $ink-muted;
       text-decoration: none;
       transition: color 0.15s;
-      &:hover { color: $ink-1; }
-    }
-  }
 
-  &__cta {
-    padding: 10px 22px;
-    background: rgba(255, 255, 255, 0.82);
-    color: $color-accent !important;
-    border: 1px solid rgba(255, 182, 145, 0.65);
-    border-radius: 999px;
-    font-weight: 700 !important;
-    backdrop-filter: blur(6px);
-    box-shadow:
-      0 4px 16px -7px rgba(150, 90, 50, 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.85);
-    transition:
-      background 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-    &:hover {
-      background: #fff;
-      transform: translateY(-1px);
-      box-shadow:
-        0 8px 22px -8px rgba(150, 90, 50, 0.34),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      &:hover { color: $ink; }
+      &:focus-visible { outline: 2px solid $accent; outline-offset: 2px; border-radius: 2px; }
     }
-    &:active { transform: translateY(0); }
-    &:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(229, 107, 58, 0.32);
-    }
+
+    @media (max-width: 640px) { display: none; }
   }
 }
 
-// ── HERO
+// ── Hero ──────────────────────────────────────────────────────────────────────
+// Concept: Living Gallery Wall — the right half is a scrolling Pinterest feed
+// of the creator's actual artwork. Left half: clean copy + form. The laptop
+// screenshot floats as a product card over the gallery, bridging art ↔ tool.
 .hero {
   position: relative;
-  min-height: 100vh;
+  padding-top: 68px;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  // Warm cream on the left grades to nothing — gallery colours take over on the right
+  background: linear-gradient(105deg, #fffaf5 0%, #fef5ec 38%, #fdeadc 62%, transparent 75%);
+  background-color: #fef5ec; // full fallback
+}
+
+// ── Scrolling gallery wall ────────────────────────────────────────────────────
+.hero-gallery {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60%;
+  height: 100%;
+  display: flex;
+  gap: 10px;
+  padding: 0 12px;
+  z-index: 0;
+
+  // Desktop: fade left edge into cream + top/bottom
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, black 18%, black 100%),
+    linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-composite: destination-in;
+  mask-image:
+    linear-gradient(to right, transparent 0%, black 18%, black 100%),
+    linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%);
+  mask-composite: intersect;
+
+  // Mobile: full-bleed faint background — visible but very muted
+  @media (max-width: 860px) {
+    width: 100%;
+    opacity: 0.18;
+    padding: 0 6px;
+    gap: 8px;
+    // Vertical edge fade only (no left-edge fade needed — full width)
+    -webkit-mask-image: linear-gradient(
+      to bottom, transparent 0%, black 8%, black 92%, transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom, transparent 0%, black 8%, black 92%, transparent 100%
+    );
+    -webkit-mask-composite: initial;
+    mask-composite: initial;
+  }
+}
+
+// Mobile column sizing — each column is a wide fixed track so images are large.
+// 3 × 54vw = 162vw total → overflows ~62vw, clipped by hero overflow:hidden.
+// Result: ~2 full columns visible + partial 3rd, images ~54vw × 81vw tall.
+.hero-gallery__col {
+  @media (max-width: 860px) {
+    flex: none;
+    width: 54vw;
+  }
+  @media (max-width: 480px) {
+    width: 58vw; // slightly larger on phones
+  }
+}
+
+.hero-gallery__col {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  // Vertical padding guarantees clearance: the eyebrow can't touch
-  // the fixed nav on short viewports (laptops, dev-tools open) and
-  // the feature pills can't sit flush with the section bottom edge
-  // when justify-content: center has nothing to push against.
-  padding: 132px 32px 96px;
+  gap: 10px;
+  // Hardware-accelerated scroll — only transform, no layout props
+  will-change: transform;
+
+  &--1 { animation: heroScroll 26s linear infinite; }
+  &--2 { animation: heroScroll 34s linear infinite; margin-top: -90px; }
+  &--3 { animation: heroScroll 20s linear infinite; margin-top: -50px; }
+}
+
+@keyframes heroScroll {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); } // -50% = exactly one set → seamless loop
+}
+
+.hero-gallery__img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  display: block;
+  flex-shrink: 0;
+}
+
+// ── Laptop product card — floats over the gallery ─────────────────────────────
+.hero-app {
+  position: absolute;
+  bottom: 5%;
+  right: 1.5%;
+  z-index: 10;
+  width: clamp(200px, 21vw, 300px);
+  border-radius: 14px;
   overflow: hidden;
-  isolation: isolate;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.10),
+    0 20px 60px -12px rgba(0,0,0,0.28),
+    0 0 0 1px rgba(255,255,255,0.18);
 
-  // Warm editorial backdrop: a peach bloom behind the laptop, a soft
-  // cream lift behind the headline, over a diagonal cream-to-sand base.
-  background:
-    radial-gradient(
-      115% 85% at 80% 36%,
-      rgba(255, 199, 165, 0.55) 0%,
-      rgba(255, 210, 180, 0.16) 42%,
-      rgba(255, 225, 210, 0) 64%
-    ),
-    radial-gradient(
-      70% 70% at 12% 26%,
-      rgba(255, 250, 244, 0.85) 0%,
-      rgba(255, 250, 244, 0) 58%
-    ),
-    linear-gradient(
-      163deg,
-      #fffaf4 0%,
-      #fbf4ec 44%,
-      #f6e7d6 100%
-    );
+  @media (max-width: 860px) { display: none; }
 
-  // Faint dotted texture — premium paper grain, fading out lower so it
-  // never reads as a hard pattern.
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background-image: radial-gradient(rgba(140, 95, 55, 0.07) 1px, transparent 1.5px);
-    background-size: 26px 26px;
-    opacity: 0.6;
-    -webkit-mask-image: radial-gradient(125% 95% at 50% 4%, #000 0%, transparent 72%);
-    mask-image: radial-gradient(125% 95% at 50% 4%, #000 0%, transparent 72%);
+  &__img {
+    width: 100%;
+    height: auto;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+}
+
+// ── Hero copy panel ───────────────────────────────────────────────────────────
+.hero__inner {
+  position: relative;
+  z-index: 20;
+  width: 100%;
+  padding-top: 80px;
+  padding-bottom: 96px;
+
+  @media (max-width: 860px) {
+    padding-top: 56px;
+    padding-bottom: 72px;
   }
 
-  // Warm light bloom behind the laptop (echoes the photo's lighting)
-  &__glow {
-    position: absolute;
-    z-index: 0;
-    top: -120px;
-    right: -120px;
-    width: 760px;
-    height: 760px;
-    border-radius: 50%;
-    pointer-events: none;
-    background: radial-gradient(
-      circle at 50% 50%,
-      rgba(255, 170, 115, 0.26) 0%,
-      rgba(255, 152, 95, 0.10) 40%,
-      transparent 70%
-    );
+  @media (max-width: 480px) {
+    padding-top: 44px;
+    padding-bottom: 60px;
+  }
+}
+
+.hero__copy {
+  max-width: 500px;
+
+  @media (max-width: 860px) { max-width: 560px; }
+  @media (max-width: 480px) { max-width: 100%; }
+}
+
+.hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.hero__eyebrow-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink-muted;
+}
+
+.hero__title {
+  margin: 0 0 20px;
+  font-size: clamp(36px, 4.6vw, 62px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  color: $ink;
+  text-wrap: balance;
+
+  em {
+    font-family: 'Instrument Serif', 'Georgia', serif;
+    font-style: italic;
+    font-weight: 400;
+    color: $accent;
   }
 
-  // Soft diagonal sun-streaks — echoes the lighting in the desk photo so
-  // the copy side shares the same light source as the laptop scene.
-  // Deliberately faint: atmosphere, never a pattern that pulls the eye.
-  &__rays {
-    position: absolute;
-    z-index: 0;
-    inset: -10% -10% auto -10%;
-    height: 78%;
-    pointer-events: none;
-    mix-blend-mode: soft-light;
-    opacity: 0.55;
-    background:
-      linear-gradient(122deg,
-        transparent 0%,
-        transparent 46%,
-        rgba(255, 244, 230, 0.85) 52%,
-        transparent 56%,
-        transparent 64%,
-        rgba(255, 240, 222, 0.6) 69%,
-        transparent 73%,
-        transparent 82%,
-        rgba(255, 246, 235, 0.5) 86%,
-        transparent 90%);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
-  }
+  @media (max-width: 480px) { font-size: 32px; letter-spacing: -0.04em; }
+  @media (max-width: 360px) { font-size: 28px; }
+}
 
-  // Soft immersive fade-out: the textured warm area dissolves into a
-  // clean cream so the hero never ends on a hard edge.
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 280px;
-    z-index: 1;
-    pointer-events: none;
-    background: linear-gradient(
-      to bottom,
-      rgba(251, 244, 236, 0) 0%,
-      rgba(251, 244, 236, 0.55) 48%,
-      rgba(250, 247, 242, 0.92) 82%,
-      $cream 100%
-    );
-  }
+.hero__lead {
+  margin: 0 0 32px;
+  font-size: clamp(15px, 1.1vw, 17px);
+  line-height: 1.7;
+  color: $ink-muted;
+  max-width: 460px;
+  text-wrap: pretty;
 
-  &__inner {
-    position: relative;
-    z-index: 2;
-    max-width: 1240px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 0.92fr 1.18fr;
-    gap: 36px;
-    align-items: center;
-  }
+  @media (max-width: 480px) { font-size: 15px; margin-bottom: 28px; }
+}
 
-  &__copy {
-    position: relative;
-    z-index: 3;
-    max-width: 560px;
-  }
+.hero__trust {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 
-  // Eyebrow badge
-  &__eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 7px 16px 7px 12px;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 180, 145, 0.6);
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 500;
-    color: $ink-2;
-    backdrop-filter: blur(8px);
-    box-shadow:
-      0 3px 14px -5px rgba(150, 95, 55, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.75);
-    margin-bottom: 28px;
-  }
+  @media (max-width: 480px) { display: none; } // hide on small screens — keep it uncluttered
+}
 
-  &__eyebrow-pin {
-    color: $color-accent;
-    flex-shrink: 0;
-  }
+// ── Trust list items ──────────────────────────────────────────────────────────
+.hero__trust li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: $ink-muted;
 
-  &__beta-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 9px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    background: $color-accent;
-    color: #fff;
-    flex-shrink: 0;
-  }
+  svg { color: $accent; flex-shrink: 0; }
+}
 
-  // Headline
-  &__title {
-    margin: 0 0 22px;
-    // 4-line break pattern is taller than the old 3-line, so the
-    // clamp ceiling drops a notch — keeps the feature pills visible
-    // above the fold on standard laptop viewports.
-    font-size: clamp(42px, 5.6vw, 72px);
-    font-weight: 800;
-    letter-spacing: -0.045em;
-    line-height: 1.04;
-    color: $ink-1;
-    em {
-      position: relative;
-      font-family: 'Instrument Serif', 'Georgia', serif;
-      font-style: italic;
-      font-weight: 400;
-      letter-spacing: -0.02em;
-      color: $color-accent;
-      white-space: nowrap;
+// ── Pause gallery when user prefers no motion ─────────────────────────────────
+@media (prefers-reduced-motion: reduce) {
+  .hero-gallery__col { animation-play-state: paused; }
+}
 
-      // Hand-drawn underline accent — feathered ends, slight rise to the
-      // right so it reads as an ink stroke rather than a CSS rule.
-      &::after {
-        content: '';
-        position: absolute;
-        left: -1.5%;
-        right: -1.5%;
-        bottom: -0.02em;
-        height: 0.16em;
-        background: linear-gradient(
-          90deg,
-          transparent 0%,
-          color-mix(in srgb, #{$color-accent} 90%, transparent) 12%,
-          $color-accent 50%,
-          color-mix(in srgb, #{$color-accent} 90%, transparent) 88%,
-          transparent 100%
-        );
-        opacity: 0.42;
-        border-radius: 999px;
-        transform: rotate(-0.7deg);
-      }
-    }
-  }
-
-  // Lead text
-  &__lead {
-    max-width: 600px;
-    font-size: clamp(17px, 1.15vw, 20px);
-    line-height: 1.7;
-    color: $ink-3;
-    margin: 0 0 34px;
-    text-wrap: pretty;
-  }
-
-  // Form
-  &__form { width: 100%; max-width: 520px; }
-
-  &__form-row {
+// ── Waitlist form ─────────────────────────────────────────────────────────────
+.wl-form {
+  &__row {
     display: flex;
-    gap: 0;
-    background: $paper;
-    border: 1.5px solid rgba(255, 188, 152, 0.7);
-    border-radius: 14px;
+    gap: 8px;
+    background: $surface;
+    border: 1.5px solid $border-strong;
+    border-radius: 12px;
     padding: 5px;
-    box-shadow:
-      0 10px 30px -12px rgba(150, 90, 50, 0.28),
-      0 2px 6px -2px rgba(150, 90, 50, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    transition:
-      border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 8px -4px rgba(0,0,0,0.08);
+    transition: border-color 0.18s, box-shadow 0.18s;
+
     &:focus-within {
-      border-color: $color-accent;
-      box-shadow:
-        0 0 0 3px rgba(229, 107, 58, 0.16),
-        0 12px 30px -12px rgba(150, 90, 50, 0.32),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      border-color: $accent;
+      box-shadow: 0 0 0 3px rgba(226,95,44,0.12), 0 2px 8px -4px rgba(0,0,0,0.08);
+    }
+
+    &--col {
+      flex-direction: column;
+      border-radius: 12px;
+
+      .btn { width: 100%; }
     }
   }
 
@@ -1377,1197 +1196,1022 @@ h2 {
     min-width: 0;
     border: 0;
     background: transparent;
-    padding: 0 16px;
-    height: 50px;
+    padding: 0 14px;
+    height: 46px;
     font: inherit;
     font-size: 15px;
-    color: $ink-1;
+    color: $ink;
     outline: 0;
-    &::placeholder { color: $ink-4; }
-    &:disabled { color: $ink-3; }
+
+    &::placeholder { color: $ink-subtle; }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    &--dark {
+      color: rgba(255,255,255,0.9);
+      &::placeholder { color: rgba(255,255,255,0.35); }
+      &:focus { outline: 0; }
+    }
+
+    @media (max-width: 480px) { font-size: 16px; } // prevent iOS zoom
   }
 
-  &__btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 0 22px;
-    height: 50px;
-    border: 0;
-    background: linear-gradient(135deg, #f5824f 0%, #e7613a 100%);
-    color: #fff;
-    border-radius: 10px;
-    font: inherit;
-    font-size: 14.5px;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-    transition:
-      background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
-
-    svg {
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    &:hover:not(:disabled) {
-      background: linear-gradient(135deg, #f78a56 0%, #e0592f 100%);
-      box-shadow: 0 10px 24px -8px rgba(229, 107, 58, 0.6);
-      svg { transform: translateX(3px); }
-    }
-    &:active:not(:disabled) {
-      transform: translateY(1px);
-      box-shadow: 0 3px 10px -6px rgba(229, 107, 58, 0.5);
-    }
-    &:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(229, 107, 58, 0.35);
-    }
-    &:disabled { opacity: 0.55; cursor: not-allowed; }
-  }
-
-  &__form-note {
-    margin: 11px 2px 0;
+  &__note {
+    margin: 10px 2px 0;
     font-size: 13px;
-    color: $ink-4;
-    display: flex;
-    align-items: center;
-    transition: color 0.2s;
-    &--err { color: #b91c1c; }
+    line-height: 1.4;
+    color: $ink-muted;
+
+    &--error { color: #b91c1c; }
+    &--dim   { color: rgba(255,255,255,0.4); }
   }
 
-  // Feature cards
-  &__feat-cards {
-    margin-top: 30px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    max-width: 560px;
-  }
+  &--dark {
+    .wl-form__row {
+      background: $dark-raised;
+      border-color: rgba(255,255,255,0.1);
 
-  &__feat-card {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 12px 13px;
-    background: rgba(255, 255, 255, 0.66);
-    border: 1px solid rgba(255, 196, 165, 0.65);
-    border-radius: 14px;
-    backdrop-filter: blur(8px);
-    box-shadow:
-      0 4px 14px -8px rgba(150, 95, 55, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    color: $ink-1;
-    cursor: default;
-    svg { color: $color-accent; flex-shrink: 0; }
-    span {
-      font-size: 12px;
-      font-weight: 600;
-      line-height: 1.2;
-      letter-spacing: -0.01em;
-      white-space: nowrap;
+      &:focus-within {
+        border-color: $accent;
+        box-shadow: 0 0 0 3px rgba(226,95,44,0.2);
+      }
     }
   }
 }
 
-// Preview area — laptop photo + floating cards. Sits slightly lower
-// than the copy and bleeds toward the right edge so the scene feels
-// large and built into the page.
-// Laptop scene: pinned to the top-right of the hero, full height,
-// starting directly under the nav (no hero padding above it). Pulled
-// left so it bleeds toward the centre, and held behind the copy.
-.hero__preview {
-  position: absolute;
-  top: 0;
-  // Pin the laptop to the centred 1240px container edge (not the raw
-  // viewport edge) so it stays visually next to the copy on wide screens.
-  // 1304 = 1240 container + 2 × 32px hero padding.
-  right: max(0px, calc((100% - 1304px) / 2));
-  bottom: 0;
-  z-index: 1;
-  margin: 0;
-  pointer-events: none;
+// ── Hero email input — same dimensions as .cta-form__input, light-mode colours
+.hero-input {
+  width: 100%;
+  height: 54px;
+  padding: 0 20px;
+  background: $surface;
+  border: 1.5px solid $border-strong;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 15px;
+  color: $ink;
+  outline: 0;
+  transition: border-color 0.18s, box-shadow 0.18s;
+
+  &::placeholder { color: $ink-subtle; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  &:focus {
+    border-color: $accent;
+    box-shadow: 0 0 0 3px rgba(226,95,44,0.14);
+  }
+
+  @media (max-width: 600px) {
+    font-size: 16px; // prevent iOS auto-zoom
+    background: rgba(255,255,255,0.97);
+  }
 }
 
-.hero__img {
-  display: block;
-  width: auto;
-  height: 100vh;
-  max-height: 100vh;
-  user-select: none;
-  transform: translateX(30px);
-  -webkit-user-drag: none;
-  // Horizontal fade: the photo stays solid on the right and dissolves
-  // toward the copy so the headline and form remain fully readable.
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    transparent 38%,
-    rgba(0, 0, 0, 0.55) 52%,
-    #000 68%,
-    #000 100%
-  );
-
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    transparent 38%,
-    rgba(0, 0, 0, 0.75) 52%,
-    #000 68%,
-    #000 100%
-  );
-}
-
-// Floating notification cards
-.hero__float {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.97);
-  border: 1px solid rgba(230, 220, 208, 0.85);
-  border-radius: 14px;
-  box-shadow:
-    0 12px 32px -10px rgba(70, 45, 20, 0.20),
-    0 2px 6px rgba(70, 45, 20, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-  z-index: 10;
-  white-space: nowrap;
-  opacity: 0;
-  --enter-delay: 450ms;
-  // Entrance, then a slow perpetual drift so the scene feels alive.
-  // The idle loop starts exactly when the entrance settles, so the
-  // hand-off is seamless.
-  animation:
-    floatIn 650ms cubic-bezier(0.16, 1, 0.3, 1) var(--enter-delay) forwards,
-    floatIdle 7s ease-in-out calc(var(--enter-delay) + 650ms) infinite;
-
-  // Positions (relative to the laptop photo) + de-synced drift speeds
-  &--tl  { top: 32%;   right: 15%;   --enter-delay: 450ms; }
-  &--tr  { top: 14%;    right: 2%;  --enter-delay: 600ms; }
-  &--br1 { top: 52%;   right: 1%; --enter-delay: 750ms; animation-duration: 650ms, 8.4s; }
-  &--br2 { bottom: 24%; right: 5%; --enter-delay: 880ms; animation-duration: 650ms, 9.6s; }
-}
-
-@keyframes floatIn {
-  from { opacity: 0; transform: translate3d(0, 12px, 0); }
-  to   { opacity: 1; transform: none; }
-}
-
-@keyframes floatIdle {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50%      { transform: translate3d(0, -5px, 0); }
-}
-
-.hero__float-icon {
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-
-  &--orange { background: $color-accent; }
-  &--green  { background: #22c55e; }
-  &--purple { background: #8b5cf6; }
-  &--blue   { background: #3b82f6; }
-}
-
-.hero__float-body {
-  display: flex;
+// ── Hero form: standalone stacked layout on ALL screen sizes ─────────────────
+// Matches the CTA section form — input and button are independent elements,
+// not a grouped pill. 54px height mirrors the CTA input exactly.
+.hero .wl-form__row {
   flex-direction: column;
-  gap: 1px;
-  min-width: 0;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  max-width: 480px;
 
-  // strong + span together form the two-line title; p is the muted sub.
-  strong {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-    color: $ink-1;
-    line-height: 1.18;
+  &:focus-within { box-shadow: none; border-color: transparent; }
+}
+
+
+.hero .wl-form__row .btn--accent {
+  width: 100%;
+  height: 54px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+// ── Mobile hero: glassmorphic card + large separated form ─────────────────────
+@media (max-width: 600px) {
+
+  // Gallery more vibrant on mobile — it glows around the glass card
+  .hero-gallery { opacity: 0.24; }
+
+  // Frosted glass card behind the copy — gallery visible around + through it,
+  // text fully readable at WCAG AA contrast on the warm semi-opaque surface.
+  .hero__copy {
+    background: rgba(255, 250, 244, 0.88);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 210, 180, 0.50);
+    border-radius: 22px;
+    padding: 28px 22px 30px;
+    box-shadow:
+      0 4px 24px -8px rgba(80, 45, 15, 0.16),
+      inset 0 1px 0 rgba(255,255,255,0.70);
+  }
+
+  // Headline: clear, bold, dark ink
+  .hero__title {
+    font-size: 30px;
+    letter-spacing: -0.04em;
+    color: $ink;
+  }
+
+  // Lead: 16px minimum, proper contrast
+  .hero__lead {
+    font-size: 16px;
+    line-height: 1.62;
+    color: $ink-2;
+    margin-bottom: 24px;
+  }
+
+  // Eyebrow: tight for mobile
+  .hero__eyebrow {
+    margin-bottom: 20px;
+    gap: 7px;
+  }
+
+  // Mobile: button gets larger touch target (60px); hero-input height handled by .hero-input
+
+  .hero .wl-form__row .btn--accent {
+    height: 60px;
+    border-radius: 16px;
+    font-size: 16px;
     letter-spacing: -0.01em;
   }
 
-  span {
-    font-size: 12px;
-    font-weight: 700;
-    color: $ink-1;
-    line-height: 1.18;
-    letter-spacing: -0.01em;
-  }
-
-  p {
-    margin: 2px 0 0;
-    font-size: 11px;
-    font-weight: 500;
-    color: $ink-4;
-    line-height: 1.3;
+  .hero .wl-form__note {
+    font-size: 12.5px;
+    text-align: center;
+    margin-top: 10px;
   }
 }
 
-// Stat variant — the "96" reads as a number, not a label.
-.hero__float--stat .hero__float-body {
-  strong {
-    font-size: 22px;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.03em;
-  }
-  span { font-size: 12px; }
-}
-
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.18); }
-  50%      { box-shadow: 0 0 0 6px rgba(255, 107, 53, 0.06); }
-}
-
-// ── DIFFERENTIATOR STRIP
-.diff {
-  padding: 40px 0;
-  background: $ink-1;
+// ── Stats bar ─────────────────────────────────────────────────────────────────
+.stats-bar {
+  border-top: 1px solid $border;
+  border-bottom: 1px solid $border;
+  background: $surface;
 
   &__inner {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 32px;
-    text-align: center;
-  }
-
-  &__item {
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+.stat {
+  flex: 1;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 28px 20px;
+
+  & + & { border-left: 1px solid $border; }
+
+  &__value-row {
+    display: flex;
     align-items: center;
     gap: 6px;
   }
 
-  &__number {
-    font-size: 32px;
+  &__value {
+    font-size: 28px;
     font-weight: 800;
-    color: $color-accent;
-    letter-spacing: -0.03em;
+    color: $ink;
+    letter-spacing: -0.04em;
+    line-height: 1;
   }
 
   &__label {
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.65);
     font-weight: 500;
+    color: $ink-muted;
+    text-align: center;
+  }
+
+  @media (max-width: 480px) {
+    padding: 20px 12px;
+    &__value { font-size: 22px; }
+    &__label { font-size: 12px; }
   }
 }
 
-// ── PROBLEM
-.problem {
-  padding: 120px 0 100px;
-  background: $cream;
+// ── Features ──────────────────────────────────────────────────────────────────
+.features {
+  padding: 100px 0;
 
   &__head {
-    max-width: 720px;
-    margin: 0 auto 60px;
     text-align: center;
-    p { margin: 18px auto 0; font-size: 18px; line-height: 1.6; color: $ink-3; max-width: 600px; }
-  }
+    margin-bottom: 52px;
 
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
+    h2 { display: inline-block; }
   }
 }
 
-.pain {
-  padding: 32px 28px;
-  background: $paper;
-  border: 1px solid $line;
-  border-radius: 18px;
-  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
-  &:hover {
-    transform: translateY(-3px);
-    border-color: rgba(197, 160, 89, 0.5);
-    box-shadow: 0 18px 40px -20px rgba(60, 40, 20, 0.18);
+// ── Pinterest pin-card grid ────────────────────────────────────────────────────
+.pin-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  align-items: start; // allow staggering
+
+  // Stagger every other card down — authentic masonry feel
+  .pin-card:nth-child(2) { margin-top: 36px; }
+  .pin-card:nth-child(4) { margin-top: 22px; }
+
+  @media (max-width: 860px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+
+    .pin-card:nth-child(2),
+    .pin-card:nth-child(4) { margin-top: 0; }
+    .pin-card:nth-child(2),
+    .pin-card:nth-child(4) { margin-top: 0; }
   }
+
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+
+.pin-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  // Pinterest portrait ratio
+  aspect-ratio: 2 / 3;
+  cursor: default;
+  background: $dark; // fallback while image loads
+
+  &:hover .pin-card__img { transform: scale(1.06); }
+
+  &__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  // Gradient: subtle dark top (for the step number) + strong dark bottom (for caption)
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to bottom, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0) 30%),
+      linear-gradient(to top,    rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0) 68%);
+  }
+
+  // Step number — top-left glass chip
+  &__num {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.14);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 999px;
+    padding: 4px 10px;
+    line-height: 1;
+  }
+
+  // Feature info — bottom of card
+  &__caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 22px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+  }
+
   &__icon {
-    display: inline-flex;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: $accent;
+    color: #fff;
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px; height: 44px;
-    border-radius: 12px;
-    background: #faf3e3;
-    color: $color-accent;
-    margin-bottom: 18px;
+    margin-top: 1px;
   }
-  h3 { margin: 0 0 10px; font-size: 18px; font-weight: 700; color: $ink-1; letter-spacing: -0.01em; }
-  p { margin: 0; font-size: 14px; line-height: 1.55; color: $ink-3; }
+
+  &__text {
+    min-width: 0;
+
+    h3 {
+      margin: 0 0 5px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.015em;
+      line-height: 1.2;
+    }
+
+    p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: rgba(255,255,255,0.65);
+    }
+  }
+
+  @media (max-width: 480px) {
+    border-radius: 14px;
+
+    &__caption { padding: 16px 13px; gap: 8px; }
+    &__icon { width: 26px; height: 26px; border-radius: 6px; }
+    &__text h3 { font-size: 12px; }
+    &__text p  { font-size: 11px; }
+    &__num { font-size: 10px; padding: 3px 8px; top: 10px; left: 10px; }
+  }
 }
 
-// ── VERSUS
-.versus {
+// ── Scheduling callout ────────────────────────────────────────────────────────
+.scheduling {
   padding: 100px 0;
-  background: $paper;
-  border-top: 1px solid #f3eadc;
-  border-bottom: 1px solid #f3eadc;
+  background: $surface;
+  border-top: 1px solid $border;
 
-  &__head {
-    text-align: center;
-    margin-bottom: 50px;
+  &__inner {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 72px;
+    align-items: center;
+
+    @media (max-width: 860px) {
+      grid-template-columns: 1fr;
+      gap: 48px;
+    }
+  }
+
+  &__copy {
+    h2 { margin-bottom: 18px; }
+
+    p {
+      margin: 0 0 28px;
+      font-size: 15.5px;
+      line-height: 1.72;
+      color: $ink-muted;
+      text-wrap: pretty;
+    }
+  }
+
+  &__perks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 14px;
+      font-weight: 500;
+      color: $ink-2;
+
+      svg { color: $accent; flex-shrink: 0; }
+    }
+  }
+}
+
+// ── CSV preview card ──────────────────────────────────────────────────────────
+.csv-card {
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.03),
+    0 8px 24px -8px rgba(0,0,0,0.10);
+
+  &__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: $bg;
+    border-bottom: 1px solid $border;
+    gap: 12px;
+  }
+
+  &__filename {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $ink-muted;
+    letter-spacing: -0.01em;
+
+    svg { color: $accent; flex-shrink: 0; }
+  }
+
+  &__ready {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #16a34a;
+    background: #dcfce7;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
   }
 
   &__table {
-    max-width: 900px;
-    margin: 0 auto;
-    border: 1px solid $line;
-    border-radius: 16px;
-    overflow: hidden;
+    padding: 0;
+  }
+
+  &__thead {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr;
+    padding: 9px 18px;
+    background: #fafaf8;
+    border-bottom: 1px solid $border;
+    gap: 8px;
+
+    span {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: $ink-subtle;
+    }
   }
 
   &__row {
     display: grid;
-    grid-template-columns: 1.2fr 1fr 1.3fr;
-    &--header {
-      background: $ink-1;
-      .versus__cell { color: #fff; font-weight: 700; font-size: 13px; letter-spacing: 0.02em; }
-    }
-    &:not(:last-child) { border-bottom: 1px solid #f3eadc; }
+    grid-template-columns: 1.6fr 1fr 1fr;
+    padding: 11px 18px;
+    gap: 8px;
+    border-bottom: 1px solid $border;
+    align-items: center;
+    transition: background 0.15s;
+
+    &:last-child { border-bottom: 0; }
+    &:hover { background: $bg; }
   }
 
-  &__cell {
-    padding: 16px 20px;
-    font-size: 14px;
-    color: $ink-2;
-    &--feature { font-weight: 600; color: $ink-1; }
-    &--them { color: $ink-4; }
-    &--us { color: $ink-1; font-weight: 500; background: rgba(255, 107, 53, 0.04); }
-  }
-}
-
-// ── FEATURES
-.features {
-  padding: 120px 0 100px;
-  background: radial-gradient(ellipse at top left, rgba(255, 107, 53, 0.06), transparent 50%), $cream;
-
-  &__head {
-    max-width: 720px;
-    margin: 0 auto 80px;
-    text-align: center;
-    p { margin: 18px auto 0; font-size: 18px; line-height: 1.6; color: $ink-3; max-width: 580px; }
+  &__pin {
+    font-size: 13px;
+    font-weight: 600;
+    color: $ink;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  &__list { display: flex; flex-direction: column; gap: 110px; }
-}
-
-.feature {
-  display: grid;
-  grid-template-columns: 1fr 1.05fr;
-  gap: 72px;
-  align-items: center;
-
-  &--reverse {
-    grid-template-columns: 1.05fr 1fr;
-    direction: rtl;
-    & > * { direction: ltr; }
+  &__board {
+    font-size: 12px;
+    color: $ink-muted;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  &__copy { max-width: 460px; }
-
-  &__num {
-    display: inline-block;
-    font-family: 'Instrument Serif', serif;
-    font-size: 48px;
-    font-style: italic;
-    color: $color-accent;
-    line-height: 1;
-    margin-bottom: 18px;
-  }
-
-  h3 { margin: 0 0 16px; font-size: clamp(26px, 2.6vw, 34px); font-weight: 700; color: $ink-1; letter-spacing: -0.025em; line-height: 1.15; }
-  p { margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: $ink-3; }
-
-  &__bullets {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 14px;
-      color: $ink-2;
-      font-weight: 500;
-      svg { color: $color-accent; flex-shrink: 0; }
-    }
-  }
-
-  &__visual { position: relative; }
-}
-
-// Feature visual panels
-:deep(.vis) {
-  position: relative;
-  border-radius: 18px;
-  padding: 30px;
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.06), rgba(197, 160, 89, 0.08));
-  border: 1px solid $line;
-  min-height: 320px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  max-width: 100%;
-  overflow: hidden;
-}
-
-:deep(.vis__panel) {
-  width: 100%;
-  max-width: 380px;
-  background: $paper;
-  border: 1px solid $line;
-  border-radius: 12px;
-  padding: 16px 16px 14px;
-  box-shadow: 0 18px 50px -22px rgba(60, 40, 20, 0.25);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-:deep(.vis__panel-head) { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: $ink-1; }
-:deep(.vis__pill) { font-size: 10px; font-weight: 600; background: #f6efe2; color: $ink-3; padding: 2px 8px; border-radius: 999px; }
-:deep(.vis__pill--accent) { background: $color-accent; color: #fff; }
-
-:deep(.vis__row) { display: flex; align-items: center; gap: 10px; padding: 8px; background: #fafaf7; border-radius: 8px; border: 1px solid #f3eadc; }
-:deep(.vis__row-img) { width: 36px; height: 36px; border-radius: 6px; flex-shrink: 0; background-size: cover; }
-:deep(.vis__row-body) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-:deep(.vis__type-line--strong) { height: auto; background: none; font-size: 11px; font-weight: 700; color: $ink-1; }
-:deep(.vis__type-line--text) { height: auto !important; width: 100% !important; background: none !important; font-size: 10px; font-weight: 500; color: $ink-3; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-:deep(.vis__chip) { font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: 4px; white-space: nowrap; }
-:deep(.vis__chip--ai) { background: #ede9fe; color: #7c3aed; }
-:deep(.vis__chip--gen) { background: #faf3e3; color: $gold; }
-:deep(.vis__chip--ok) { background: #dcfce7; color: #16a34a; }
-:deep(.vis__chip--pending) { background: #f3f4f6; color: $ink-3; }
-:deep(.vis__chip--broken) { background: #fef2f2; color: #dc2626; }
-
-
-// Bulk visual
-:deep(.vis__field) { display: flex; flex-direction: column; gap: 6px; label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: $ink-2; } }
-:deep(.vis__check) { width: 14px; height: 14px; border: 1.5px solid #d1d5db; border-radius: 3px; background: #fff; position: relative; }
-:deep(.vis__check--on) { background: $color-accent; border-color: $color-accent; }
-:deep(.vis__check--on::after) { content: ''; position: absolute; top: 2px; left: 4px; width: 3px; height: 6px; border-right: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(45deg); }
-:deep(.vis__input) { padding: 8px 10px; background: #fafaf7; border: 1px solid #f3eadc; border-radius: 6px; font-size: 12px; color: $ink-1; font-weight: 500; }
-:deep(.vis__applybar) { display: flex; align-items: center; justify-content: space-between; padding: 10px 4px 0; margin-top: 6px; border-top: 1px solid #f3eadc; font-size: 11px; }
-:deep(.vis__hint) { color: $ink-4; }
-:deep(.vis__btn) { padding: 5px 12px; background: $color-accent; color: #fff; border-radius: 5px; font-weight: 600; font-size: 11px; }
-
-// CSV visual
-:deep(.vis__csv-row) { display: flex; align-items: center; gap: 10px; padding: 10px; background: #fafaf7; border-radius: 8px; border: 1px solid #f3eadc; }
-:deep(.vis__csv-icon) { width: 30px; height: 36px; background: #fff; border: 1px solid $line; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-:deep(.vis__csv-body) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-:deep(.vis__csv-name) { font-size: 11px; font-weight: 600; color: $ink-1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-:deep(.vis__csv-meta) { font-size: 10px; color: $ink-4; }
-:deep(.vis__csv-modes) { display: flex; gap: 6px; }
-:deep(.vis__csv-mode) { flex: 1; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 8px; border: 1px solid #f3eadc; font-size: 11px; font-weight: 500; color: $ink-3; background: #fafaf7; }
-:deep(.vis__csv-mode--active) { border-color: $color-accent; background: rgba(255, 107, 53, 0.06); color: $ink-1; font-weight: 600; }
-
-// ── HOW IT WORKS
-.how {
-  padding: 120px 0;
-  background: $ink-1;
-  color: #fff;
-  .kicker { color: rgba(255, 255, 255, 0.55); }
-  h2 { color: #fff; em { color: #f9b779; } }
-
-  &__head { max-width: 760px; margin: 0 auto 80px; text-align: center; }
-
-  &__steps {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 32px;
-  }
-
-  &__line {
-    position: absolute;
-    top: 28px;
-    left: 8%; right: 8%;
-    height: 1px;
-    background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.18) 50%, transparent 100%);
-    z-index: 0;
-  }
-}
-
-.step {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  padding: 0 12px;
-
-  &__num {
+  &__date {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 56px; height: 56px;
-    margin: 0 auto 24px;
-    background: $ink-1;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    font-family: 'Instrument Serif', serif;
-    font-style: italic;
-    font-size: 28px;
-    color: $color-accent;
-  }
-
-  h3 { margin: 0 0 10px; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
-  p { margin: 0; font-size: 14px; line-height: 1.6; color: rgba(255, 255, 255, 0.65); max-width: 260px; margin-left: auto; margin-right: auto; }
-}
-
-// ── PROOF
-.proof {
-  padding: 110px 0;
-  background: $cream;
-
-  &__grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 72px; align-items: center; }
-  &__visual { position: relative; }
-
-  &__img {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 14px;
-    border: 1px solid $line;
-    box-shadow: 0 28px 60px -28px rgba(60, 40, 20, 0.22), 0 12px 24px -16px rgba(60, 40, 20, 0.12);
-    user-select: none;
-  }
-
-  &__credit {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 16px;
-    padding: 7px 14px;
-    background: $cream;
-    border: 1px solid $line;
-    border-radius: 999px;
+    gap: 5px;
     font-size: 12px;
     font-weight: 600;
-    color: $ink-3;
-    text-decoration: none;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
-    svg { color: $color-accent; }
-    &:hover { background: #fff7ed; border-color: rgba(255, 107, 53, 0.4); color: $ink-1; }
+    color: $accent;
+    white-space: nowrap;
+
+    svg { flex-shrink: 0; color: $accent; }
   }
 
-  &__copy { max-width: 480px; h2 { margin: 16px 0 18px; } }
-  &__lead { margin: 0 0 24px; font-size: 17px; line-height: 1.6; color: $ink-3; }
-
-  &__points {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  &__footer {
     display: flex;
-    flex-direction: column;
-    gap: 14px;
-    li { display: flex; align-items: flex-start; gap: 12px; font-size: 15px; line-height: 1.55; color: $ink-2; strong { display: block; color: $ink-1; font-weight: 700; margin-bottom: 1px; } }
-  }
-
-  &__bullet-icon {
-    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: rgba(255, 107, 53, 0.12);
-    color: $color-accent;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-}
+    justify-content: space-between;
+    padding: 11px 18px;
+    background: $bg;
+    border-top: 1px solid $border;
+    gap: 8px;
 
-// ── MY STORY
-.story {
-  padding: 110px 0;
-  background: $paper;
-  border-top: 1px solid #f3eadc;
-
-  &__inner { max-width: 760px; }
-
-  &__head {
-    text-align: center;
-    margin-bottom: 48px;
-  }
-
-  &__lead {
-    margin: 18px auto 0;
-    max-width: 560px;
-    font-size: 18px;
-    line-height: 1.6;
-    color: $ink-3;
-  }
-
-  &__points {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-
-    li {
-      display: flex;
-      align-items: flex-start;
-      gap: 18px;
-      font-size: 16px;
-      line-height: 1.62;
-      color: $ink-3;
-      strong {
-        display: block;
-        color: $ink-1;
-        font-weight: 700;
-        margin-bottom: 3px;
-        letter-spacing: -0.01em;
-      }
+    span {
+      font-size: 12px;
+      color: $ink-subtle;
+      font-weight: 500;
     }
   }
 
-  &__num {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: rgba(255, 107, 53, 0.12);
-    color: $color-accent;
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin-top: 1px;
+  &__count {
+    font-size: 11px;
+    font-weight: 700;
+    color: $ink-muted;
+    background: $border;
+    padding: 3px 10px;
+    border-radius: 999px;
   }
 }
 
-// ── USE CASES
-.usecases {
-  padding: 100px 0;
-  background: $cream;
-  border-top: 1px solid #f3eadc;
+// ── Story ─────────────────────────────────────────────────────────────────────
+// The exampleStatsImg fills the background as atmospheric proof of real results.
+// heroLaptopImg sits prominently in the right column as the product shot.
+// A directional warm overlay keeps left-side text at WCAG AA contrast (7:1+).
+.story {
+  position: relative;
+  padding: 110px 0;
+  overflow: hidden;
 
-  &__head { text-align: center; margin-bottom: 60px; }
+  // ── Background: analytics screenshot ──────────────────────────────────────
+  &__bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+    // Let the image breathe through the overlay
+    opacity: 0.55;
+  }
+
+  // Warm directional overlay:
+  // - Left: near-opaque dark so white text hits 7:1 contrast
+  // - Right: lighter so the laptop screenshot pops against the bg
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      108deg,
+      rgba(14, 7, 2, 0.94) 0%,
+      rgba(18, 9, 3, 0.88) 30%,
+      rgba(16, 8, 2, 0.74) 55%,
+      rgba(12, 6, 2, 0.52) 78%,
+      rgba(8,  4, 1, 0.32) 100%
+    );
+  }
+
+  // ── Content grid ──────────────────────────────────────────────────────────
+  &__inner {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1.08fr;
+    gap: 72px;
+    align-items: center;
+
+    @media (max-width: 820px) {
+      grid-template-columns: 1fr;
+      gap: 48px;
+    }
+  }
+
+  // ── Left: text copy ───────────────────────────────────────────────────────
+  &__copy { max-width: 520px; }
+
+  &__heading {
+    margin: 0 0 24px;
+    font-size: clamp(26px, 3.2vw, 42px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: #fff;
+    text-wrap: balance;
+
+    em {
+      font-family: 'Instrument Serif', 'Georgia', serif;
+      font-style: italic;
+      font-weight: 400;
+      color: $accent;
+      letter-spacing: -0.01em;
+    }
+  }
+
+  &__copy p {
+    margin: 0 0 16px;
+    font-size: 15.5px;
+    line-height: 1.72;
+    color: rgba(255, 255, 255, 0.70);
+    text-wrap: pretty;
+
+    &:last-of-type { margin-bottom: 28px; }
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: $accent;
+    text-decoration: none;
+    background: rgba(226, 95, 44, 0.12);
+    border: 1px solid rgba(226, 95, 44, 0.32);
+    border-radius: 999px;
+    transition: background 0.18s, border-color 0.18s;
+
+    &:hover {
+      background: rgba(226, 95, 44, 0.22);
+      border-color: rgba(226, 95, 44, 0.55);
+    }
+    &:focus-visible {
+      outline: 2px solid $accent;
+      outline-offset: 3px;
+      border-radius: 999px;
+    }
+  }
+
+  // ── Right: laptop screenshot ───────────────────────────────────────────────
+  &__visual {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  &__laptop {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.22),
+      0 32px 80px -16px rgba(0, 0, 0, 0.55);
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  &__caption {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.38);
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+}
+
+// ── Pricing ───────────────────────────────────────────────────────────────────
+.pricing {
+  padding: 100px 0;
+  background: $surface;
+  border-top: 1px solid $border;
 
   &__grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 22px;
+    gap: 16px;
+    align-items: start;
+
+    @media (max-width: 960px) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 540px) { grid-template-columns: 1fr; }
   }
-}
 
-.usecase {
-  padding: 28px 24px;
-  background: $paper;
-  border: 1px solid $line;
-  border-radius: 16px;
-  transition: transform 0.2s, box-shadow 0.2s;
-  &:hover { transform: translateY(-3px); box-shadow: 0 16px 40px -20px rgba(60, 40, 20, 0.16); }
-
-  &__icon {
-    display: inline-flex;
-    align-items: center;
+  &__footnote {
+    display: flex;
+    align-items: flex-start;
     justify-content: center;
-    width: 44px; height: 44px;
-    border-radius: 12px;
-    background: #faf3e3;
-    color: $color-accent;
-    margin-bottom: 16px;
+    gap: 7px;
+    margin: 28px auto 0;
+    max-width: 580px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: $ink-muted;
+    text-align: center;
+
+    svg { flex-shrink: 0; margin-top: 1px; color: $ink-subtle; }
   }
-  h3 { margin: 0 0 8px; font-size: 16px; font-weight: 700; color: $ink-1; }
-  p { margin: 0; font-size: 13px; line-height: 1.55; color: $ink-3; }
 }
 
-// ── BETA FREE PLAN SECTION
-.beta-plan {
-  padding: 100px 0;
-  background: linear-gradient(180deg, #fff9f6 0%, #fff 100%);
-  border-top: 1px solid #f3ede8;
+.plan {
+  position: relative;
+  padding: 28px 22px;
+  background: $bg;
+  border: 1px solid $border;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  &--featured {
+    background: $dark;
+    border-color: $dark;
+    box-shadow: 0 12px 40px -12px rgba(0,0,0,0.30);
+
+    .plan__name   { color: rgba(255,255,255,0.5); }
+    .plan__amount { color: #fff; }
+    .plan__period { color: rgba(255,255,255,0.4); }
+    .plan__tagline{ color: rgba(255,255,255,0.5); }
+    .plan__features li { color: rgba(255,255,255,0.72); }
+    .plan__features svg { color: $accent; }
+  }
+
+  &__badge {
+    position: absolute;
+    top: -13px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    background: $accent;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 13px;
+    border-radius: 999px;
+  }
+
+  &__head { display: flex; flex-direction: column; gap: 6px; }
+
+  &__name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: $ink-muted;
+  }
+
+  &__price {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+  }
+
+  &__amount {
+    font-size: 30px;
+    font-weight: 800;
+    color: $ink;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  &__period {
+    font-size: 13px;
+    font-weight: 500;
+    color: $ink-muted;
+  }
+
+  &__tagline {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: $ink-muted;
+    text-wrap: pretty;
+  }
+
+  &__features {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    flex: 1;
+
+    li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      color: $ink-2;
+    }
+
+    svg {
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: $accent;
+    }
+  }
+}
+
+// ── Dark CTA section ──────────────────────────────────────────────────────────
+.cta-dark {
+  background: $dark;
+  overflow: hidden;
 
   &__inner {
-    max-width: 760px;
+    max-width: 520px;
     margin: 0 auto;
     text-align: center;
+    padding: 72px 0;
   }
 
-  &__kicker {
+  // Pulsing dot + label
+  &__label {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 5px 14px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    background: color-mix(in srgb, #{$color-accent} 12%, #fff);
-    color: $color-accent;
-    border: 1px solid color-mix(in srgb, #{$color-accent} 25%, #fff);
-    margin-bottom: 28px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 22px;
+  }
 
-    svg { flex-shrink: 0; }
+  &__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: $accent;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 0 rgba(226,95,44,0.6);
+    animation: ctaDotPulse 2.4s ease-out infinite;
   }
 
   &__title {
-    font-size: clamp(28px, 4vw, 44px);
+    margin: 0 0 18px;
+    font-size: clamp(32px, 4.4vw, 54px);
     font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: -0.03em;
-    color: $ink-1;
-    margin: 0 0 20px;
+    letter-spacing: -0.04em;
+    line-height: 1.06;
+    color: #fff;
+    text-wrap: balance;
 
-    em { font-style: normal; color: $color-accent; }
+    em {
+      font-family: 'Instrument Serif', 'Georgia', serif;
+      font-style: italic;
+      font-weight: 400;
+      color: $accent;
+      letter-spacing: -0.01em;
+    }
   }
 
   &__lead {
-    font-size: 17px;
+    margin: 0 0 40px;
+    font-size: 16px;
     line-height: 1.65;
-    color: $ink-3;
-    max-width: 580px;
-    margin: 0 auto 52px;
-  }
-
-  &__perks {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 48px;
-    text-align: left;
-  }
-
-  &__cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 28px;
-    background: $color-accent;
-    color: #fff;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 4px 20px -4px rgba(255, 107, 53, 0.45);
-
-    &:hover {
-      background: #ff8451;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 28px -4px rgba(255, 107, 53, 0.5);
-    }
+    color: rgba(255,255,255,0.48);
+    text-wrap: pretty;
   }
 }
 
-.beta-perk {
-  display: flex;
-  gap: 14px;
-  padding: 20px;
-  background: #fff;
-  border: 1px solid #f0ece8;
-  border-radius: 14px;
-  box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);
-  align-items: flex-start;
+@keyframes ctaDotPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(226,95,44,0.55); }
+  60%  { box-shadow: 0 0 0 7px rgba(226,95,44,0); }
+  100% { box-shadow: 0 0 0 0 rgba(226,95,44,0); }
+}
 
-  &__icon {
+// ── Marquee strips ────────────────────────────────────────────────────────────
+.cta-marquee {
+  width: 100%;
+  overflow: hidden;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+
+  &__track {
+    display: flex;
+    gap: 10px;
+    width: max-content;
+    animation: ctaMarquee 32s linear infinite;
+  }
+
+  &__img {
+    width: 86px;
+    height: 116px;
+    object-fit: cover;
+    border-radius: 10px;
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    border-radius: 9px;
-    background: color-mix(in srgb, #{$color-accent} 10%, #fff);
-    color: $color-accent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 2px;
-  }
+    opacity: 0.68;
+    transition: opacity 0.2s;
 
-  strong {
-    display: block;
-    font-size: 14px;
-    font-weight: 700;
-    color: $ink-1;
-    margin-bottom: 4px;
-  }
-
-  p {
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.5;
-    color: $ink-3;
+    &:hover { opacity: 0.92; }
   }
 }
 
-// ── FINAL CTA
-.cta {
-  padding: 120px 0;
-  background: radial-gradient(ellipse at center, rgba(255, 107, 53, 0.18), transparent 60%), linear-gradient(180deg, $ink-1 0%, #0f0d0b 100%);
-  color: #fff;
+@keyframes ctaMarquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
 
-  &__inner {
-    max-width: 720px;
-    margin: 0 auto;
-    text-align: center;
-    h2 { color: #fff; em { color: $color-accent; } }
-    p { margin: 20px auto 36px; font-size: 17px; line-height: 1.6; color: rgba(255, 255, 255, 0.7); max-width: 540px; }
-  }
+@media (prefers-reduced-motion: reduce) {
+  .cta-marquee__track { animation-play-state: paused; }
+  .cta-dark__dot { animation: none; }
+}
 
-  &__form {
-    display: flex;
-    gap: 8px;
-    padding: 6px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 14px;
-    max-width: 480px;
-    margin: 0 auto;
-    backdrop-filter: blur(10px);
-    &:focus-within { border-color: $color-accent; box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.18); }
-  }
+// ── CTA standalone form ───────────────────────────────────────────────────────
+.cta-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
 
   &__input {
-    flex: 1; min-width: 0; border: 0; background: transparent;
-    padding: 0 14px; height: 48px; font: inherit; font-size: 15px; color: #fff; outline: 0;
-    &::placeholder { color: rgba(255, 255, 255, 0.45); }
+    width: 100%;
+    height: 54px;
+    padding: 0 20px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1.5px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    font: inherit;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.9);
+    outline: 0;
+    transition: border-color 0.18s, box-shadow 0.18s;
+
+    &::placeholder { color: rgba(255, 255, 255, 0.32); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    &:focus {
+      border-color: $accent;
+      box-shadow: 0 0 0 3px rgba(226, 95, 44, 0.25);
+    }
+
+    @media (max-width: 480px) { font-size: 16px; } // prevent iOS zoom
   }
 
   &__btn {
-    padding: 0 22px; height: 48px; border: 0; background: $color-accent; color: #fff;
-    border-radius: 9px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
-    transition: background 0.15s, transform 0.15s;
-    &:hover:not(:disabled) { background: #ff8451; transform: translateY(-1px); }
-    &:disabled { opacity: 0.55; cursor: not-allowed; }
-  }
-
-  &__note { margin: 16px auto 0; font-size: 13px; color: rgba(255, 255, 255, 0.45); &--err { color: #fca5a5; } }
-}
-
-// ── FOOTER
-.footer {
-  padding: 40px 0;
-  background: #0f0d0b;
-  color: rgba(255, 255, 255, 0.6);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-
-  &__inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
-  &__brand { font-weight: 800; font-size: 16px; color: #fff; text-decoration: none; letter-spacing: -0.03em; span { color: $color-accent; } }
-  &__copy { font-size: 13px; color: rgba(255, 255, 255, 0.4); margin: 0; }
-  &__links {
-    display: flex; gap: 22px;
-    a { font-size: 13px; color: rgba(255, 255, 255, 0.55); text-decoration: none; transition: color 0.15s; &:hover { color: #fff; } }
-  }
-}
-
-// ── Responsive
-@media (max-width: 1240px) {
-  .hero__inner { gap: 28px; }
-  .feature, .feature--reverse { gap: 56px; }
-}
-
-@media (max-width: 1024px) {
-  // Tablet (incl. iPad portrait & landscape): the laptop becomes a
-  // soft right-bleed backdrop instead of a stacked image. The copy
-  // sits in the left half with breathing room top and bottom; the
-  // floating notification cards are hidden so the scene reads as a
-  // calm editorial photo, not a busy mockup.
-  .hero {
-    position: relative;
-    min-height: auto;
-    display: block;
-    padding: 148px 36px 140px;
-    overflow: hidden;
-  }
-  .hero__inner {
-    grid-template-columns: 1fr;
-    gap: 44px;
-    position: relative;
-    z-index: 3;
-    max-width: 760px;
-  }
-  .hero__copy { max-width: 600px; }
-
-  // Backdrop laptop — fills the right side of the hero as a tall
-  // vertical column, anchored top-to-bottom, bleeding off the right
-  // edge. A horizontal mask fades it to transparent on the left so
-  // the copy has clean space to breathe in.
-  .hero__preview {
-    position: absolute;
-    inset: 0;
-    width: auto;
-    max-width: none;
-    margin: 0;
-    z-index: 1;
-    pointer-events: none;
-  }
-  .hero__img {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: auto;
-    left: auto;
-    height: 100%;
-    width: auto;
-    max-width: none;
-    max-height: none;
-    transform: translateX(18%);
-    opacity: 0.32;
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent 0%,
-      transparent 18%,
-      rgba(0, 0, 0, 0.55) 42%,
-      #000 75%
-    );
-    mask-image: linear-gradient(
-      to right,
-      transparent 0%,
-      transparent 18%,
-      rgba(0, 0, 0, 0.55) 42%,
-      #000 75%
-    );
-  }
-  .hero__float { display: none; }
-  // Less aggressive cream fade so the laptop backdrop doesn't get
-  // chopped by the section transition.
-  .hero::after { height: 200px; }
-
-  .hero__feat-cards { max-width: 600px; }
-
-  .feature, .feature--reverse { grid-template-columns: 1fr; direction: ltr; gap: 40px; }
-  .proof__grid { grid-template-columns: 1fr; gap: 48px; }
-  .proof__copy { max-width: 100%; }
-  .versus__table { font-size: 12px; }
-  .versus__cell { padding: 12px 12px; }
-  .diff__inner { grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .usecases__grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 760px) {
-  .container { padding: 0 20px; }
-  .nav__inner { padding: 14px 20px; gap: 14px; }
-  .nav__links { display: none; }
-  .nav__cta { padding: 9px 18px; font-size: 13px; }
-
-  // Phone hero: the laptop becomes a soft backdrop bleeding from the
-  // bottom-right edge, not a stacked image with floating cards. Copy
-  // and CTA stay the focal element; the photo is atmosphere.
-  .hero {
-    position: relative;
-    min-height: auto;
-    padding: 96px 22px 88px;
-    display: block;
-    overflow: hidden;
-  }
-  .hero__inner { grid-template-columns: 1fr; gap: 32px; position: relative; z-index: 3; }
-  .hero__copy { max-width: 100%; }
-
-  .hero__title { font-size: clamp(40px, 11vw, 56px); }
-  .hero__title em { white-space: normal; }
-  .hero__lead { font-size: 16px; }
-
-  // On phones the input is detached from the button: the input owns
-  // its own bordered "card" so it reads as a real field, and the
-  // button sits as a clearly separate CTA underneath. The shared pill
-  // works on desktop but feels cramped on a 360px screen.
-  .hero__form-row {
-    flex-direction: column;
-    gap: 12px;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-    &:focus-within { border: 0; box-shadow: none; }
-  }
-  // Input matches the warm paper card aesthetic used in eyebrows and
-  // feature pills: warm off-white, peach border, soft warm shadow,
-  // generous vertical padding (no fixed height) for a breathable feel.
-  .hero__input {
     width: 100%;
-    height: auto;
-    padding: 22px 20px;
-    background: #fffaf3;
-    border: 1.5px solid rgba(255, 182, 145, 0.6);
-    border-radius: 16px;
-    font-size: 16.5px;
-    font-weight: 500;
-    line-height: 1.3;
-    color: $ink-1;
-    box-shadow:
-      0 14px 36px -18px rgba(150, 90, 50, 0.28),
-      0 2px 6px -3px rgba(150, 90, 50, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    transition: border-color 0.2s, box-shadow 0.2s;
-    &::placeholder { color: $ink-4; font-weight: 400; }
-    &:focus {
-      border-color: $color-accent;
-      box-shadow:
-        0 0 0 3px rgba(229, 107, 58, 0.16),
-        0 14px 36px -18px rgba(150, 90, 50, 0.34),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-  }
-  .hero__btn {
-    width: 100%;
-    justify-content: center;
-    height: 50px;
-    border-radius: 14px;
-    font-size: 14.5px;
-  }
-  .hero__feat-cards { grid-template-columns: repeat(2, 1fr); }
-
-  // Laptop becomes a soft backdrop spanning the whole hero. The image
-  // itself is the only thing faded; the floating notification cards
-  // sit at full opacity in their natural positions so the "scene"
-  // feeling carries over from desktop.
-  .hero__preview {
-    position: absolute;
-    inset: 0;
-    width: auto;
-    max-width: none;
-    margin: 0;
-    z-index: 1;
-    pointer-events: none;
-  }
-  .hero__img {
-    position: absolute;
-    right: -32%;
-    bottom: -6%;
-    width: 132%;
-    height: auto;
-    max-height: none;
-    transform: none;
-    opacity: 0.38;
-    -webkit-mask-image: radial-gradient(
-      120% 100% at 100% 100%,
-      #000 0%,
-      rgba(0, 0, 0, 0.65) 45%,
-      transparent 78%
-    );
-    mask-image: radial-gradient(
-      120% 100% at 100% 100%,
-      #000 0%,
-      rgba(0, 0, 0, 0.65) 45%,
-      transparent 78%
-    );
-  }
-  // Keep two floating cards visible — one near the top (over the
-  // headline area), one near the bottom (over the laptop fade). They
-  // sit ABOVE the copy (z:4) so they aren't lost behind the headline,
-  // scaled down to feel proportional to the phone viewport.
-  .hero__float {
-    position: absolute;
-    z-index: 4;
-    transform: scale(0.78);
-    transform-origin: top right;
-    padding: 9px 12px;
-    gap: 8px;
+    height: 54px;
+    font-size: 15px;
+    font-weight: 700;
     border-radius: 12px;
-    animation: none;
-    opacity: 1;
   }
-  .hero__float-icon { width: 26px; height: 26px; }
-  .hero__float--stat .hero__float-body strong { font-size: 18px; }
-  // "96 Pins Ready" — top-right, near the eyebrow line
-  .hero__float--tl {
-    top: 92px;
-    right: 14px;
-    left: auto;
-    bottom: auto;
-  }
-  // "Pinterest validation passed" — over the laptop's faded zone
-  .hero__float--tr {
-    top: auto;
-    right: auto;
-    bottom: 56px;
-    left: 14px;
-    transform-origin: bottom left;
-  }
-  .hero__float--br1,
-  .hero__float--br2 { display: none; }
-  // Soften the hero fade-out so the laptop backdrop blends with the
-  // section below it (the cream wash was clipping the image edge).
-  .hero::after { height: 160px; }
 
-  .problem, .features, .how, .story, .cta, .usecases, .beta-plan { padding: 80px 0 70px; }
-  .beta-plan__perks { grid-template-columns: 1fr; }
-  .problem__grid { grid-template-columns: 1fr; }
-  .features__list { gap: 70px; }
-  .feature__num { font-size: 38px; }
+  &__note {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.35);
+    text-align: center;
 
-  .how__steps { grid-template-columns: 1fr; gap: 48px; }
-  .how__line { display: none; }
-
-  .versus__row { grid-template-columns: 1fr; }
-  .versus__row--header { display: none; }
-  .versus__cell--feature { font-size: 13px; border-bottom: none; padding-bottom: 4px; }
-  .versus__cell--them::before { content: 'Others: '; font-weight: 600; }
-  .versus__cell--us::before { content: 'WallArtRoom: '; font-weight: 600; }
-
-  // Dark differentiator strip: stack vertically with each number/label
-  // pair centered so the three items align equally instead of one
-  // dangling on a second row.
-  .diff { padding: 32px 0; }
-  .diff__inner {
-    grid-template-columns: 1fr;
-    gap: 22px;
-    max-width: 320px;
-    margin: 0 auto;
-  }
-  .diff__item { text-align: center; }
-  .diff__number { font-size: 30px; line-height: 1; }
-  .diff__label { font-size: 13px; line-height: 1.4; }
-
-  .usecases__grid { grid-template-columns: 1fr; }
-
-  // Mirror the hero treatment: detach the input from the button so
-  // each gets its own surface and the input reads as a real field.
-  .cta__form {
-    flex-direction: column;
-    gap: 12px;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-    &:focus-within { border: 0; box-shadow: none; }
-  }
-  .cta__input {
-    width: 100%;
-    height: auto;
-    padding: 22px 20px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1.5px solid rgba(255, 255, 255, 0.18);
-    border-radius: 16px;
-    font-size: 16.5px;
-    font-weight: 500;
-    line-height: 1.3;
-    color: #fff;
-    &:focus {
-      border-color: $color-accent;
-      box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18);
-    }
-  }
-  .cta__btn { width: 100%; height: 50px; border-radius: 12px; font-size: 14.5px; }
-  .footer__inner { flex-direction: column; text-align: center; }
-
-  // Stop figure panels (Board Intelligence, CSV Studio, etc.) from
-  // forcing a horizontal scroll. The inner mock is laid out around a
-  // 380px panel; on a 360px screen its padding pushes past the viewport.
-  :deep(.vis) {
-    padding: 20px;
-    min-height: 0;
-    max-width: 100%;
-    overflow: hidden;
-  }
-  :deep(.vis__panel) {
-    max-width: 100%;
-    width: 100%;
+    &--error { color: #fca5a5; }
   }
 }
+
+// ── Footer ────────────────────────────────────────────────────────────────────
+.footer {
+  background: $dark;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 28px 0;
+
+  &__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+
+    @media (max-width: 580px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+  }
+
+  &__brand {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: rgba(255,255,255,0.45);
+
+    em { font-style: normal; color: $accent; }
+  }
+
+  &__copy {
+    margin: 0;
+    font-size: 12px;
+    color: rgba(255,255,255,0.28);
+  }
+
+  &__links {
+    display: flex;
+    gap: 18px;
+
+    a, :deep(a) {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.35);
+      text-decoration: none;
+      transition: color 0.15s;
+
+      &:hover { color: rgba(255,255,255,0.7); }
+      &:focus-visible { outline: 2px solid $accent; outline-offset: 2px; border-radius: 2px; }
+    }
+  }
+}
+
+// ── Reduced motion ────────────────────────────────────────────────────────────
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; }
+}
+
 </style>
