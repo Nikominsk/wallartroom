@@ -87,7 +87,21 @@ export default defineEventHandler(async (event) => {
       }))
       .sort((a, b) => b.count - a.count)
 
-    return { weekLabel: label, count: weekPins.length, segments }
+    const exportedWeekPins = weekPins.filter(p => p.status === 'exported')
+    const expSegMap = new Map()
+    for (const p of exportedWeekPins) {
+      const name = p.board?.trim() || '(No Board)'
+      expSegMap.set(name, (expSegMap.get(name) ?? 0) + 1)
+    }
+    const exportedSegments = [...expSegMap.entries()]
+      .map(([name, cnt]) => ({
+        name,
+        count: cnt,
+        color: name === '(No Board)' ? '#d1d5db' : (boardColorMap.get(name) ?? null),
+      }))
+      .sort((a, b) => b.count - a.count)
+
+    return { weekLabel: label, count: weekPins.length, segments, exportedCount: exportedWeekPins.length, exportedSegments }
   })
 
   // Upcoming pins — fetch thumbnails separately to avoid join issues

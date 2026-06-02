@@ -126,9 +126,23 @@ const emit = defineEmits(['close', 'uploaded'])
 // overwhelming the server or hitting browser connection limits.
 const CONCURRENCY = 6
 
+const { setUploading } = useMetadataUpload()
+
 const fileInputEl    = ref(null)
 const dragOver       = ref(false)
 const isUploading    = ref(false)
+
+watch(isUploading, (val) => setUploading(val))
+
+function beforeUnloadGuard(e) {
+  e.preventDefault()
+  e.returnValue = ''
+}
+watch(isUploading, (val) => {
+  if (val) window.addEventListener('beforeunload', beforeUnloadGuard)
+  else     window.removeEventListener('beforeunload', beforeUnloadGuard)
+})
+onUnmounted(() => window.removeEventListener('beforeunload', beforeUnloadGuard))
 
 // items: { id, file, status: 'pending'|'uploading'|'done'|'error', error?, image? }
 let _nextId = 1
@@ -154,13 +168,13 @@ function addFiles(fileList) {
   for (const file of fileList) {
     if (!isValidType(file)) {
       items.value.push({
-        id: _nextId++, file, status: 'error', error: 'Unsupported file type',
+        id: _nextId++, file, status: 'error', error: 'Wrong file type',
       })
       continue
     }
     if (file.size > MAX_BYTES) {
       items.value.push({
-        id: _nextId++, file, status: 'error', error: `Too large (max ${MAX_BYTES / 1024 / 1024} MB)`,
+        id: _nextId++, file, status: 'error', error: 'File too large',
       })
       continue
     }
@@ -222,14 +236,13 @@ async function startUpload() {
       for (const item of queue) {
         if (!allowedIds.has(item.id)) {
           item.status = 'error'
-          item.error  = 'Upload limit reached for your plan'
+          item.error  = 'Upload limit reached'
         }
       }
     }
   } catch (e) {
     // Whole batch rejected (quota, validation, etc.) — mark all pending as error
-    const msg = e?.data?.statusMessage ?? e?.message ?? 'Prepare failed'
-    for (const item of queue) { item.status = 'error'; item.error = msg }
+    for (const item of queue) { item.status = 'error'; item.error = 'Upload failed' }
     isUploading.value = false
     return
   }
@@ -256,7 +269,7 @@ async function startUpload() {
         confirmed.push({ key: upload.key, publicUrl: upload.publicUrl, mimeType: upload.mimeType })
       } catch (e) {
         item.status = 'error'
-        item.error  = e?.message ?? 'Upload to storage failed'
+        item.error  = 'Upload failed'
       }
     }
   }
@@ -274,9 +287,8 @@ async function startUpload() {
     } catch (e) {
       // DB insert failed — files are in R2 but not in the DB. Mark all done
       // items with a soft error so the user knows to retry.
-      const msg = e?.data?.statusMessage ?? e?.message ?? 'Saving failed'
       for (const item of queue) {
-        if (item.status === 'done') { item.status = 'error'; item.error = msg }
+        if (item.status === 'done') { item.status = 'error'; item.error = 'Upload failed' }
       }
     }
   }
@@ -419,6 +431,8 @@ function statusLabel(item) {
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     overflow: hidden;
+    max-height: 320px;
+    overflow-y: auto;
   }
 
   &__list-head {
@@ -433,6 +447,9 @@ function statusLabel(item) {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    position: sticky;
+    top: 0;
+    z-index: 1;
   }
 
   &__item {
@@ -555,7 +572,7 @@ function statusLabel(item) {
       color: #fff;
       font-weight: 600;
 
-      &:hover:not(:disabled) {
+      &:hover {
         background: #15803d;
         border-color: #15803d;
       }

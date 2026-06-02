@@ -5,10 +5,70 @@
 
         <!-- ── Header ──────────────────────────────────────────────────── -->
         <header class="ai-modal__head">
-          <div class="ai-modal__head-text">
-            <span class="ai-modal__eyebrow">AI Generation</span>
-            <h2 id="ai-modal-title" class="ai-modal__title">{{ headerTitle }}</h2>
+          <h2 id="ai-modal-title" class="ai-modal__title">
+            <template v-if="isWorking">{{ headerTitle }}</template>
+            <template v-else>
+              Generate metadata
+              <span class="ai-modal__image-count">{{ imageCount }}</span>
+            </template>
+          </h2>
+
+          <!-- Templates inline in header -->
+          <div v-if="!isWorking" class="ai-modal__head-tpl">
+            <svg v-if="templatesLoading" class="ai-modal__tpl-spinner" width="13" height="13" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="9" stroke="#e5e7eb" stroke-width="2.5"/>
+              <path d="M11 2a9 9 0 0 1 9 9" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <template v-else-if="templates.length || loaded">
+              <select
+                v-model="selectedTplId"
+                class="ai-modal__tpl-select"
+                :disabled="!templates.length"
+                @change="applyTemplate"
+              >
+                <option value="">{{ templates.length ? 'Templates…' : 'No templates' }}</option>
+                <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">{{ tpl.name }}</option>
+              </select>
+
+              <button
+                class="ai-modal__tpl-save-btn"
+                type="button"
+                @click.stop="openSaveForm"
+              >
+                Save as
+              </button>
+
+              <!-- Save-as popover -->
+              <div v-if="showSaveForm" class="ai-modal__tpl-popover" @click.stop>
+                <p class="ai-modal__tpl-popover-title">Save as template</p>
+                <input
+                  ref="saveNameInput"
+                  v-model="saveName"
+                  class="ai-modal__tpl-popover-input"
+                  type="text"
+                  placeholder="Template name…"
+                  maxlength="100"
+                  @keydown.enter.prevent="saveAsTemplate"
+                  @keydown.esc="showSaveForm = false; saveName = ''"
+                />
+                <div class="ai-modal__tpl-popover-actions">
+                  <button
+                    class="ai-modal__tpl-btn ai-modal__tpl-btn--primary"
+                    type="button"
+                    :disabled="!saveName.trim() || saving"
+                    @click="saveAsTemplate"
+                  >{{ saving ? 'Saving…' : 'Save' }}</button>
+                  <button
+                    class="ai-modal__tpl-btn"
+                    type="button"
+                    @click="showSaveForm = false; saveName = ''"
+                  >Cancel</button>
+                </div>
+                <p v-if="saveError" class="ai-modal__tpl-popover-err">{{ saveError }}</p>
+              </div>
+            </template>
           </div>
+
           <button
             class="ai-modal__close"
             type="button"
@@ -73,71 +133,6 @@
 
         <!-- ── Configure state ─────────────────────────────────────────── -->
         <div v-else class="ai-modal__body">
-
-          <!-- ── Templates loading ─────────────────────────────────────── -->
-          <div v-if="templatesLoading" class="ai-modal__tpl-loading">
-            <svg class="ai-modal__tpl-spinner" width="14" height="14" viewBox="0 0 22 22" fill="none">
-              <circle cx="11" cy="11" r="9" stroke="#e5e7eb" stroke-width="2.5"/>
-              <path d="M11 2a9 9 0 0 1 9 9" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/>
-            </svg>
-            Loading templates…
-          </div>
-
-          <!-- ── Templates bar ──────────────────────────────────────────── -->
-          <div v-else-if="templates.length || loaded" class="ai-modal__tpl-bar">
-            <select
-              v-model="selectedTplId"
-              class="ai-modal__tpl-select"
-              :disabled="!templates.length"
-            >
-              <option value="">{{ templates.length ? 'Select template…' : 'No templates yet' }}</option>
-              <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">{{ tpl.name }}</option>
-            </select>
-            <button
-              class="ai-modal__tpl-btn"
-              type="button"
-              :disabled="!selectedTplId"
-              @click="applyTemplate"
-            >Load</button>
-
-            <span class="ai-modal__tpl-sep" />
-
-            <template v-if="showSaveForm">
-              <input
-                ref="saveNameInput"
-                v-model="saveName"
-                class="ai-modal__tpl-name-input"
-                type="text"
-                placeholder="Template name…"
-                maxlength="100"
-                @keydown.enter.prevent="saveAsTemplate"
-                @keydown.esc="showSaveForm = false; saveName = ''"
-              />
-              <button
-                class="ai-modal__tpl-btn ai-modal__tpl-btn--primary"
-                type="button"
-                :disabled="!saveName.trim() || saving"
-                @click="saveAsTemplate"
-              >{{ saving ? '…' : 'Save' }}</button>
-              <button
-                class="ai-modal__tpl-cancel"
-                type="button"
-                @click="showSaveForm = false; saveName = ''"
-              >
-                <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13"/></svg>
-              </button>
-            </template>
-            <button
-              v-else
-              class="ai-modal__tpl-save-as"
-              type="button"
-              @click="openSaveForm"
-            >
-              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg>
-              Save as template
-            </button>
-            <span v-if="saveError" class="ai-modal__tpl-err">{{ saveError }}</span>
-          </div>
 
           <!-- 1 · Fields -->
           <section class="ai-modal__section">
@@ -217,24 +212,6 @@
               />
             </div>
 
-            <div class="ai-modal__field-row">
-              <div class="ai-modal__field">
-                <label class="ai-modal__label" for="ai-exclude">Exclude keywords</label>
-                <input id="ai-exclude" class="ai-modal__input" v-model="options.excludeKeywords" placeholder="word1, word2" />
-              </div>
-              <div class="ai-modal__field">
-                <label class="ai-modal__label" for="ai-keywords">Include keywords</label>
-                <input id="ai-keywords" class="ai-modal__input" v-model="options.includeKeywords" placeholder="keyword1, keyword2" />
-              </div>
-            </div>
-
-            <div class="ai-modal__checks">
-              <label class="ai-modal__check">
-                <input type="checkbox" v-model="options.usePromptAsContext" />
-                <span>Use image prompt as context</span>
-              </label>
-            </div>
-
             <button class="ai-modal__more-btn" type="button" @click="showMore = !showMore">
               <svg
                 width="11" height="11" viewBox="0 0 12 12" fill="none"
@@ -256,6 +233,14 @@
                 <label class="ai-modal__label" for="ai-niche">Niche / topic</label>
                 <input id="ai-niche" class="ai-modal__input" v-model="options.niche" placeholder="e.g. boho living room" />
               </div>
+              <div class="ai-modal__field">
+                <label class="ai-modal__label" for="ai-exclude">Exclude keywords</label>
+                <input id="ai-exclude" class="ai-modal__input" v-model="options.excludeKeywords" placeholder="word1, word2" />
+              </div>
+              <div class="ai-modal__field">
+                <label class="ai-modal__label" for="ai-keywords">Include keywords</label>
+                <input id="ai-keywords" class="ai-modal__input" v-model="options.includeKeywords" placeholder="keyword1, keyword2" />
+              </div>
             </div>
           </section>
 
@@ -265,14 +250,10 @@
           <section class="ai-modal__section">
             <h3 class="ai-modal__section-title">
               <span class="ai-modal__step-num">3</span>
-              Tone &amp; output
+              Output settings
             </h3>
 
-            <div class="ai-modal__field-row ai-modal__field-row--4">
-              <div class="ai-modal__field">
-                <label class="ai-modal__label" for="ai-tone">Tone / style</label>
-                <input id="ai-tone" class="ai-modal__input" v-model="options.tone" placeholder="e.g. inspiring" />
-              </div>
+            <div class="ai-modal__field-row ai-modal__field-row--3">
               <div class="ai-modal__field">
                 <label class="ai-modal__label" for="ai-lang">Language</label>
                 <select id="ai-lang" class="ai-modal__input" v-model="options.language">
@@ -388,6 +369,13 @@ async function saveAsTemplate() {
   }
 }
 
+watch(showSaveForm, (open) => {
+  if (open) {
+    const close = () => { showSaveForm.value = false; saveName.value = '' }
+    document.addEventListener('click', close, { once: true })
+  }
+})
+
 const hasBoardsConfigured = computed(() => props.boardCount > 0)
 
 const activeFieldCount = computed(() => {
@@ -462,31 +450,35 @@ function handleClose() {
 .ai-modal__head {
   flex-shrink: 0;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 20px 22px 18px;
+  padding: 13px 18px;
   border-bottom: 1px solid #f3f4f6;
-}
-
-.ai-modal__head-text { min-width: 0; }
-
-.ai-modal__eyebrow {
-  display: block;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: $color-accent;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  margin-bottom: 3px;
 }
 
 .ai-modal__title {
   margin: 0;
-  font-size: 15.5px;
+  font-size: 14px;
   font-weight: 700;
   color: $color-primary;
   letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.ai-modal__image-count {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: $color-accent;
+  background: color-mix(in srgb, #{$color-accent} 10%, #fff);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  letter-spacing: 0.02em;
 }
 
 .ai-modal__close {
@@ -508,16 +500,7 @@ function handleClose() {
   &:disabled { opacity: 0.35; cursor: not-allowed; }
 }
 
-// ── Templates bar ─────────────────────────────────────────────────────────────
-.ai-modal__tpl-loading {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12.5px;
-  color: #9ca3af;
-  padding: 6px 12px;
-}
-
+// ── Templates in header ───────────────────────────────────────────────────────
 .ai-modal__tpl-spinner {
   flex-shrink: 0;
   animation: tpl-spin 0.8s linear infinite;
@@ -525,18 +508,19 @@ function handleClose() {
 
 @keyframes tpl-spin { to { transform: rotate(360deg); } }
 
-.ai-modal__tpl-bar {
+.ai-modal__head-tpl {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 6px;
-  padding: 10px 22px 0;
-  flex-shrink: 0;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
+  position: relative;
 }
 
 .ai-modal__tpl-select {
-  height: 28px;
-  padding: 0 8px;
+  height: 26px;
+  padding: 0 7px;
   border: 1.5px solid #e5e7eb;
   border-radius: 6px;
   font: inherit;
@@ -544,12 +528,82 @@ function handleClose() {
   color: $color-primary;
   background: #fff;
   cursor: pointer;
-  flex: 1;
   min-width: 0;
-  max-width: 220px;
+  max-width: 150px;
 
   &:focus { outline: none; border-color: $color-accent; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.ai-modal__tpl-save-btn {
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 9px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+  &:hover { background: #f3f4f6; border-color: #d1d5db; color: $color-primary; }
+}
+
+// ── Save-as popover ───────────────────────────────────────────────────────────
+.ai-modal__tpl-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0,0,0,0.04);
+  width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.ai-modal__tpl-popover-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: $color-primary;
+}
+
+.ai-modal__tpl-popover-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 9px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12.5px;
+  color: $color-primary;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &:focus { outline: none; border-color: $color-accent; }
+}
+
+.ai-modal__tpl-popover-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.ai-modal__tpl-popover-err {
+  margin: 0;
+  font-size: 11px;
+  color: #dc2626;
 }
 
 .ai-modal__tpl-btn {
@@ -578,72 +632,6 @@ function handleClose() {
   }
 }
 
-.ai-modal__tpl-sep {
-  width: 1px;
-  height: 16px;
-  background: #e5e7eb;
-  flex-shrink: 0;
-  align-self: center;
-}
-
-.ai-modal__tpl-name-input {
-  height: 28px;
-  padding: 0 8px;
-  border: 1.5px solid $color-accent;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 12px;
-  background: #fff;
-  color: $color-primary;
-  flex: 1;
-  min-width: 120px;
-  max-width: 180px;
-
-  &:focus { outline: none; }
-}
-
-.ai-modal__tpl-cancel {
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: none;
-  color: #9ca3af;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border-radius: 4px;
-  flex-shrink: 0;
-
-  &:hover { color: $color-primary; background: #f3f4f6; }
-}
-
-.ai-modal__tpl-save-as {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: none;
-  background: none;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  color: #6b7280;
-  cursor: pointer;
-  padding: 0 2px;
-  flex-shrink: 0;
-  white-space: nowrap;
-  transition: color 0.12s;
-
-  &:hover { color: $color-accent; }
-}
-
-.ai-modal__tpl-err {
-  width: 100%;
-  font-size: 11px;
-  color: #dc2626;
-}
-
 // ── Body ──────────────────────────────────────────────────────────────────────
 .ai-modal__body {
   flex: 1;
@@ -656,15 +644,15 @@ function handleClose() {
   flex-shrink: 0;
   height: 1px;
   background: #f3f4f6;
-  margin: 0 22px;
+  margin: 0 18px;
 }
 
 // ── Section ───────────────────────────────────────────────────────────────────
 .ai-modal__section {
-  padding: 20px 22px;
+  padding: 13px 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .ai-modal__section-title {
@@ -754,8 +742,8 @@ function handleClose() {
 .ai-modal__fill-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 9px 11px;
   background: #fafafa;
   border: 1px solid #f3f4f6;
   border-radius: 8px;
@@ -787,6 +775,7 @@ function handleClose() {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 
+  &--3 { grid-template-columns: 1fr 1fr 1fr; }
   &--4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
   &--more { margin-top: 4px; }
 }
@@ -877,7 +866,7 @@ function handleClose() {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 22px;
+  padding: 11px 18px;
   border-top: 1px solid #f3f4f6;
 }
 
@@ -1017,6 +1006,7 @@ function handleClose() {
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 600px) {
   .ai-modal__field-row       { grid-template-columns: 1fr; }
+  .ai-modal__field-row--3,
   .ai-modal__field-row--4    { grid-template-columns: 1fr 1fr; }
   .ai-modal__foot            { flex-direction: column; align-items: stretch; }
   .ai-modal__foot-actions    { justify-content: flex-end; }

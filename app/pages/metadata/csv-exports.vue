@@ -54,28 +54,36 @@
           <div class="csv-item__info">
             <span class="csv-item__filename">{{ exp.filename }}</span>
             <span class="csv-item__meta">{{ formatDate(exp.created_at) }}</span>
-            <span v-if="publishRangeLabel(exp)" class="csv-item__publish-meta">
-              <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-                <rect x="1.5" y="3" width="11" height="10" rx="1.5" />
-                <path d="M4 1.5v3M10 1.5v3M1.5 6.5h11" />
-              </svg>
-              {{ publishRangeLabel(exp) }}
-            </span>
           </div>
 
           <span class="csv-item__count">{{ exp.row_count }} pin{{ exp.row_count !== 1 ? 's' : '' }}</span>
 
           <div class="csv-item__actions">
-            <span
-              v-if="exp.marked_exported_at"
-              class="csv-item__badge csv-item__badge--exported"
-              :title="`Marked exported on ${formatDate(exp.marked_exported_at)}`"
-            >
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 8l4 4 8-8" />
-              </svg>
-              Exported
-            </span>
+            <template v-if="exp.marked_exported_at">
+              <span
+                class="csv-item__badge csv-item__badge--exported"
+                :title="`Marked exported on ${formatDate(exp.marked_exported_at)}`"
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 8l4 4 8-8" />
+                </svg>
+                Exported
+              </span>
+              <button
+                class="csv-item__btn csv-item__btn--set-draft"
+                :disabled="draftingIds.has(exp.id)"
+                title="Restore all images to Draft status"
+                @click="handleSetDraft(exp)"
+              >
+                <svg v-if="draftingIds.has(exp.id)" class="csv-item__btn-spinner" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="2" stroke-dasharray="20" stroke-dashoffset="10" />
+                </svg>
+                <svg v-else width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 8h8M8 4l-4 4 4 4" />
+                </svg>
+                Restore to Draft
+              </button>
+            </template>
             <button
               v-else
               class="csv-item__btn csv-item__btn--set-exported"
@@ -124,16 +132,16 @@
 
         <!-- Expanded image grid -->
         <div v-if="expandedId === exp.id" class="csv-item__body">
-          <div v-if="hasPerDayBreakdown(exp)" class="csv-item__breakdown">
+          <div v-if="hasPerDayBreakdown(exp.id)" class="csv-item__breakdown">
             <div class="csv-item__breakdown-head">
               <strong>Publish schedule</strong>
               <span class="csv-item__breakdown-sub">
-                {{ exp.publish_summary.scheduled }} scheduled
-                <template v-if="exp.publish_summary.unscheduled > 0">· {{ exp.publish_summary.unscheduled }} unscheduled</template>
+                {{ publishSummaryFor(exp.id).scheduled }} scheduled
+                <template v-if="publishSummaryFor(exp.id).unscheduled > 0">· {{ publishSummaryFor(exp.id).unscheduled }} unscheduled</template>
               </span>
             </div>
             <div class="csv-item__breakdown-grid">
-              <div v-for="d in perDayList(exp)" :key="d.day" class="csv-item__breakdown-pill">
+              <div v-for="d in perDayList(exp.id)" :key="d.day" class="csv-item__breakdown-pill">
                 <span class="csv-item__breakdown-day">{{ formatDay(d.day) }}</span>
                 <span class="csv-item__breakdown-count">{{ d.count }}</span>
               </div>
@@ -262,24 +270,41 @@ function formatDay(iso) {
 }
 
 // ── Publish-schedule metadata helpers ─────────────────────────────────────────
-function publishRangeLabel(exp) {
-  const s = exp.publish_summary
-  if (!s || !s.scheduled) return ''
-  const first = formatDay(s.earliest)
-  const last = formatDay(s.latest)
-  const days = s.dayCount
-  const avg = days > 0 ? Math.round((s.scheduled / days) * 10) / 10 : 0
+// Computed from the images already loaded when a row is expanded, so the page
+// itself doesn't have to load any publish dates up front.
+function publishSummaryFor(id) {
+  const imgs = imageState(id).data
+  const perDay = {}
+  let earliest = null
+  let latest = null
+  let scheduled = 0
 
-  if (days <= 1) return `${first} · ${s.scheduled} pin${s.scheduled !== 1 ? 's' : ''}`
-  return `${first} → ${last} · ${days} days · ~${avg}/day`
+  for (const img of imgs) {
+    const ts = img.pinterest.publishDate
+    if (!ts) continue
+    scheduled++
+    if (!earliest || ts < earliest) earliest = ts
+    if (!latest || ts > latest) latest = ts
+    const dayKey = ts.slice(0, 10) // YYYY-MM-DD from ISO timestamp
+    perDay[dayKey] = (perDay[dayKey] ?? 0) + 1
+  }
+
+  return {
+    scheduled,
+    unscheduled: imgs.length - scheduled,
+    earliest,
+    latest,
+    dayCount: Object.keys(perDay).length,
+    perDay,
+  }
 }
 
-function hasPerDayBreakdown(exp) {
-  return !!(exp.publish_summary?.scheduled)
+function hasPerDayBreakdown(id) {
+  return publishSummaryFor(id).scheduled > 0
 }
 
-function perDayList(exp) {
-  const pd = exp.publish_summary?.perDay ?? {}
+function perDayList(id) {
+  const pd = publishSummaryFor(id).perDay
   return Object.keys(pd)
     .sort()
     .map(day => ({ day, count: pd[day] }))
@@ -312,13 +337,14 @@ async function toggleImages(id) {
 
 // ── Set exported action ───────────────────────────────────────────────────────
 const settingIds = reactive(new Set())
+const draftingIds = reactive(new Set())
 const deletingIds = reactive(new Set())
 const { invalidateCache } = useMetadataImages()
 const { bump: bumpCsvBadge } = useCsvExportBadge()
 
 async function handleSetExported(exp) {
   const ok = await confirm(
-    `Mark all ${exp.row_count} image${exp.row_count !== 1 ? 's' : ''} from "${exp.filename}" as exported?\n\nThis sets the Pinterest status to "exported" and records the exported_at timestamp for each pin.`
+    `You've uploaded "${exp.filename}" to Pinterest?\n\nMark all ${exp.row_count} image${exp.row_count !== 1 ? 's' : ''} as exported so you always know which ones are already live on Pinterest.`
   )
   if (!ok) return
 
@@ -348,6 +374,37 @@ async function handleSetExported(exp) {
     await alert(`Failed to set exported: ${e.data?.statusMessage ?? e.message}`)
   } finally {
     settingIds.delete(exp.id)
+  }
+}
+
+async function handleSetDraft(exp) {
+  const ok = await confirm(
+    `Restore all ${exp.row_count} image${exp.row_count !== 1 ? 's' : ''} from "${exp.filename}" to Draft?\n\nThis resets their Pinterest status back to draft and clears the exported timestamp. The export history record stays intact.`
+  )
+  if (!ok) return
+
+  draftingIds.add(exp.id)
+  try {
+    await $fetch(`/api/pinterest/csv-exports/${exp.id}/set-draft`, { method: 'POST' })
+
+    exports.value = exports.value.map(e =>
+      e.id === exp.id ? { ...e, marked_exported_at: null } : e
+    )
+    bumpCsvBadge(1)
+
+    const state = imagesCache[exp.id]
+    if (state?.data?.length) {
+      for (const img of state.data) {
+        img.pinterest.status     = 'draft'
+        img.pinterest.exportedAt = null
+      }
+    }
+
+    invalidateCache()
+  } catch (e) {
+    await alert(`Failed to restore to draft: ${e.data?.statusMessage ?? e.message}`)
+  } finally {
+    draftingIds.delete(exp.id)
   }
 }
 
@@ -473,6 +530,13 @@ async function handleDelete(exp) {
     &__list { padding: 14px 14px; }
     &__header { padding: 12px 14px; }
   }
+
+  @media (max-width: 600px) {
+    // The hamburger in the layout replaces navigation on phones — hide the
+    // redundant "← Metadata" back link and make room for the hamburger.
+    &__back   { display: none; }
+    &__header { padding-left: 54px; }
+  }
 }
 
 // ── Export item ──────────────────────────────────────────────────────────────────
@@ -589,6 +653,14 @@ async function handleDelete(exp) {
       color: #6d28d9;
 
       &:hover:not(:disabled) { background: #ede9fe; border-color: #c4b5fd; }
+    }
+
+    &--set-draft {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      color: #c2410c;
+
+      &:hover:not(:disabled) { background: #ffedd5; border-color: #fdba74; }
     }
 
     &--danger {

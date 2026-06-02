@@ -15,6 +15,10 @@ function defaultFilters() {
     pinterestBoard: '',
     pinterestDateFrom: '',
     pinterestDateTo: '',
+    pinterestStatusError: '',
+    exportedDateFrom: '',
+    exportedDateTo: '',
+    unsaved: '',
     onlySelected: false,
   }
 }
@@ -40,7 +44,7 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest'), 
   // Filters belonging to the inactive mode are ignored — they're hidden in the
   // UI for that mode, so showing a non-default state would be misleading.
   const defaultsSnapshot = defaultFilters()
-  const PINTEREST_KEYS = new Set(['pinterestTitle', 'pinterestDescription', 'pinterestLink', 'pinterestDate', 'pinterestExported', 'pinterestBoard', 'pinterestDateFrom', 'pinterestDateTo'])
+  const PINTEREST_KEYS = new Set(['pinterestTitle', 'pinterestDescription', 'pinterestLink', 'pinterestDate', 'pinterestExported', 'pinterestBoard', 'pinterestDateFrom', 'pinterestDateTo', 'pinterestStatusError', 'exportedDateFrom', 'exportedDateTo'])
   const ADOBE_KEYS = new Set(['adobeStockComplete', 'adobeStockDate'])
   const hasFilters = computed(() => {
     for (const key of Object.keys(defaultsSnapshot)) {
@@ -118,7 +122,12 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest'), 
       }
 
       if (isPinterestMode.value && filters.pinterestBoard) {
-        if (img.pinterest.boardId !== filters.pinterestBoard) return false
+        const hasBoard = !!img.pinterest.boardId
+        if (filters.pinterestBoard === '__has__' && !hasBoard) return false
+        else if (filters.pinterestBoard === '__no__' && hasBoard) return false
+        else if (filters.pinterestBoard !== '__has__' && filters.pinterestBoard !== '__no__') {
+          if (img.pinterest.boardId !== filters.pinterestBoard) return false
+        }
       }
 
       if (isPinterestMode.value && (filters.pinterestDateFrom || filters.pinterestDateTo)) {
@@ -127,6 +136,18 @@ export function useGalleryFilters(images, selectedIds, mode = ref('pinterest'), 
         if (!d) return false  // no date → excluded when a range is active
         if (filters.pinterestDateFrom && d < filters.pinterestDateFrom) return false
         if (filters.pinterestDateTo   && d > filters.pinterestDateTo)   return false
+      }
+
+      if (isPinterestMode.value && (filters.exportedDateFrom || filters.exportedDateTo)) {
+        const raw = img.pinterest.exportedAt
+        if (!raw) return false
+        const d = new Date(raw).toISOString().slice(0, 10) // YYYY-MM-DD
+        if (filters.exportedDateFrom && d < filters.exportedDateFrom) return false
+        if (filters.exportedDateTo   && d > filters.exportedDateTo)   return false
+      }
+
+      if (isPinterestMode.value && filters.pinterestStatusError === 'error') {
+        if (img.pinterest.status !== 'error') return false
       }
 
       if (filters.onlySelected && !selectedIds.value.has(img.id)) return false

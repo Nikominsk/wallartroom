@@ -47,6 +47,13 @@ const client = useSupabaseClient()
 const route  = useRoute()
 const loading = ref(false)
 
+// Pre-initialize the Supabase auth client so signInWithOAuth works on the
+// first click. Without this, the internal auth._initialize() may still be
+// running when the user clicks, causing the first OAuth attempt to fail silently.
+onMounted(async () => {
+  await client.auth.getSession()
+})
+
 const isSignup = computed(() => route.path === '/signup')
 const titleText = computed(() => isSignup.value ? 'Create your account' : 'Welcome back')
 
@@ -62,11 +69,11 @@ async function signIn() {
   const redirectTo = next
     ? `${window.location.origin}/auth/confirm?next=${encodeURIComponent(next)}`
     : `${window.location.origin}/auth/confirm`
-  const { error } = await client.auth.signInWithOAuth({
+  const { error: oauthError } = await client.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo },
   })
-  if (error) loading.value = false
+  if (oauthError) loading.value = false
 }
 </script>
 

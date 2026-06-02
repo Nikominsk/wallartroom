@@ -1,6 +1,9 @@
 <template>
   <div class="meta-shell" :class="{ 'meta-shell--collapsed': collapsed }">
-    <aside class="meta-shell__sidebar" :aria-expanded="!collapsed">
+    <!-- ── Mobile nav backdrop ───────────────────────────────────────────── -->
+    <div v-if="mobileNavOpen" class="meta-shell__mobile-backdrop" @click="mobileNavOpen = false" />
+
+    <aside class="meta-shell__sidebar" :class="{ 'meta-shell__sidebar--mob-open': mobileNavOpen }" :aria-expanded="!collapsed">
       <!-- ── Brand + collapse toggle ─────────────────────────────────── -->
       <div class="meta-shell__brand">
         <NuxtLink to="/metadata" class="meta-shell__brand-link" :title="collapsed ? 'WallArtRoom' : ''">
@@ -192,6 +195,16 @@
       </div>
     </Teleport>
 
+    <!-- ── Phone hamburger — Teleported to body so overflow:hidden on ──────────
+         meta-shell__main never clips it (iOS Safari quirk with fixed+overflow) -->
+    <Teleport to="body">
+      <button class="meta-shell__hamburger" type="button" aria-label="Open menu" @click="mobileNavOpen = true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M2 4h12M2 8h12M2 12h12"/>
+        </svg>
+      </button>
+    </Teleport>
+
     <main class="meta-shell__main">
       <!-- Gallery workspace stays mounted across Pins/Drafts/Schedules/Posted so
            switching is instant — only the preset prop changes. -->
@@ -213,7 +226,7 @@
     <!-- Upload modal lives at the layout level so it's reachable from every
          metadata route, including Settings / CSV history. -->
     <Teleport to="body">
-      <div v-if="uploadOpen" class="meta-upload-overlay" @click.self="closeUpload">
+      <div v-if="uploadOpen" class="meta-upload-overlay" @click.self="!uploadUploading && closeUpload()">
         <MetadataUploadModal @close="closeUpload" @uploaded="onUploadedFromModal" />
       </div>
     </Teleport>
@@ -228,7 +241,10 @@
 
 <script setup>
 const { collapsed, toggle } = useMetadataSidebar()
-const { open: uploadOpen, openUpload, closeUpload, emitUploaded } = useMetadataUpload()
+const mobileNavOpen = ref(false)
+// Close the drawer on every navigation
+watch(() => useRoute().path, () => { mobileNavOpen.value = false })
+const { open: uploadOpen, uploading: uploadUploading, openUpload, closeUpload, emitUploaded } = useMetadataUpload()
 const { count: csvCount, refresh: refreshCsvBadge } = useCsvExportBadge()
 const { count: helpUnreadCount, refresh: refreshHelpBadge } = useHelpBadge()
 const supabase = useSupabaseClient()
@@ -814,7 +830,7 @@ $sidebar-w-collapsed: 68px;
     padding: 6px 0;
   }
 
-  // ── Responsive ──────────────────────────────────────────────────────
+  // ── Responsive: tablet ──────────────────────────────────────────────────────
   @media (max-width: 768px) {
     &__sidebar {
       width: $sidebar-w-collapsed;
@@ -846,6 +862,75 @@ $sidebar-w-collapsed: 68px;
     &__user { justify-content: center; padding: 6px 0; }
 
     &__collapse { display: none; }
+  }
+
+  // ── Responsive: phone — sidebar becomes a slide-in drawer ───────────────────
+  &__mobile-backdrop { display: none; }
+  &__hamburger       { display: none; }
+
+  @media (max-width: 600px) {
+    &__sidebar {
+      position: fixed !important;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: $sidebar-w !important;
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+      z-index: 60;
+
+      // Restore full labels inside the drawer (override the 768px icon-only rules)
+      .meta-shell__brand-text,
+      .meta-shell__nav-label,
+      .meta-shell__upload-label,
+      .meta-shell__user-meta    { display: block !important; }
+      .meta-shell__user-action  { display: flex  !important; }
+      .meta-shell__upload-btn   { padding: 0 12px !important; justify-content: flex-start !important; }
+      .meta-shell__nav-item     { justify-content: flex-start !important; padding: 9px 11px !important; }
+      .meta-shell__nav-item--child { padding: 7px 11px 7px 30px !important; gap: 10px !important; }
+      .meta-shell__nav-badge    { position: static !important; min-width: 18px !important; width: auto !important; height: 18px !important; padding: 0 5px !important; font-size: 11px !important; margin: 0 0 0 auto !important; }
+      .meta-shell__nav-children::before { display: block !important; }
+      .meta-shell__user         { justify-content: flex-start !important; padding: 6px 4px !important; }
+      .meta-shell__collapse     { display: none !important; }
+
+      &--mob-open {
+        transform: translateX(0);
+        box-shadow: 4px 0 28px rgba(0, 0, 0, 0.22);
+      }
+    }
+
+    &__mobile-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 59;
+    }
+
+    &__hamburger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      width: 34px;
+      height: 34px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fff;
+      color: #4b5563;
+      cursor: pointer;
+      padding: 0;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      transition: background 0.12s;
+
+      &:hover { background: #f3f4f6; }
+    }
+
+    &__main { width: 100%; }
+    &__privacy { display: none; }
   }
 }
 

@@ -160,14 +160,6 @@
         </div>
 
         <div class="ai-panel__section">
-          <p class="ai-panel__section-label">Context</p>
-          <label class="ai-panel__check">
-            <input type="checkbox" v-model="options.usePromptAsContext" />
-            Use image prompt as context
-          </label>
-        </div>
-
-        <div class="ai-panel__section">
           <p class="ai-panel__section-label">Overwrite behavior</p>
           <label class="ai-panel__radio">
             <input type="radio" v-model="options.overwriteMode" value="missing-only" />

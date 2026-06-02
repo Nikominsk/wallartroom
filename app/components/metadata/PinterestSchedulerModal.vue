@@ -101,22 +101,28 @@
         </div>
       </div>
 
-      <!-- Order controls -->
+      <!-- Order cards -->
       <div class="ps-modal__order">
-        <div>
+        <div class="ps-modal__order-header">
           <span class="ps-modal__label">Image order</span>
-          <span class="ps-modal__order-hint">
-            {{ orderStatus }}
-          </span>
+          <span class="ps-modal__order-status">{{ orderStatus }}</span>
         </div>
-        <div class="ps-modal__order-actions">
-          <button type="button" class="ps-modal__mini-btn ps-modal__mini-btn--accent" :disabled="images.length < 2" @click="randomizeOrder">
-            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 4h4l10 12h4M3 16h4l3-4M14 4h3l1-2 1 2M14 16h3l1 2 1-2" />
-            </svg>
-            Randomize posting order
-          </button>
-          <button v-if="isRandomized" type="button" class="ps-modal__mini-btn" @click="resetOrder">Reset</button>
+        <div class="ps-modal__order-cards">
+          <label
+            v-for="opt in ORDER_OPTIONS"
+            :key="opt.value"
+            class="ps-modal__order-card"
+            :class="{ 'ps-modal__order-card--active': orderMode === opt.value }"
+          >
+            <input
+              type="radio"
+              name="ps-order"
+              :value="opt.value"
+              v-model="orderMode"
+              class="ps-modal__order-radio"
+            />
+            <span class="ps-modal__order-card-title">{{ opt.title }}</span>
+          </label>
         </div>
       </div>
 
@@ -239,20 +245,35 @@ watch(perDay, (n) => {
 // Seed slots on first mount.
 slots.value = autoSpacedSlots(perDay.value)
 
-// ── Image ordering (randomizable) ─────────────────────────────────────────────
+// ── Image ordering ────────────────────────────────────────────────────────────
 
-const originalIds = computed(() => props.images.map(i => i.id))
+const ORDER_OPTIONS = [
+  {
+    value: 'gallery',
+    title: 'Gallery order',
+    desc: 'Images are scheduled in the same sequence they currently appear in the gallery.',
+  },
+  {
+    value: 'random',
+    title: 'Randomize',
+    desc: 'Images are shuffled randomly before dates are assigned. Re-select to get a different shuffle.',
+  },
+  {
+    value: 'optimized',
+    title: 'Optimized schedule',
+    desc: 'Pins from the same board are spread as far apart as possible across all scheduled days.',
+  },
+]
+
+const orderMode     = ref('gallery')
 const orderedImages = ref([...props.images])
-const isRandomized = ref(false)
 
 watch(() => props.images, (imgs) => {
-  // Image list changed externally — re-sync, keeping any prior randomization
-  // only if the same set of ids is still present.
-  if (isRandomized.value) {
+  if (orderMode.value !== 'gallery') {
+    // Re-sync: keep existing order for ids still present, append new ones.
     const known = new Map(imgs.map(i => [i.id, i]))
-    const next = orderedImages.value.map(o => known.get(o.id)).filter(Boolean)
-    // Append any new ids that weren't in the previous order.
-    const seen = new Set(next.map(i => i.id))
+    const next  = orderedImages.value.map(o => known.get(o.id)).filter(Boolean)
+    const seen  = new Set(next.map(i => i.id))
     for (const img of imgs) if (!seen.has(img.id)) next.push(img)
     orderedImages.value = next
   } else {
@@ -260,26 +281,44 @@ watch(() => props.images, (imgs) => {
   }
 }, { immediate: true })
 
-function randomizeOrder() {
-  const arr = [...orderedImages.value]
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+watch(orderMode, (mode) => {
+  if (mode === 'gallery') {
+    orderedImages.value = [...props.images]
+  } else if (mode === 'random') {
+    const arr = [...props.images]
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+    orderedImages.value = arr
+  } else if (mode === 'optimized') {
+    const bucketMap = new Map()
+    for (const img of props.images) {
+      const key = img.pinterest?.board || ''
+      if (!bucketMap.has(key)) bucketMap.set(key, [])
+      bucketMap.get(key).push(img)
+    }
+    const buckets = [...bucketMap.values()].map(b => [...b])
+    const result  = []
+    let lastIdx   = -1
+    while (true) {
+      const nonEmpty = buckets
+        .map((b, i) => ({ b, i }))
+        .filter(x => x.b.length > 0)
+        .sort((a, b) => b.b.length - a.b.length)
+      if (nonEmpty.length === 0) break
+      const pick = nonEmpty.find(x => x.i !== lastIdx) ?? nonEmpty[0]
+      result.push(pick.b.shift())
+      lastIdx = pick.i
+    }
+    orderedImages.value = result
   }
-  orderedImages.value = arr
-  isRandomized.value = true
-}
-
-function resetOrder() {
-  orderedImages.value = [...props.images]
-  isRandomized.value = false
-}
+})
 
 const orderStatus = computed(() => {
-  if (props.images.length < 2) return ''
-  return isRandomized.value
-    ? 'Randomized — dates assign in this new order'
-    : 'Using the order from the gallery'
+  if (orderMode.value === 'random')    return 'Randomly shuffled — each time you select this you get a new sequence.'
+  if (orderMode.value === 'optimized') return 'Board-optimized — pins from the same board are spaced as far apart as possible across the scheduled days.'
+  return 'Dates are assigned following the current gallery order.'
 })
 
 // ── Existing-day info ─────────────────────────────────────────────────────────
@@ -700,27 +739,76 @@ function handleApply() {
 
   &__order {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 10px;
-    padding: 10px 14px;
+    padding: 12px 14px;
     background: #fafafa;
     border: 1px solid #e5e7eb;
     border-radius: 10px;
-    flex-wrap: wrap;
   }
 
-  &__order-hint {
-    display: block;
-    margin-top: 2px;
+  &__order-header {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__order-status {
+    font-size: 11.5px;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+
+  &__order-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  &__order-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 9px 10px 9px 28px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+
+    &:hover { border-color: #d1d5db; background: #fafafa; }
+
+    &--active {
+      border-color: $color-accent;
+      background: color-mix(in srgb, #{$color-accent} 6%, #fff);
+    }
+  }
+
+  &__order-radio {
+    position: absolute;
+    top: 10px;
+    left: 8px;
+    width: 14px;
+    height: 14px;
+    accent-color: $color-accent;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  &__order-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: $color-primary;
+    line-height: 1.3;
+  }
+
+  &__order-card-desc {
     font-size: 11px;
     color: #6b7280;
-  }
-
-  &__order-actions {
-    display: flex;
-    gap: 6px;
-    align-items: center;
+    line-height: 1.45;
   }
 
   &__mini-btn {
@@ -747,7 +835,7 @@ function handleApply() {
       color: #fff;
       font-weight: 600;
 
-      &:hover { background: color-mix(in srgb, #{$color-accent} 94%, #000); border-color: color-mix(in srgb, #{$color-accent} 94%, #000); }
+      &:hover:not(:disabled) { background: color-mix(in srgb, #{$color-accent} 94%, #000); border-color: color-mix(in srgb, #{$color-accent} 94%, #000); }
     }
   }
 

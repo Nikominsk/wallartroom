@@ -6,12 +6,14 @@
 // page that shows images registers a refresh handler so a finished upload
 // re-pulls the gallery without a hard reload.
 
-const _open = ref(false)
-const _handlers = new Set()
+const _open      = ref(false)
+const _uploading = ref(false)
+const _handlers  = new Set()
 
 export function useMetadataUpload() {
-  function openUpload() { _open.value = true }
-  function closeUpload() { _open.value = false }
+  function openUpload()         { _open.value = true }
+  function closeUpload()        { _open.value = false }
+  function setUploading(state)  { _uploading.value = state }
 
   // Returns an unsubscribe fn — call it onUnmounted so a torn-down page can't
   // keep refreshing a gallery that no longer exists.
@@ -26,5 +28,5 @@ export function useMetadataUpload() {
     }
   }
 
-  return { open: _open, openUpload, closeUpload, onUploaded, emitUploaded }
+  return { open: _open, uploading: _uploading, openUpload, closeUpload, setUploading, onUploaded, emitUploaded }
 }

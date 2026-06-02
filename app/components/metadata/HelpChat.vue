@@ -671,4 +671,14 @@ watch(() => props.open, async (val) => {
   opacity: 0;
   transform: translateY(16px) scale(0.97);
 }
+
+@media (max-width: 600px) {
+  .help-popup {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+    max-height: calc(100vh - 72px);
+  }
+}
 </style>

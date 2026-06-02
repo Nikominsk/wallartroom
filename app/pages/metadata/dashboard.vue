@@ -102,7 +102,13 @@
         <div class="dash__card">
           <div class="dash__card-head">
             <span class="dash__card-title">Publishing Schedule</span>
-            <span class="dash__card-meta">next 6 weeks · {{ totalScheduled }} scheduled</span>
+            <div class="dash__card-head-right">
+              <label class="dash__filter-check">
+                <input type="checkbox" v-model="showOnlyExportedSchedule" />
+                <span>Exported only</span>
+              </label>
+              <span class="dash__card-meta">next 6 weeks · {{ totalScheduled }} scheduled</span>
+            </div>
           </div>
           <svg viewBox="0 0 420 148" class="dash__bar-svg" aria-hidden="true">
             <defs>
@@ -333,37 +339,43 @@ const donutSlices = computed(() => {
 const barData = computed(() => {
   if (!data.value) return []
   const weeks = data.value.weeklySchedule
-  const max = Math.max(...weeks.map(w => w.count), 1)
+  const exportedOnly = showOnlyExportedSchedule.value
+  const max = Math.max(...weeks.map(w => exportedOnly ? (w.exportedCount ?? 0) : w.count), 1)
   const MAX_H = 94
   const BASELINE = 108
 
   return weeks.map((w, i) => {
+    const count = exportedOnly ? (w.exportedCount ?? 0) : w.count
+    const segsSource = exportedOnly ? (w.exportedSegments ?? []) : (w.segments ?? [])
     const cx = 52 + i * 64
-    const totalBarH = (w.count / max) * MAX_H
+    const totalBarH = (count / max) * MAX_H
     const barY = BASELINE - totalBarH
 
     const rects = []
     let yBottom = BASELINE
-    const segs = [...(w.segments ?? [])].sort((a, b) => b.count - a.count)
+    const segs = [...segsSource].sort((a, b) => b.count - a.count)
     for (const seg of segs) {
-      const segH = w.count > 0 ? (seg.count / w.count) * totalBarH : 0
+      const segH = count > 0 ? (seg.count / count) * totalBarH : 0
       if (segH < 0.5) continue
       rects.push({ x: cx - 20, y: yBottom - segH, height: segH, color: colorForBoard(seg.name) })
       yBottom -= segH
     }
 
-    return { ...w, cx, barY, barH: totalBarH, rects }
+    return { ...w, count, cx, barY, barH: totalBarH, rects }
   })
 })
 
-const totalScheduled = computed(() =>
-  data.value?.weeklySchedule.reduce((s, w) => s + w.count, 0) ?? 0,
-)
+const totalScheduled = computed(() => {
+  if (!data.value) return 0
+  const key = showOnlyExportedSchedule.value ? 'exportedCount' : 'count'
+  return data.value.weeklySchedule.reduce((s, w) => s + (w[key] ?? 0), 0)
+})
 
 // ── Upcoming pins ──────────────────────────────────────────────────────────
 
 const ITEM_W = 80 // 72px thumb + 8px gap
 
+const showOnlyExportedSchedule = ref(true)
 const showOnlyExported = ref(true)
 const scrollIndex = ref(0)
 const thumbLoaded = reactive({})
@@ -907,5 +919,20 @@ function formatTime(dateStr) {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.5; }
+}
+
+@media (max-width: 600px) {
+  .dash {
+    padding: 16px 14px 40px;
+
+    // Extra left padding on the header to clear the fixed hamburger (which
+    // is at left:12px and 34px wide, so content must start at ≥54px from
+    // viewport; 14px container padding + 40px here = 54px).
+    &__head { padding-left: 40px; }
+
+    // Stack board-distribution and publishing-schedule cards vertically
+    &__row2     { grid-template-columns: 1fr !important; }
+    &__skel-row { grid-template-columns: 1fr !important; }
+  }
 }
 </style>

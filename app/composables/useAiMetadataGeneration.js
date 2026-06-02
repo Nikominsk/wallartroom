@@ -195,6 +195,14 @@ export function useAiMetadataGeneration() {
           progress.failedCount++
           progress.failedIds.push(img.id)
           progress.lastError = e?.data?.statusMessage ?? e?.message ?? 'Unknown error'
+
+          // Mark the image as error so the user can identify and retry it.
+          onUpdate({
+            ...img,
+            pinterest: { ...img.pinterest, status: 'error' },
+            updatedAt: new Date().toISOString(),
+          })
+
           // Quota exhausted — abort immediately, every remaining call will also fail.
           if (e?.status === 402 || e?.statusCode === 402) {
             progress.status = 'cancelled'
@@ -204,8 +212,9 @@ export function useAiMetadataGeneration() {
       }
     }
 
-    // Run CONCURRENCY workers; each drains the shared queue until empty.
-    await Promise.all(Array.from({ length: CONCURRENCY }, worker))
+    // < 4 images → sequential (1 worker); otherwise run CONCURRENCY in parallel.
+    const workerCount = images.length < 4 ? 1 : CONCURRENCY
+    await Promise.all(Array.from({ length: workerCount }, worker))
 
     if (progress.status !== 'cancelled') progress.status = 'done'
   }

@@ -34,6 +34,12 @@ function getR2Client(): S3Client {
     region: 'auto',
     endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
     credentials: { accessKeyId, secretAccessKey },
+    // R2 doesn't support the AWS SDK's automatic "flexible checksum" headers.
+    // Without these two lines the SDK adds a placeholder checksum to presigned
+    // upload URLs, which makes the browser's direct PUT fail with a signature
+    // error. Only add checksums when a request actually requires one.
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   })
   return _client
 }

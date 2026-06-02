@@ -60,7 +60,6 @@
                 aria-label="Choose color for new board"
                 @click.stop="openPicker('new')"
               >
-                <span v-if="!newColor" class="board-row__swatch-auto">A</span>
               </button>
               <input
                 v-model.trim="newName"
@@ -85,9 +84,10 @@
                     :key="hex"
                     type="button"
                     class="board-row__palette-swatch"
-                    :class="{ 'board-row__palette-swatch--active': newColor === hex }"
+                    :class="{ 'board-row__palette-swatch--active': newColor === hex, 'board-row__palette-swatch--used': usedColors.has(hex) }"
                     :style="{ background: hex }"
-                    :aria-label="hex"
+                    :aria-label="usedColors.has(hex) ? hex + ' (already used)' : hex"
+                    :title="usedColors.has(hex) ? 'Already used by another board' : ''"
                     @click="setNewColor(hex)"
                   />
                   <button
@@ -145,7 +145,6 @@
                   :aria-label="`Change color for board ${board.name}`"
                   @click.stop="openPicker(board.id)"
                 >
-                  <span v-if="!board.color" class="board-row__swatch-auto">A</span>
                 </button>
 
                 <!-- View mode -->
@@ -253,87 +252,6 @@
               No boards yet. Add your first board above.
             </div>
           </div>
-        </section>
-
-        <!-- ── AI defaults ──────────────────────────────────────────────── -->
-        <section v-show="activeSection === 'ai'" class="settings-card">
-          <header class="settings-card__head">
-            <div>
-              <h2 class="settings-card__title">AI Metadata Generation defaults</h2>
-              <p class="settings-card__hint">These values pre-fill the AI generation modal. You can still override them per run.</p>
-            </div>
-          </header>
-
-          <form class="settings-card__body settings-card__body--form" @submit.prevent="handleSaveAi">
-            <div class="settings-grid">
-              <div class="settings-field">
-                <label class="settings-field__label">Maximum title length</label>
-                <input
-                  v-model.number="aiDraft.ai_max_title_length"
-                  type="number"
-                  class="settings-field__input"
-                  min="10"
-                  max="255"
-                />
-                <span class="settings-field__hint">Pinterest hard limit: 100 characters.</span>
-              </div>
-
-              <div class="settings-field">
-                <label class="settings-field__label">Maximum description length</label>
-                <input
-                  v-model.number="aiDraft.ai_max_description_length"
-                  type="number"
-                  class="settings-field__input"
-                  min="10"
-                  max="800"
-                />
-                <span class="settings-field__hint">Pinterest hard limit: 500 characters.</span>
-              </div>
-
-              <div class="settings-field">
-                <label class="settings-field__label">Default tone / style</label>
-                <input
-                  v-model="aiDraft.ai_default_tone"
-                  class="settings-field__input"
-                  placeholder="e.g. inspiring, minimal, playful"
-                />
-              </div>
-
-              <div class="settings-field">
-                <label class="settings-field__label">Default language</label>
-                <select v-model="aiDraft.ai_default_language" class="settings-field__input">
-                  <option>English</option>
-                  <option>German</option>
-                  <option>French</option>
-                  <option>Spanish</option>
-                  <option>Italian</option>
-                  <option>Dutch</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="settings-field settings-field--full">
-              <label class="settings-field__label">Additional instructions</label>
-              <textarea
-                v-model="aiDraft.ai_additional_instructions"
-                class="settings-field__input settings-field__input--textarea"
-                rows="4"
-                placeholder="e.g. Do not use characters like '-' when generating titles and descriptions."
-              />
-              <span class="settings-field__hint">Free-form guidance appended to every AI generation request.</span>
-            </div>
-
-            <div class="settings-card__footer">
-              <button type="submit" class="settings-btn settings-btn--primary" :disabled="!aiDirty || savingAi">
-                {{ savingAi ? 'Saving…' : 'Save changes' }}
-              </button>
-              <button type="button" class="settings-btn" :disabled="!aiDirty || savingAi" @click="resetAiDraft">
-                Discard
-              </button>
-              <span v-if="aiSaved" class="settings-card__status settings-card__status--ok">Saved</span>
-              <span v-if="aiError" class="settings-card__status settings-card__status--err">{{ aiError }}</span>
-            </div>
-          </form>
         </section>
 
           <!-- ── CSV Export ───────────────────────────────────────────────── -->
@@ -865,11 +783,6 @@ const sections = [
     icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>`,
   },
   {
-    id: 'ai',
-    label: 'AI Defaults',
-    icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.6 3.4 3.4 1.6-3.4 1.6L8 11.5 6.4 8.1 3 6.5l3.4-1.6z"/><path d="M12 11.5l.7 1.4 1.3.6-1.3.6-.7 1.4-.7-1.4-1.3-.6 1.3-.6z"/></svg>`,
-  },
-  {
     id: 'export',
     label: 'CSV Export',
     icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1v9M5 7l3 3 3-3"/><path d="M2 11v3a1 1 0 001 1h10a1 1 0 001-1v-3"/></svg>`,
@@ -973,6 +886,12 @@ watch(boards, (list) => {
   }
 }, { deep: false, immediate: true })
 
+const usedColors = computed(() => new Set(boards.value.map(b => b.color).filter(Boolean)))
+
+function pickFreshColor() {
+  return PALETTE.find(c => !usedColors.value.has(c)) ?? PALETTE[0]
+}
+
 const newSwatchStyle = computed(() => {
   if (newColor.value) return { background: newColor.value }
   return { background: '#f3f4f6', color: '#9ca3af' }
@@ -1035,7 +954,7 @@ async function handleAddBoard() {
   if (!newName.value) return
   addingBoard.value = true
   try {
-    await addBoard(newName.value, newColor.value)
+    await addBoard(newName.value, newColor.value ?? pickFreshColor())
     newName.value = ''
     newColor.value = null
   } catch (e) {
@@ -2034,6 +1953,10 @@ onMounted(() => {
       align-items: center;
       justify-content: center;
     }
+
+    &--used {
+      opacity: 0.35;
+    }
   }
 
   &__hex {
@@ -2618,6 +2541,62 @@ onMounted(() => {
     cursor: pointer;
 
     input { accent-color: $color-accent; }
+  }
+}
+
+// ── Phone layout (≤ 600px) ────────────────────────────────────────────────────
+@media (max-width: 600px) {
+  .settings-page {
+    // Clear the fixed hamburger button
+    &__header { padding: 12px 14px 10px 54px; }
+
+    // Stack sections-nav above content instead of side by side
+    &__body {
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    // Horizontal scrolling pill nav at the top
+    &__sections-nav {
+      width: 100%;
+      flex-direction: row;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 10px;
+      border-right: none;
+      border-bottom: 1px solid #ececec;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    &__section-link {
+      flex-shrink: 0;
+      white-space: nowrap;
+      padding: 7px 12px;
+
+      // Hide icons in the horizontal pill nav to save space
+      .settings-page__section-link-icon { display: none; }
+    }
+
+    &__content {
+      overflow-y: visible;
+      padding: 16px 14px 48px;
+    }
+  }
+
+  // Board rows: allow the delete button to wrap below the name on very narrow screens
+  .board-row {
+    flex-wrap: wrap;
+    &__picker { left: 0; right: 0; min-width: unset; }
+  }
+
+  // Settings card: remove max-width constraint so it uses full phone width
+  .settings-card {
+    max-width: 100%;
+
+    &__body { padding: 14px; }
+    &__head  { padding: 14px; }
   }
 }
 </style>

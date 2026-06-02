@@ -111,9 +111,14 @@
           <span class="meta-page__ai-count">{{ aiTargetImages.length }}</span>
         </button>
 
-        <span v-if="!viewCaps.readOnly && totalUnsavedCount > 0" class="meta-page__unsaved-pill">
+        <button
+          v-if="!viewCaps.readOnly && totalUnsavedCount > 0"
+          class="meta-page__unsaved-pill"
+          :class="{ 'meta-page__unsaved-pill--active': filters.unsaved === 'set' }"
+          @click="filters.unsaved = filters.unsaved === 'set' ? '' : 'set'"
+        >
           {{ totalUnsavedCount }} unsaved
-        </span>
+        </button>
       </div>
 
       <div v-if="viewCaps.readOnly" class="meta-page__actions-right">
@@ -362,51 +367,53 @@
     <!-- ── CSV Export modal ───────────────────────────────────────────────── -->
     <div v-if="showExport" class="meta-page__overlay" @click.self="showExport = false">
       <div class="meta-page__modal meta-page__modal--export">
-        <div class="meta-page__modal-header">
-          <h3>Export to Pinterest CSV</h3>
-          <button class="meta-page__icon-btn" @click="showExport = false">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13" /></svg>
-          </button>
-        </div>
-        <div class="meta-page__modal-body">
-          <!-- Summary -->
-          <p>
-            <strong>{{ exportSelectedImages.length }}</strong> of {{ csvExportImages.length }} image(s) selected for export.
-          </p>
 
-          <div class="meta-page__export-tz">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="10" cy="10" r="8" /><path d="M10 5v5l3 2" />
-            </svg>
-            <span>
-              Publish times are written in <strong>{{ exportZoneLabel }}</strong>.
-              Set this to your Pinterest account timezone in
-              <NuxtLink to="/metadata/settings" class="meta-page__export-tz-link">Settings</NuxtLink>.
+        <!-- Header: title + meta chips + close -->
+        <div class="meta-page__export-hd">
+          <div class="meta-page__export-hd-top">
+            <h3 class="meta-page__export-hd-title">Export to Pinterest CSV</h3>
+            <button class="meta-page__icon-btn" @click="showExport = false">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13" /></svg>
+            </button>
+          </div>
+          <div class="meta-page__export-hd-meta">
+            <!-- Selected count -->
+            <span class="meta-page__export-chip">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+              <strong>{{ exportSelectedImages.length }}</strong>&nbsp;/ {{ csvValidation.valid.length }} selected
+            </span>
+            <!-- Timezone -->
+            <span class="meta-page__export-chip meta-page__export-chip--tz" :title="`Publish times written in ${exportZoneLabel} — change in Settings`">
+              <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M10 5v5l3 2"/></svg>
+              {{ exportTimezone }}
+              <NuxtLink to="/metadata/settings" class="meta-page__export-chip-link" title="Open timezone settings" @click="showExport = false">↗</NuxtLink>
+            </span>
+            <!-- 100-pin limit -->
+            <span class="meta-page__export-chip meta-page__export-chip--limit" title="Pinterest's schedule waitlist supports max 100 pins at a time. Uploading more silently drops the extras — export in batches of 100.">
+              <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v4"/><circle cx="10" cy="14" r=".6" fill="currentColor" stroke="none"/></svg>
+              Max 100 per batch
             </span>
           </div>
+        </div>
 
-          <!-- Skipped: categorised by missing field -->
-          <div v-if="csvValidation.invalid.length" class="meta-page__export-warn">
-            <strong>{{ csvValidation.invalid.length }} skipped</strong> — missing required fields:
-            <ul>
-              <li v-for="[field, count] in csvSkippedByField" :key="field">
-                <strong>{{ count }}</strong> × {{ field }}
-              </li>
-            </ul>
+        <!-- Slim alert strip (only when something needs attention) -->
+        <div v-if="csvValidation.invalid.length || csvOptionalSummary.length || csvValidation.valid.length > CSV_EXPORT_LIMIT" class="meta-page__export-alerts">
+          <div v-if="csvValidation.invalid.length" class="meta-page__export-alert meta-page__export-alert--warn">
+            <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10 2l8 16H2L10 2z"/><path d="M10 8v4M10 14h.01"/></svg>
+            <strong>{{ csvValidation.invalid.length }} skipped</strong>&nbsp;— missing:&nbsp;{{ csvSkippedByField.map(([f, c]) => `${c}× ${f}`).join(', ') }}
           </div>
-
-          <!-- Optional fields note -->
-          <div v-if="csvOptionalSummary.length" class="meta-page__export-note">
-            <strong>Optional fields missing</strong>
-            <span class="meta-page__export-note-sub">(these images will still export):</span>
-            <ul>
-              <li v-for="o in csvOptionalSummary" :key="o.key">
-                <strong>{{ o.count }}</strong> · {{ o.label }}
-              </li>
-            </ul>
+          <div v-if="csvOptionalSummary.length" class="meta-page__export-alert meta-page__export-alert--note">
+            <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="10" cy="10" r="8"/><path d="M10 6v4"/><circle cx="10" cy="14" r=".6" fill="currentColor" stroke="none"/></svg>
+            Optional missing (still exports):&nbsp;{{ csvOptionalSummary.map(o => `${o.count}× ${o.label}`).join(', ') }}
           </div>
+          <div v-if="csvValidation.valid.length > CSV_EXPORT_LIMIT" class="meta-page__export-alert meta-page__export-alert--overflow">
+            <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10 2l8 16H2L10 2z"/><path d="M10 8v4M10 14h.01"/></svg>
+            {{ csvValidation.valid.length - CSV_EXPORT_LIMIT }} more image{{ csvValidation.valid.length - CSV_EXPORT_LIMIT !== 1 ? 's' : '' }} not shown — upload this batch first, then export the rest.
+          </div>
+        </div>
 
-          <!-- Image preview list -->
+        <!-- Table fills all remaining height -->
+        <div class="meta-page__export-body">
           <div v-if="csvValidation.valid.length" class="meta-page__export-table-wrap">
             <table class="meta-page__export-table">
               <thead>
@@ -429,7 +436,7 @@
               </thead>
               <tbody>
                 <tr
-                  v-for="img in csvValidation.valid"
+                  v-for="img in csvValidation.valid.slice(0, CSV_EXPORT_LIMIT)"
                   :key="img.id"
                   class="meta-page__export-row"
                   :class="{ 'meta-page__export-row--unchecked': !exportSelectedIds.has(img.id) }"
@@ -470,9 +477,9 @@
               </tbody>
             </table>
           </div>
-
-          <p v-if="!csvValidation.valid.length" class="meta-page__export-error">No complete images to export.</p>
+          <p v-else class="meta-page__export-error">No complete images to export.</p>
         </div>
+
         <div class="meta-page__modal-footer">
           <button class="meta-page__btn meta-page__btn--primary" :disabled="!exportSelectedImages.length" @click="handleDownloadCsv">
             Download {{ exportSelectedImages.length }} as CSV
@@ -531,46 +538,30 @@
               {{ boardSuggestionResult.reasoning }}
             </p>
 
-            <!-- Existing boards checklist -->
-            <div v-if="boardSuggestionResult?.recommendedBoards?.length" class="bi-modal__checklist">
-              <div class="bi-modal__checklist-label">Select boards to apply</div>
-              <label
-                v-for="name in boardSuggestionResult.recommendedBoards"
-                :key="name"
-                class="bi-modal__check-row"
-              >
-                <input
-                  type="checkbox"
-                  :checked="boardSuggestionChecked.includes(name)"
-                  @change="toggleBoardSuggestionCheck(name)"
-                />
-                <span>{{ name }}</span>
-              </label>
-            </div>
-            <div v-else-if="boardSuggestionResult && !boardSuggestionResult.recommendedBoards?.length" class="bi-modal__empty">
-              No suitable boards found for this pin.
+            <!-- Single recommendation + optional new board, radio-style -->
+            <div v-if="boardSuggestionResult?.recommendedBoards?.length || boardSuggestionResult" class="bi-modal__options">
+              <template v-if="boardSuggestionResult?.recommendedBoards?.length">
+                <label class="bi-modal__option">
+                  <input type="radio" v-model="boardSuggestionPick" value="existing" />
+                  <span class="bi-modal__option-name">{{ boardSuggestionResult.recommendedBoards[0] }}</span>
+                </label>
+              </template>
+              <div v-else class="bi-modal__empty">No suitable board found for this pin.</div>
             </div>
 
-            <!-- New board suggestion (parallel request) — shown as a checkbox -->
+            <!-- New board suggestion -->
             <div v-if="boardSuggestionLoadingNew || newBoardSuggestion" class="bi-modal__new-section">
               <div v-if="boardSuggestionLoadingNew" class="bi-modal__loading-new">
                 <svg class="bi-modal__spinner bi-modal__spinner--sm" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                 </svg>
-                Finding new board name…
+                Finding alternative board name…
               </div>
-              <template v-else-if="newBoardSuggestion">
-                <div class="bi-modal__checklist-label">Potential new board</div>
-                <label class="bi-modal__check-row bi-modal__check-row--new">
-                  <input
-                    type="checkbox"
-                    :checked="newBoardChecked"
-                    @change="newBoardChecked = !newBoardChecked"
-                  />
-                  <span>{{ newBoardSuggestion }}</span>
-                  <span class="bi-modal__new-badge">New</span>
-                </label>
-              </template>
+              <label v-else-if="newBoardSuggestion" class="bi-modal__option">
+                <input type="radio" v-model="boardSuggestionPick" value="new" />
+                <span class="bi-modal__option-name">{{ newBoardSuggestion }}</span>
+                <span class="bi-modal__new-badge">New</span>
+              </label>
             </div>
 
             <!-- Actions -->
@@ -975,6 +966,7 @@ watch(
   { immediate: true },
 )
 
+
 // Wrap the gallery's filtered images so route-level status presets and "must
 // have a publish date" (Schedules view) are enforced regardless of what the
 // user does in the toolbar.
@@ -985,6 +977,11 @@ const filteredImages = computed(() => {
   }
   if (props.requirePublishDate) {
     list = list.filter(i => !!i.pinterest?.publishDate)
+  }
+  if (filters.unsaved === 'set') {
+    list = list.filter(i => unsavedIds.value.has(i.id))
+  } else if (filters.unsaved === 'missing') {
+    list = list.filter(i => !unsavedIds.value.has(i.id))
   }
   return list
 })
@@ -1167,6 +1164,7 @@ watch(activeId, (newId, oldId) => {
 const totalUnsavedCount = computed(() =>
   pendingChanges.value.size + (isDirty.value ? 1 : 0)
 )
+watch(totalUnsavedCount, (n) => { if (n === 0) filters.unsaved = '' })
 
 const unsavedIds = computed(() => {
   const s = new Set(pendingChanges.value.keys())
@@ -1437,12 +1435,8 @@ async function handleGenerate() {
       return await $fetch('/api/generate-metadata', {
         method: 'POST',
         body: {
-          filename:          img.filename,
           imageUrl:          img.thumbnailUrl || img.mediaUrl || null,
-          prompt:            img.prompt,
-          colors:            img.colors,
           additionalContext: opts.additionalContext,
-          accountContext:    analyticsBrief.value || '',
           options:           opts,
           boards:            opts.generateFor.pinterestBoard ? boards.value.map(b => b.name) : [],
           existingTitles:    ctx.existingTitles ?? [],
@@ -1488,29 +1482,17 @@ function closeAiModal() {
 // ── Board Intelligence ───────────────────────────────────────────────────────
 const { suggestion: boardSuggestionResult, newBoardSuggestion, loading: boardSuggestionLoading, loadingNew: boardSuggestionLoadingNew, suggestBoard } = useBoardIntelligence()
 const showBoardSuggestion = ref(false)
-const boardSuggestionChecked = ref([]) // names of existing recommended boards the user has ticked
-const newBoardChecked = ref(false)     // whether the parallel new-board suggestion is ticked
+const boardSuggestionPick = ref(null) // 'existing' | 'new' | null
 
-// Pre-tick all recommended existing boards when a result arrives.
+// Auto-select the top existing recommendation when it arrives.
 watch(boardSuggestionResult, (result) => {
-  boardSuggestionChecked.value = result?.recommendedBoards ? [...result.recommendedBoards] : []
+  if (result?.recommendedBoards?.length) boardSuggestionPick.value = 'existing'
 })
-
-// New board suggestion always arrives unchecked.
-watch(newBoardSuggestion, () => {
-  newBoardChecked.value = false
-})
-
-function toggleBoardSuggestionCheck(name) {
-  const idx = boardSuggestionChecked.value.indexOf(name)
-  if (idx === -1) boardSuggestionChecked.value = [...boardSuggestionChecked.value, name]
-  else boardSuggestionChecked.value = boardSuggestionChecked.value.filter(n => n !== name)
-}
 
 const canApplyBoardSuggestion = computed(() => {
-  const hasCheckedExisting = boardSuggestionChecked.value.length > 0
-  const hasCheckedNew = newBoardChecked.value && !!newBoardSuggestion.value
-  return hasCheckedExisting || hasCheckedNew
+  if (boardSuggestionPick.value === 'existing') return !!boardSuggestionResult.value?.recommendedBoards?.length
+  if (boardSuggestionPick.value === 'new') return !!newBoardSuggestion.value
+  return false
 })
 
 async function handleSuggestBoard() {
@@ -1536,13 +1518,12 @@ async function applyBoardSuggestion() {
     let boardId = null
     let boardName = ''
 
-    // Create new board if its checkbox is checked, otherwise take the first checked existing board.
-    if (newBoardChecked.value && newBoardSuggestion.value) {
+    if (boardSuggestionPick.value === 'new' && newBoardSuggestion.value) {
       const newB = await addBoard(newBoardSuggestion.value)
       boardId = newB.id
       boardName = newB.name
-    } else if (boardSuggestionChecked.value.length > 0) {
-      const name = boardSuggestionChecked.value[0]
+    } else if (boardSuggestionPick.value === 'existing') {
+      const name = boardSuggestionResult.value?.recommendedBoards?.[0]
       const b = boards.value.find(b => b.name === name)
       if (b) { boardId = b.id; boardName = b.name }
     }
@@ -1632,6 +1613,9 @@ const viewCaps = computed(() => {
     checkLinks: !isExported,
     scanDuplicates: !isExported,
     readOnly: isExported,
+    showTitleFilter: !isExported,
+    showUnsavedFilter: !isExported,
+    showExportedDateFilter: isExported,
   }
 })
 
@@ -1689,19 +1673,14 @@ const pinterestScheduleInfo = ref(null)
 const pinterestScheduleInfoLoading = ref(false)
 
 const pinterestSchedTargetImages = computed(() =>
-  selectedCount.value > 0
-    ? validImages.value.filter(i => selectedIds.value.has(i.id))
-    : filteredImages.value
+  validImages.value.filter(i => selectedIds.value.has(i.id))
 )
 
 // Count of invalid images that would have been targets had they been valid —
 // shown in the scheduler so the user knows how many were skipped.
-const pinterestSchedInvalidCount = computed(() => {
-  if (selectedCount.value > 0) {
-    return invalidImages.value.filter(i => selectedIds.value.has(i.id)).length
-  }
-  return invalidImages.value.length
-})
+const pinterestSchedInvalidCount = computed(() =>
+  invalidImages.value.filter(i => selectedIds.value.has(i.id)).length
+)
 
 async function openPinterestScheduler() {
   showPinterestScheduler.value = true
@@ -1722,6 +1701,9 @@ async function handlePinterestScheduleApply(updatedImages) {
 }
 
 // ── CSV Export ────────────────────────────────────────────────────────────────
+// Pinterest's schedule waitlist cap — never export more than this in one file.
+const CSV_EXPORT_LIMIT = 100
+
 const { validate, downloadCsv } = usePinterestCsvExport()
 const showExport = ref(false)
 const exportSelectedIds = ref(new Set())
@@ -1738,11 +1720,19 @@ function fmtExportDate(iso) {
   return iso ? formatWallClockInZone(iso, exportTimezone.value).replace('T', ' ') : '—'
 }
 
-const csvExportImages = computed(() =>
-  selectedCount.value > 0
+const csvExportImages = computed(() => {
+  const imgs = selectedCount.value > 0
     ? validImages.value.filter(i => selectedIds.value.has(i.id))
     : filteredImages.value
-)
+  return [...imgs].sort((a, b) => {
+    const da = a.pinterest?.publishDate ?? ''
+    const db = b.pinterest?.publishDate ?? ''
+    if (!da && !db) return 0
+    if (!da) return 1
+    if (!db) return -1
+    return da < db ? -1 : da > db ? 1 : 0
+  })
+})
 
 const csvValidation = computed(() => validate(csvExportImages.value))
 
@@ -1767,13 +1757,13 @@ const exportSelectedImages = computed(() =>
   csvValidation.value.valid.filter(img => exportSelectedIds.value.has(img.id))
 )
 
-const exportAllSelected = computed(() =>
-  csvValidation.value.valid.length > 0 &&
-  csvValidation.value.valid.every(img => exportSelectedIds.value.has(img.id))
-)
+const exportAllSelected = computed(() => {
+  const limited = csvValidation.value.valid.slice(0, CSV_EXPORT_LIMIT)
+  return limited.length > 0 && limited.every(img => exportSelectedIds.value.has(img.id))
+})
 
 const exportSomeSelected = computed(() =>
-  csvValidation.value.valid.some(img => exportSelectedIds.value.has(img.id))
+  csvValidation.value.valid.slice(0, CSV_EXPORT_LIMIT).some(img => exportSelectedIds.value.has(img.id))
 )
 
 function boardChipStyle(name) {
@@ -1781,14 +1771,15 @@ function boardChipStyle(name) {
 }
 
 function openExport() {
-  exportSelectedIds.value = new Set(csvValidation.value.valid.map(img => img.id))
+  exportSelectedIds.value = new Set(csvValidation.value.valid.slice(0, CSV_EXPORT_LIMIT).map(img => img.id))
   showExport.value = true
 }
 
 function toggleExportAll() {
+  const limited = csvValidation.value.valid.slice(0, CSV_EXPORT_LIMIT)
   exportSelectedIds.value = exportAllSelected.value
     ? new Set()
-    : new Set(csvValidation.value.valid.map(img => img.id))
+    : new Set(limited.map(img => img.id))
 }
 
 function toggleExportImage(id) {
@@ -1878,7 +1869,7 @@ function saveViewState() {
     localStorage.setItem(LS_PAGE_SIZE_KEY, String(pageSize.value))
     // Never persist date-range filters — they come from calendar deep-links and
     // should not bleed into future normal visits to this page.
-    const { pinterestDateFrom, pinterestDateTo, ...persistedFilters } = filters
+    const { pinterestDateFrom, pinterestDateTo, exportedDateFrom, exportedDateTo, ...persistedFilters } = filters
     localStorage.setItem(lsViewKey.value, JSON.stringify({
       currentPage: currentPage.value,
       sortField: sortField.value,
@@ -2128,6 +2119,16 @@ function goToPage(page) {
     border-radius: 20px;
     padding: 2px 9px;
     white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+    &:hover { background: #fde68a; border-color: #f59e0b; }
+
+    &--active {
+      background: #f59e0b;
+      border-color: #d97706;
+      color: #fff;
+    }
   }
 
   // ── Body ─────────────────────────────────────────────────────────────────────
@@ -2531,7 +2532,7 @@ function goToPage(page) {
     flex-direction: column;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 
-    &--export { max-width: 920px; }
+    &--export { max-width: 960px; max-height: 92vh; }
   }
 
   &__modal-header {
@@ -2687,42 +2688,145 @@ function goToPage(page) {
     margin: 0;
   }
 
-  &__export-warn {
-    padding: 12px 14px;
-    background: #fffbeb;
-    border: 1px solid #fcd34d;
-    border-radius: 8px;
+  // ── Export modal header ───────────────────────────────────────────────────────
+
+  &__export-hd {
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    flex-shrink: 0;
+  }
+
+  &__export-hd-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  &__export-hd-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: $color-primary;
+  }
+
+  &__export-hd-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__export-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 24px;
+    padding: 0 9px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+
+    strong { font-weight: 700; color: $color-primary; }
+    svg { color: #6b7280; flex-shrink: 0; }
+
+    &--tz {
+      background: #f0f9ff;
+      border-color: #bae6fd;
+      color: #0369a1;
+      svg { color: #0284c7; }
+    }
+
+    &--limit {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+      cursor: default;
+      svg { color: #3b82f6; }
+    }
+  }
+
+  &__export-chip-link {
+    color: inherit;
+    opacity: 0.7;
+    text-decoration: none;
+    font-size: 10px;
+    margin-left: 1px;
+
+    &:hover { opacity: 1; }
+  }
+
+  // ── Export alert strip ────────────────────────────────────────────────────────
+
+  &__export-alerts {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  &__export-alert {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 7px 18px;
     font-size: 12px;
-    color: #92400e;
-    line-height: 1.5;
+    line-height: 1.4;
+
+    & + & { border-top: 1px solid rgba(0,0,0,0.05); }
+
+    strong { font-weight: 700; }
+
+    &--warn {
+      background: #fffbeb;
+      color: #92400e;
+      svg { color: #d97706; }
+    }
+
+    &--note {
+      background: #f0f9ff;
+      color: #0c4a6e;
+      svg { color: #0284c7; }
+    }
+
+    &--overflow {
+      background: #fff7ed;
+      color: #9a3412;
+      svg { color: #ea580c; }
+    }
   }
 
-  &__export-note {
-    padding: 10px 14px;
-    background: #f0f4ff;
-    border: 1px solid #c7d7fd;
-    border-radius: 8px;
-    font-size: 12px;
-    color: #3730a3;
-    line-height: 1.5;
+  // ── Export body (table fills all remaining space) ─────────────────────────────
+
+  &__export-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
-  &__export-note-sub {
-    margin-left: 4px;
-    font-weight: 400;
-    color: #4f46e5;
+  &__export-error {
+    margin: auto;
+    padding: 40px 20px;
+    color: #ef4444;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
   }
-
-  &__export-error { color: #ef4444; font-weight: 600; }
 
   // ── Export preview table ─────────────────────────────────────────────────────
 
   &__export-table-wrap {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
+    flex: 1;
     overflow-y: auto;
-    max-height: 380px;
+    border-top: none;
   }
 
   &__export-table {
@@ -2819,30 +2923,6 @@ function goToPage(page) {
     font-variant-numeric: tabular-nums;
     color: #374151;
     white-space: nowrap;
-  }
-
-  &__export-tz {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 10px 14px;
-    background: #f0f9ff;
-    border: 1px solid #bae6fd;
-    border-radius: 8px;
-    font-size: 12.5px;
-    color: #075985;
-    line-height: 1.5;
-
-    svg { flex-shrink: 0; margin-top: 1px; color: #0284c7; }
-    strong { font-weight: 700; }
-  }
-
-  &__export-tz-link {
-    color: #0284c7;
-    font-weight: 600;
-    text-decoration: underline;
-
-    &:hover { color: #075985; }
   }
 
   // ── Responsive ───────────────────────────────────────────────────────────────
@@ -3360,6 +3440,60 @@ function goToPage(page) {
     display: flex;
     gap: 8px;
     padding-top: 2px;
+  }
+}
+
+// ── Phone layout (≤ 600px) ────────────────────────────────────────────────────
+@media (max-width: 600px) {
+  .meta-page {
+    // Top bar: left padding to clear the fixed hamburger button
+    &__top-bar {
+      padding: 8px 10px 8px 54px;
+      min-height: 52px;
+      gap: 8px;
+    }
+    // Hide the heading — the page title is obvious from context
+    &__heading { display: none; }
+
+    // Toolbar: allow horizontal scroll so filter pills never truncate
+    &__toolbar {
+      padding: 6px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    // Actions bar: tighter padding
+    &__actions-bar {
+      padding: 4px 8px;
+      gap: 6px;
+    }
+    // Single/Multi mode switch is redundant on touch (tap = single, long-tap is rare)
+    &__mode-switch { display: none; }
+
+    // Panel: slides up as a full-screen overlay instead of sitting beside the grid
+    &__panel {
+      position: fixed;
+      inset: 0;
+      width: 100% !important;
+      z-index: 40;
+      border-left: none;
+      border-top: 3px solid $color-accent;
+      animation: panel-slide-up 0.2s ease;
+    }
+
+    // Pagination: compact
+    &__pagination {
+      padding: 6px 8px;
+      gap: 6px;
+    }
+    &__page-btn--jump { display: none; }
+    &__page-info,
+    &__page-size { font-size: 11px; }
+  }
+
+  @keyframes panel-slide-up {
+    from { transform: translateY(40px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
   }
 }
 </style>

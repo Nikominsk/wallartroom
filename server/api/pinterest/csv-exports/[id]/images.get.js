@@ -16,21 +16,33 @@ export default defineEventHandler(async (event) => {
   const imageIds = exportRow.image_ids ?? []
   if (imageIds.length === 0) return { data: [] }
 
-  const { data, error } = await client
-    .from('image')
-    .select(`
-      *,
-      primary_color:color!primary_color_id(name,hex),
-      secondary_color:color!secondary_color_id(name,hex),
-      tertiary_color:color!tertiary_color_id(name,hex),
-      pinterest_image(*),
-      adobe_image(*)
-    `)
-    .eq('project_id', projectId)
-    .in('id', imageIds)
-    .order('created_at', { ascending: false })
+  // Fetch in batches. Passing every id into a single `.in(...)` builds one huge
+  // request URL that can overflow the HTTP connection ("Headers Overflow
+  // Error") when an export references a lot of images. Chunking keeps each
+  // request small no matter how big the export is.
+  const CHUNK_SIZE = 100
+  const all = []
+  for (let i = 0; i < imageIds.length; i += CHUNK_SIZE) {
+    const chunk = imageIds.slice(i, i + CHUNK_SIZE)
+    const { data, error } = await client
+      .from('image')
+      .select(`
+        *,
+        primary_color:color!primary_color_id(name,hex),
+        secondary_color:color!secondary_color_id(name,hex),
+        tertiary_color:color!tertiary_color_id(name,hex),
+        pinterest_image(*),
+        adobe_image(*)
+      `)
+      .eq('project_id', projectId)
+      .in('id', chunk)
 
-  if (error) throw createError({ statusCode: 500, statusMessage: error.message })
+    if (error) throw createError({ statusCode: 500, statusMessage: error.message })
+    if (data) all.push(...data)
+  }
 
-  return { data: data ?? [] }
+  // Newest first, matching the original single-query ordering.
+  all.sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0))
+
+  return { data: all }
 })
