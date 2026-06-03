@@ -886,6 +886,11 @@ h2 {
 
     @media (max-width: 640px) { display: none; }
   }
+
+  // On mobile __links is hidden — push the CTA button to the far right
+  .btn--ghost-nav {
+    @media (max-width: 640px) { margin-left: auto; }
+  }
 }
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
