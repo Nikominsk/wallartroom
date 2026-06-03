@@ -173,6 +173,28 @@
       </div>
 
 
+      <!-- ══ SCHEDULING CALLOUT ════════════════════════════════════════════════ -->
+      <section class="scheduling" id="scheduling">
+        <img :src="schedCalImg" alt="" class="scheduling__bg" aria-hidden="true" loading="lazy" draggable="false" />
+        <div class="scheduling__overlay" aria-hidden="true" />
+        <div class="scheduling__content">
+          <span class="scheduling__tag">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Built-in scheduling
+          </span>
+          <h2 class="scheduling__title">
+            Plan weeks of pins.<br><em>Publish on autopilot.</em>
+          </h2>
+          <p class="scheduling__sub">Every pin in your export gets a scheduled date. Upload once to Pinterest and your content goes live exactly when you want it.</p>
+          <div class="scheduling__pills">
+            <span class="scheduling__pill">Precise publish times</span>
+            <span class="scheduling__pill">Weeks planned in one export</span>
+            <span class="scheduling__pill">Auto-imported by Pinterest</span>
+          </div>
+        </div>
+      </section>
+
+
       <!-- ══ FEATURES ══════════════════════════════════════════════════════════ -->
       <section class="features" id="features">
         <div class="container">
@@ -210,64 +232,6 @@
                 </div>
               </div>
             </article>
-          </div>
-
-        </div>
-      </section>
-
-
-      <!-- ══ SCHEDULING CALLOUT ════════════════════════════════════════════════ -->
-      <section class="scheduling" id="scheduling">
-        <div class="container scheduling__inner">
-
-          <div class="scheduling__copy">
-            <span class="kicker">Publish on your schedule</span>
-            <h2>Set a date.<br><em>Pinterest does the rest.</em></h2>
-            <p>Every pin in your CSV export comes with a scheduled publish date attached. Upload once to Pinterest and your content goes live automatically, exactly when you planned it. No manual posting. No missed slots.</p>
-            <ul class="scheduling__perks">
-              <li>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7l3.5 3.5L12 4"/></svg>
-                Schedule weeks of pins in one export
-              </li>
-              <li>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7l3.5 3.5L12 4"/></svg>
-                Precise publish time per pin
-              </li>
-              <li>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7l3.5 3.5L12 4"/></svg>
-                Pinterest reads the dates on import automatically
-              </li>
-            </ul>
-          </div>
-
-          <!-- CSS-built CSV preview — no image needed -->
-          <div class="csv-card" aria-label="Example scheduled CSV export">
-            <div class="csv-card__topbar">
-              <span class="csv-card__filename">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                pinterest-export.csv
-              </span>
-              <span class="csv-card__ready">Ready to import</span>
-            </div>
-            <div class="csv-card__table">
-              <div class="csv-card__thead">
-                <span>Pin title</span>
-                <span>Board</span>
-                <span>Publish date</span>
-              </div>
-              <div class="csv-card__row" v-for="row in schedRows" :key="row.title">
-                <span class="csv-card__pin">{{ row.title }}</span>
-                <span class="csv-card__board">{{ row.board }}</span>
-                <span class="csv-card__date">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  {{ row.date }}
-                </span>
-              </div>
-            </div>
-            <div class="csv-card__footer">
-              <span>48 pins total</span>
-              <span class="csv-card__count">Jun 14 – Jul 2</span>
-            </div>
           </div>
 
         </div>
@@ -470,7 +434,7 @@
           <p class="footer__copy">© {{ year }} · The Pinterest Revenue OS</p>
           <nav class="footer__links" aria-label="Footer links">
             <NuxtLink to="/privacy">Privacy</NuxtLink>
-            <a href="mailto:hello@wallartroom.com">Contact</a>
+            <a href="mailto:digidesignadobe@gmail.com">Contact</a>
           </nav>
         </div>
       </footer>
@@ -481,8 +445,9 @@
 
 
 <script setup>
-import heroLaptopImg   from '@@/assets/images/herolaptop.png'
-import exampleStatsImg from '@@/assets/images/examplestatistic.png'
+import heroLaptopImg    from '@@/assets/images/herolaptop.png'
+import exampleStatsImg  from '@@/assets/images/examplestatistic.png'
+import schedCalImg      from '@@/assets/images/schedulecalender.png'
 
 // Gallery wall — all 14 artwork images
 import galImg01 from '@@/assets/images/random/A_cyan_gun_barrel_in_digital_environment_illustrates_power_an_917c10c5-d2fb-4478-ac80-56d091d776d9_1.png'
@@ -585,14 +550,6 @@ const galleryCol1 = [galImg06, galImg09, galImg11, galImg13, galImg02, galImg08,
 const galleryCol2 = [galImg08, galImg07, galImg03, galImg04, galImg14, galImg10, galImg12, galImg01, galImg05, galImg06, galImg09, galImg11, galImg13, galImg02]
 const galleryCol3 = [galImg10, galImg12, galImg01, galImg05, galImg06, galImg09, galImg11, galImg13, galImg02, galImg08, galImg07, galImg03, galImg04, galImg14]
 
-// Scheduling section — CSV preview rows
-const schedRows = [
-  { title: 'Coastal Sunset Print', board: 'Coastal Art',    date: 'Jun 14 · 14:00' },
-  { title: 'Abstract Nebula',      board: 'Space Prints',   date: 'Jun 15 · 09:00' },
-  { title: 'Forest Mist',          board: 'Nature Prints',  date: 'Jun 16 · 11:00' },
-  { title: 'Minimalist Moon',      board: 'Minimalist',     date: 'Jun 17 · 08:00' },
-]
-
 // CTA marquee — all images, ordered for colour variety
 const ctaImages = [galImg06, galImg08, galImg10, galImg11, galImg13, galImg07, galImg03, galImg09, galImg14, galImg02, galImg04, galImg12, galImg01, galImg05]
 
@@ -619,6 +576,15 @@ const featureList = [
   },
 ]
 
+// Features shared across all plans — only upload/AI/project amounts differ
+const sharedFeatures = [
+  'CSV export + scheduling',
+  'Board intelligence',
+  'Duplicate & freshness guard',
+  'AI metadata generation',
+  'Pinterest API publishing',
+]
+
 const plans = [
   {
     name:     'Free',
@@ -626,13 +592,7 @@ const plans = [
     period:   '/ forever',
     tagline:  'Try the tool at your own pace.',
     isFree:   true,
-    features: [
-      '10 image uploads',
-      '25 AI generations',
-      '1 project',
-      'CSV export',
-      'Board intelligence',
-    ],
+    features: ['10 image uploads', '25 AI generations', '1 project', ...sharedFeatures],
     cta:      'Join waitlist',
     featured: false,
     badge:    null,
@@ -643,13 +603,7 @@ const plans = [
     period:   '/ mo',
     tagline:  '~2 new images every day of the month.',
     isFree:   false,
-    features: [
-      '50 image uploads / month',
-      '200 AI generations / month',
-      '1 project',
-      'CSV export + scheduling',
-      'Priority board intelligence',
-    ],
+    features: ['50 image uploads / month', '200 AI generations / month', '1 project', ...sharedFeatures],
     cta:      'Join waitlist',
     featured: false,
     badge:    null,
@@ -660,13 +614,7 @@ const plans = [
     period:   '/ mo',
     tagline:  '~6 images a day. Ideal for active stores.',
     isFree:   false,
-    features: [
-      '200 image uploads / month',
-      '1,000 AI generations / month',
-      '3 projects',
-      'Duplicate & freshness guard',
-      'Priority support',
-    ],
+    features: ['200 image uploads / month', '1,000 AI generations / month', '3 projects', ...sharedFeatures],
     cta:      'Join waitlist',
     featured: true,
     badge:    'Most popular',
@@ -677,13 +625,7 @@ const plans = [
     period:   '/ mo',
     tagline:  '50 images a day. Built for agencies and power creators.',
     isFree:   false,
-    features: [
-      '1,500 image uploads / month',
-      '5,000 AI generations / month',
-      '10 projects',
-      'All features included',
-      'Dedicated support',
-    ],
+    features: ['1,500 image uploads / month', '5,000 AI generations / month', '10 projects', ...sharedFeatures],
     cta:      'Join waitlist',
     featured: false,
     badge:    null,
@@ -1108,11 +1050,11 @@ h2 {
 }
 
 .hero__title {
-  margin: 0 0 20px;
-  font-size: clamp(36px, 4.6vw, 62px);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1.05;
+  margin: 0 0 24px;
+  font-size: clamp(46px, 6.8vw, 96px);
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 0.97;
   color: $ink;
   text-wrap: balance;
 
@@ -1121,10 +1063,12 @@ h2 {
     font-style: italic;
     font-weight: 400;
     color: $accent;
+    letter-spacing: -0.02em;
   }
 
-  @media (max-width: 480px) { font-size: 32px; letter-spacing: -0.04em; }
-  @media (max-width: 360px) { font-size: 28px; }
+  @media (max-width: 860px) { font-size: clamp(40px, 7vw, 72px); }
+  @media (max-width: 480px) { font-size: 38px; letter-spacing: -0.045em; line-height: 1.0; }
+  @media (max-width: 360px) { font-size: 32px; }
 }
 
 .hero__lead {
@@ -1540,54 +1484,113 @@ h2 {
   }
 }
 
-// ── Scheduling callout ────────────────────────────────────────────────────────
+// ── Scheduling callout — full-bleed image background ─────────────────────────
 .scheduling {
-  padding: 100px 0;
-  background: $surface;
-  border-top: 1px solid $border;
+  position: relative;
+  overflow: hidden;
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  &__inner {
-    display: grid;
-    grid-template-columns: 1fr 1.1fr;
-    gap: 72px;
+  &__bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    z-index: 0;
+  }
+
+  // Dark gradient — heavier at bottom so white text is readable
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      160deg,
+      rgba(10, 8, 6, 0.72) 0%,
+      rgba(12, 9, 5, 0.80) 50%,
+      rgba(14, 10, 5, 0.88) 100%
+    );
+  }
+
+  &__content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 760px;
+    padding: 80px 32px;
+  }
+
+  &__tag {
+    display: inline-flex;
     align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: $accent;
+    margin-bottom: 20px;
 
-    @media (max-width: 860px) {
-      grid-template-columns: 1fr;
-      gap: 48px;
+    svg { flex-shrink: 0; }
+  }
+
+  &__title {
+    margin: 0 0 20px;
+    font-size: clamp(32px, 5vw, 64px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1.04;
+    color: #fff;
+    text-wrap: balance;
+
+    em {
+      font-family: 'Instrument Serif', 'Georgia', serif;
+      font-style: italic;
+      font-weight: 400;
+      color: $accent;
     }
   }
 
-  &__copy {
-    h2 { margin-bottom: 18px; }
-
-    p {
-      margin: 0 0 28px;
-      font-size: 15.5px;
-      line-height: 1.72;
-      color: $ink-muted;
-      text-wrap: pretty;
-    }
+  &__sub {
+    margin: 0 auto 32px;
+    max-width: 520px;
+    font-size: 17px;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.65);
+    text-wrap: pretty;
   }
 
-  &__perks {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  &__pills {
     display: flex;
-    flex-direction: column;
-    gap: 11px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
 
-    li {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      font-size: 14px;
-      font-weight: 500;
-      color: $ink-2;
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 16px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
 
-      svg { color: $accent; flex-shrink: 0; }
-    }
+  @media (max-width: 600px) {
+    min-height: 360px;
+    &__content { padding: 60px 24px; }
+    &__title { font-size: 32px; }
+    &__sub { font-size: 15px; }
   }
 }
 
@@ -2071,17 +2074,43 @@ h2 {
 }
 
 // ── Marquee strips ────────────────────────────────────────────────────────────
+// True seamless loop: [...images, ...images] → translateX(-50%) = one full set.
+// Fade masks at both edges hide the loop point on large screens.
 .cta-marquee {
+  position: relative;
   width: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
   overflow: hidden;
   padding: 12px 0;
   border-top: 1px solid rgba(255,255,255,0.06);
+
+  // Left + right fade — hides the seam, adds depth
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 140px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  &::before {
+    left: 0;
+    background: linear-gradient(to right, $dark 0%, transparent 100%);
+  }
+  &::after {
+    right: 0;
+    background: linear-gradient(to left, $dark 0%, transparent 100%);
+  }
 
   &__track {
     display: flex;
     gap: 10px;
     width: max-content;
-    animation: ctaMarquee 32s linear infinite;
+    // Loop: translateX(-50%) moves exactly one full set of images offscreen
+    // and the second (identical) copy seamlessly fills the gap.
+    animation: ctaMarquee 36s linear infinite;
   }
 
   &__img {
@@ -2090,10 +2119,10 @@ h2 {
     object-fit: cover;
     border-radius: 10px;
     flex-shrink: 0;
-    opacity: 0.68;
+    opacity: 0.72;
     transition: opacity 0.2s;
 
-    &:hover { opacity: 0.92; }
+    &:hover { opacity: 0.95; }
   }
 }
 
