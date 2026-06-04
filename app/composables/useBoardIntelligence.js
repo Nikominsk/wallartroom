@@ -1,23 +1,27 @@
 export function useBoardIntelligence() {
   const suggestion = ref(null)
-  const newBoardSuggestion = ref(null)
+  const newBoardSuggestionSpecific = ref(null)
+  const newBoardSuggestionBroad = ref(null)
   const loading = ref(false)
   const loadingNew = ref(false)
+  const newBoardsLoaded = ref(false) // true once the new-name call has settled
   const error = ref(null)
   const health = ref(null)
   const healthLoading = ref(false)
 
-  // Fires two parallel requests:
-  //   1. existing board matching (always)
-  //   2. new board name suggestion (skipped when withNewBoard=false, e.g. bulk AI flow)
+  // Fires two requests:
+  //   1. existing board matching (always) — charges quota
+  //   2. new board name suggestions (parallel, when boards exist; bundled with #1 when no boards)
   async function suggestBoard(pinData, boards, { withNewBoard = true } = {}) {
-    if (!boards?.length) return
     loading.value = true
     error.value = null
     suggestion.value = null
-    newBoardSuggestion.value = null
+    newBoardSuggestionSpecific.value = null
+    newBoardSuggestionBroad.value = null
+    newBoardsLoaded.value = false
 
-    const boardNames = boards.map(b => typeof b === 'string' ? b : b.name)
+    const boardNames = (boards ?? []).map(b => typeof b === 'string' ? b : b.name)
+    const hasBoards = boardNames.length > 0
 
     $fetch('/api/pinterest/board-intelligence', {
       method: 'POST',
@@ -26,17 +30,27 @@ export function useBoardIntelligence() {
         description: pinData.description || '',
         keywords: pinData.keywords || '',
         filename: pinData.filename || '',
+        imageUrl: pinData.imageUrl || null,
         boards: boardNames,
       },
     }).then(result => {
       suggestion.value = { recommendedBoards: result.recommendedBoards, reasoning: result.reasoning }
+      // When no boards exist, the main call takes the fast path and returns new name suggestions.
+      if (!hasBoards) {
+        newBoardSuggestionSpecific.value = result.newBoardSpecific || null
+        newBoardSuggestionBroad.value = result.newBoardBroad || null
+        newBoardsLoaded.value = true
+      }
     }).catch(e => {
       error.value = e?.data?.statusMessage || e?.message || 'Board suggestion failed'
+      if (!hasBoards) newBoardsLoaded.value = true
     }).finally(() => {
       loading.value = false
     })
 
-    if (withNewBoard) {
+    // Only fire the parallel call when there are boards to match against.
+    // When no boards, new name suggestions come from the main fast-path response above.
+    if (withNewBoard && hasBoards) {
       loadingNew.value = true
       $fetch('/api/pinterest/board-intelligence', {
         method: 'POST',
@@ -44,15 +58,18 @@ export function useBoardIntelligence() {
           title: pinData.title || '',
           description: pinData.description || '',
           filename: pinData.filename || '',
+          imageUrl: pinData.imageUrl || null,
           boards: boardNames,
           forceNewSuggestion: true,
         },
       }).then(result => {
-        newBoardSuggestion.value = result.newBoard || null
+        newBoardSuggestionSpecific.value = result.newBoardSpecific || null
+        newBoardSuggestionBroad.value = result.newBoardBroad || null
       }).catch(() => {
         // non-critical — new board suggestion failing doesn't block the flow
       }).finally(() => {
         loadingNew.value = false
+        newBoardsLoaded.value = true
       })
     }
   }
@@ -70,9 +87,11 @@ export function useBoardIntelligence() {
 
   function clear() {
     suggestion.value = null
-    newBoardSuggestion.value = null
+    newBoardSuggestionSpecific.value = null
+    newBoardSuggestionBroad.value = null
+    newBoardsLoaded.value = false
     error.value = null
   }
 
-  return { suggestion, newBoardSuggestion, loading, loadingNew, error, health, healthLoading, suggestBoard, loadBoardHealth, clear }
+  return { suggestion, newBoardSuggestionSpecific, newBoardSuggestionBroad, loading, loadingNew, newBoardsLoaded, error, health, healthLoading, suggestBoard, loadBoardHealth, clear }
 }

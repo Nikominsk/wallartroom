@@ -391,7 +391,7 @@ const queueStats = computed(() => {
 
   const anyEnd = dates[dates.length - 1]  // absolute latest exported date
 
-  const suggestStart = denseEnd ? addDays(denseEnd, 1) : null
+  const suggestStart = denseEnd ? (addDays(denseEnd, 1) > tomorrowLocalDate() ? addDays(denseEnd, 1) : tomorrowLocalDate()) : null
   const denseEndDaysAhead = denseEnd ? dateDiffDays(denseEnd, today) : null
 
   return { denseEnd, denseEndDaysAhead, suggestStart, outlierCount, outlierEnd, anyEnd }

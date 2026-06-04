@@ -161,14 +161,14 @@ export function useMetadataImages() {
   // user. On `move`, the rows leave the active project so we strip them from
   // the local cache; on `copy`, the source rows stay put — the new copies
   // belong to the target project and only appear there after switching.
-  async function transferImages(ids, targetProjectId, mode = 'move') {
+  async function transferImages(ids, targetProjectId, mode = 'move', fields = null) {
     if (!ids?.length || !targetProjectId) return null
     saving.value = true
     saveError.value = null
     try {
       const result = await $fetch('/api/images/transfer', {
         method: 'POST',
-        body: { ids, targetProjectId, mode },
+        body: { ids, targetProjectId, mode, fields },
       })
       if (mode === 'move') {
         const idSet = new Set(result?.movedIds ?? ids)

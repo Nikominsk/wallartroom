@@ -116,6 +116,26 @@
             >{{ progress.duplicateRetryCount }} retried</span>
           </div>
 
+          <!-- Setup summary -->
+          <div class="ai-modal__setup">
+            <div class="ai-modal__setup-row">
+              <span class="ai-modal__setup-key">Generating</span>
+              <span class="ai-modal__setup-val">
+                <template v-if="options.generateFor.pinterestTitle">Title</template>
+                <template v-if="options.generateFor.pinterestTitle && (options.generateFor.pinterestDescription || options.generateFor.pinterestBoard)"> · </template>
+                <template v-if="options.generateFor.pinterestDescription">Description</template>
+                <template v-if="options.generateFor.pinterestDescription && options.generateFor.pinterestBoard"> · </template>
+                <template v-if="options.generateFor.pinterestBoard">Board</template>
+              </span>
+            </div>
+            <div class="ai-modal__setup-row">
+              <span class="ai-modal__setup-key">Condition</span>
+              <span class="ai-modal__setup-val">
+                {{ overwriteLabel }}<template v-if="options.skipFilled"> · skip if all filled</template>
+              </span>
+            </div>
+          </div>
+
           <div v-if="progress.lastError && progress.failedCount" class="ai-modal__error-banner">
             {{ progress.lastError }}
           </div>
@@ -982,6 +1002,35 @@ function handleClose() {
   &--skip  { color: #9ca3af; }
   &--fail  { color: #ef4444; }
   &--retry { color: #d97706; }
+}
+
+.ai-modal__setup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+
+  &-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  &-key {
+    color: #9ca3af;
+    font-weight: 500;
+    white-space: nowrap;
+    min-width: 72px;
+  }
+
+  &-val {
+    color: #374151;
+  }
 }
 
 .ai-modal__error-banner {

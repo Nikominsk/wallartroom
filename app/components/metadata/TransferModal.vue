@@ -37,6 +37,51 @@
         </div>
       </fieldset>
 
+      <!-- Fields to carry over -->
+      <fieldset class="xfer__field">
+        <legend class="xfer__legend">Fields to carry over</legend>
+        <div class="xfer__checks">
+          <label class="xfer__check" :class="{ 'xfer__check--disabled': busy }">
+            <input type="checkbox" v-model="fields.title" :disabled="busy" />
+            Title
+          </label>
+          <label class="xfer__check" :class="{ 'xfer__check--disabled': busy }">
+            <input type="checkbox" v-model="fields.description" :disabled="busy" />
+            Description
+          </label>
+          <label class="xfer__check" :class="{ 'xfer__check--disabled': busy }">
+            <input type="checkbox" v-model="fields.board" :disabled="busy" />
+            Board name
+          </label>
+          <label class="xfer__check" :class="{ 'xfer__check--disabled': busy }">
+            <input type="checkbox" v-model="fields.link" :disabled="busy" />
+            Redirect URL
+          </label>
+          <label class="xfer__check" :class="{ 'xfer__check--disabled': busy }">
+            <input type="checkbox" v-model="fields.status" :disabled="busy" />
+            Status
+          </label>
+        </div>
+
+        <!-- Board sub-option: only shown when board is checked -->
+        <div v-if="fields.board" class="xfer__board-opts">
+          <label class="xfer__board-opt" :class="{ 'xfer__board-opt--on': fields.boardMissing === 'create' }">
+            <input type="radio" v-model="fields.boardMissing" value="create" :disabled="busy" />
+            <span>
+              <span class="xfer__board-opt-title">Create if missing</span>
+              <span class="xfer__board-opt-sub">Boards that don't exist in the destination will be created.</span>
+            </span>
+          </label>
+          <label class="xfer__board-opt" :class="{ 'xfer__board-opt--on': fields.boardMissing === 'skip' }">
+            <input type="radio" v-model="fields.boardMissing" value="skip" :disabled="busy" />
+            <span>
+              <span class="xfer__board-opt-title">Skip if missing</span>
+              <span class="xfer__board-opt-sub">Images whose board doesn't exist in the destination will have no board set.</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
       <!-- Destination -->
       <div class="xfer__field">
         <label class="xfer__legend" for="xfer-dest">Destination project</label>
@@ -95,6 +140,7 @@ const emit = defineEmits(['close', 'confirm'])
 
 const mode     = ref('move')
 const targetId = ref('')
+const fields   = reactive({ title: true, description: true, board: true, boardMissing: 'create', link: true, status: true })
 
 const targets = computed(() =>
   (props.projects ?? []).filter(p => p.id !== props.activeProjectId),
@@ -120,7 +166,7 @@ watchEffect(() => {
 
 function onConfirm() {
   if (!canSubmit.value) return
-  emit('confirm', { mode: mode.value, targetProjectId: targetId.value })
+  emit('confirm', { mode: mode.value, targetProjectId: targetId.value, fields: { ...fields } })
 }
 </script>
 
@@ -243,6 +289,56 @@ function onConfirm() {
   &__mode-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   &__mode-title { font-size: 13px; font-weight: 600; color: $color-primary; }
   &__mode-sub { font-size: 12px; color: #6b7280; line-height: 1.4; }
+
+  &__checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+  }
+
+  &__check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: $color-primary;
+    cursor: pointer;
+    user-select: none;
+
+    input { accent-color: $color-accent; cursor: pointer; }
+    &--disabled { opacity: 0.5; cursor: not-allowed; input { cursor: not-allowed; } }
+  }
+
+  &__board-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-left: 20px;
+    padding-left: 12px;
+    border-left: 2px solid #e5e7eb;
+  }
+
+  &__board-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #ececec;
+    border-radius: 8px;
+    background: #fafafa;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+
+    input { margin-top: 2px; accent-color: $color-accent; cursor: pointer; flex-shrink: 0; }
+    &:hover { background: #f3f4f6; }
+    &--on {
+      background: color-mix(in srgb, #{$color-accent} 7%, #fff);
+      border-color: color-mix(in srgb, #{$color-accent} 40%, #fff);
+    }
+  }
+
+  &__board-opt-title { display: block; font-size: 12.5px; font-weight: 600; color: $color-primary; }
+  &__board-opt-sub   { display: block; font-size: 11.5px; color: #6b7280; line-height: 1.4; margin-top: 1px; }
 
   &__select {
     width: 100%;

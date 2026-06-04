@@ -108,6 +108,17 @@
           <button
             v-if="selectedCount > 0"
             class="gallery-toolbar__menu-item"
+            @click="emit('download-selected'); moreOpen = false"
+          >
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 2v10M6 8l4 4 4-4" />
+              <path d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" />
+            </svg>
+            Download {{ selectedCount }} selected as ZIP
+          </button>
+          <button
+            v-if="selectedCount > 0"
+            class="gallery-toolbar__menu-item"
             @click="emit('transfer'); moreOpen = false"
           >
             <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -378,6 +389,7 @@ const emit = defineEmits([
   'check-links',
   'scan-duplicates',
   'transfer',
+  'download-selected',
 ])
 
 const showFilters = ref(false)

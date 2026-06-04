@@ -25,6 +25,17 @@ export default defineEventHandler(async (event) => {
   const targetProjectId = String(body?.targetProjectId ?? '').trim()
   const mode = body?.mode === 'copy' ? 'copy' : 'move'
 
+  // Field selection — default all true so existing callers without this param are unaffected.
+  const f = body?.fields ?? {}
+  const fields = {
+    title:        f.title       !== false,
+    description:  f.description !== false,
+    board:        f.board       !== false,
+    boardMissing: f.boardMissing === 'skip' ? 'skip' : 'create', // 'create' | 'skip'
+    link:         f.link        !== false,
+    status:       f.status      !== false,
+  }
+
   if (ids.length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'No image ids provided' })
   }
@@ -79,6 +90,37 @@ export default defineEventHandler(async (event) => {
     const r3 = await client.from('adobe_image').update({ project_id: targetProjectId }).in('image_id', allowedIds)
     if (r3.error) throw createError({ statusCode: 500, statusMessage: r3.error.message })
 
+    // Apply field deselection and fix board_ids (they pointed to source project's boards).
+    const { data: movedPins } = await client
+      .from('pinterest_image')
+      .select('image_id, board, board_id')
+      .in('image_id', allowedIds)
+      .eq('project_id', targetProjectId)
+
+    if (movedPins?.length) {
+      const targetBoardMap = await ensureBoards(
+        client, movedPins, fields.board ? targetProjectId : null, fields.boardMissing === 'create'
+      )
+      for (const pin of movedPins) {
+        const patch = {}
+        if (!fields.title)       patch.title = null
+        if (!fields.description) patch.description = null
+        if (!fields.link)        patch.link = null
+        if (!fields.status)      patch.status = 'draft'
+        if (!fields.board) {
+          patch.board = null
+          patch.board_id = null
+        } else {
+          // Fix the board_id to point to the target project's board.
+          const targetBoard = pin.board ? targetBoardMap.get(pin.board.toLowerCase()) : null
+          patch.board_id = targetBoard?.id ?? null
+        }
+        if (Object.keys(patch).length) {
+          await client.from('pinterest_image').update(patch).eq('image_id', pin.image_id)
+        }
+      }
+    }
+
     return {
       ok: true,
       mode,
@@ -89,6 +131,38 @@ export default defineEventHandler(async (event) => {
   }
 
   // ── Copy mode ────────────────────────────────────────────────────────────
+
+  // Helper: resolve board names from pins against the target project.
+  // Returns a name.toLowerCase() → { id, name } map for boards that exist.
+  // When create=true, missing boards are inserted first.
+  // When create=false (skip), missing boards are simply absent from the map
+  // so callers set board/board_id to null for those images.
+  // Pass tgtProjectId=null to skip entirely (board field deselected).
+  async function ensureBoards(db, pins, tgtProjectId, create = true) {
+    if (!tgtProjectId) return new Map()
+    const names = [...new Set(pins.map(r => r.board).filter(Boolean))]
+    if (!names.length) return new Map()
+    const { data: existing } = await db
+      .from('pinterest_board')
+      .select('id, name')
+      .eq('project_id', tgtProjectId)
+      .in('name', names)
+    const map = new Map((existing ?? []).map(b => [b.name.toLowerCase(), b]))
+    if (create) {
+      for (const name of names) {
+        if (!map.has(name.toLowerCase())) {
+          const { data: created } = await db
+            .from('pinterest_board')
+            .insert({ name, project_id: tgtProjectId })
+            .select('id, name')
+            .single()
+          if (created) map.set(name.toLowerCase(), created)
+        }
+      }
+    }
+    return map
+  }
+
   const { data: pinRows, error: pinErr } = await client
     .from('pinterest_image')
     .select('*')
@@ -105,6 +179,11 @@ export default defineEventHandler(async (event) => {
 
   const pinByImage = new Map((pinRows ?? []).map(r => [r.image_id, r]))
   const adobeByImage = new Map((adobeRows ?? []).map(r => [r.image_id, r]))
+
+  // Pre-resolve boards in the target project so we can set board_id on each copy.
+  const targetBoardMap = await ensureBoards(
+    client, pinRows ?? [], fields.board ? targetProjectId : null, fields.boardMissing === 'create'
+  )
 
   const createdImageIds = []
   // Track R2 keys we wrote so we can attempt cleanup if a later DB insert
@@ -156,17 +235,19 @@ export default defineEventHandler(async (event) => {
       // exported_at / published_at) — those timestamps belong to the source.
       const p = pinByImage.get(src.id)
       if (p) {
+        const targetBoard = fields.board && p.board ? targetBoardMap.get(p.board.toLowerCase()) : null
         const { error: pe } = await client.from('pinterest_image').insert({
           image_id: newId,
           project_id: targetProjectId,
           // pin_id intentionally omitted — the table's default generator
           // produces a fresh globally-unique short id.
-          title: p.title ?? null,
-          description: p.description ?? null,
-          board: p.board ?? null,
-          link: p.link ?? null,
-          publish_date: p.publish_date ?? null,
-          status: 'draft',
+          title:        fields.title       ? (p.title       ?? null) : null,
+          description:  fields.description ? (p.description ?? null) : null,
+          board:        fields.board       ? (p.board       ?? null) : null,
+          board_id:     targetBoard?.id    ?? null,
+          link:         fields.link        ? (p.link        ?? null) : null,
+          publish_date: p.publish_date     ?? null,
+          status:       fields.status      ? (p.status      ?? 'draft') : 'draft',
         })
         if (pe) throw createError({ statusCode: 500, statusMessage: pe.message })
       }

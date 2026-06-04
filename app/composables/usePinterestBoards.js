@@ -69,9 +69,25 @@ export function usePinterestBoards() {
   }
 
   async function addBoard(name, color = null) {
+    let resolvedColor = color
+    if (!resolvedColor) {
+      // Count how many existing boards effectively use each palette slot, then
+      // assign the least-used one so the new board gets a distinct color.
+      const counts = new Array(FALLBACK_PALETTE.length).fill(0)
+      for (const b of boards.value) {
+        if (b.color) {
+          const idx = FALLBACK_PALETTE.findIndex(p => p.bg.toLowerCase() === b.color.toLowerCase())
+          if (idx >= 0) counts[idx]++
+        } else {
+          counts[hashIndex(b.name, FALLBACK_PALETTE.length)]++
+        }
+      }
+      const minIdx = counts.reduce((best, c, i) => c < counts[best] ? i : best, 0)
+      resolvedColor = FALLBACK_PALETTE[minIdx].bg
+    }
     const board = await $fetch('/api/pinterest/boards', {
       method: 'POST',
-      body: { name, color },
+      body: { name, color: resolvedColor },
     })
     boards.value = [...boards.value, board].sort((a, b) => a.name.localeCompare(b.name))
     return board

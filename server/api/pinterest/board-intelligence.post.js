@@ -14,14 +14,19 @@ function isCatchAll(name) {
   return false
 }
 
+// Build a GPT-4o user message content array that includes the image when available.
+function buildUserContent(textPart, imageUrl) {
+  if (!imageUrl) return textPart
+  return [
+    { type: 'text', text: textPart },
+    { type: 'image_url', image_url: { url: imageUrl, detail: 'low' } },
+  ]
+}
+
 export default defineEventHandler(async (event) => {
   const { projectId, user } = await requireMetadataProject(event)
   const body = await readBody(event)
-  const { title, description, keywords, filename, boards, forceNewSuggestion } = body
-
-  if (!boards?.length) {
-    throw createError({ statusCode: 400, statusMessage: 'No boards provided' })
-  }
+  const { title, description, keywords, filename, imageUrl, boards, forceNewSuggestion } = body
 
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -35,14 +40,23 @@ export default defineEventHandler(async (event) => {
   }
 
   // ── Fast path: user clicked "Suggest a new board name" ────────────────────
-  // Skip board-list analysis entirely and just ask the model to invent a
-  // specific new board name for this pin.
-  if (forceNewSuggestion) {
+  // Also the only path when the project has no boards yet.
+  if (forceNewSuggestion || !boards?.length) {
     const pinLines = [
       title       ? `Title: "${title}"`       : '',
       description ? `Description: "${description}"` : '',
       filename    ? `Filename: ${filename}`   : '',
+      imageUrl    ? '' : (!title && !description ? 'No text data provided.' : ''),
     ].filter(Boolean).join('\n')
+
+    const hasText = !!(title || description || filename)
+    const systemContent = `You are a Pinterest board naming expert. Given a pin's ${imageUrl ? 'image' : ''}${imageUrl && hasText ? ' and ' : ''}${hasText ? 'text data' : ''}, suggest TWO Pinterest board names for this pin:
+1. "newBoardSpecific" — a precise niche name (2–4 words, Title Case) that exactly matches the subject. E.g. "Rocky Mountain Landscapes", "Minimalist Desk Setup".
+2. "newBoardBroad" — a broader category name (2–4 words, Title Case) that is still topically relevant but encompasses more content. E.g. "Nature Photography", "Home Office Decor".
+Do NOT suggest generic catch-all names like "All", "Everything", "My Pins". Both names must be clearly related to the pin's actual content.
+Respond with JSON: {"newBoardSpecific": "...", "newBoardBroad": "...", "reasoning": "one sentence"}`
+
+    const userText = pinLines.trim() || (imageUrl ? 'Analyze the image to suggest board names.' : 'No data provided.')
 
     const resp = await $fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -50,14 +64,11 @@ export default defineEventHandler(async (event) => {
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [
-          {
-            role: 'system',
-            content: `You are a Pinterest board naming expert. Given a pin's text data, suggest ONE specific, topical Pinterest board name that would be the ideal home for this pin. The name should be 2–4 words, Title Case, and describe a precise niche (e.g. "Minimalist Office Decor", "Botanical Wall Art"). Do NOT suggest generic catch-all names like "All", "Everything", "My Pins". Respond with JSON: {"newBoard": "Board Name Here", "reasoning": "one sentence"}`,
-          },
-          { role: 'user', content: pinLines || 'No text data provided.' },
+          { role: 'system', content: systemContent },
+          { role: 'user', content: buildUserContent(userText, imageUrl) },
         ],
         response_format: { type: 'json_object' },
-        max_tokens: 100,
+        max_tokens: 150,
         temperature: 0.5,
       }),
     }).catch((e) => {
@@ -69,10 +80,11 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 502, statusMessage: 'Could not parse AI response' })
     }
 
-    const suggested = String(p.newBoard ?? '').trim()
+    if (!forceNewSuggestion) await recordUsage(event, user.id, { aiGenerations: 1 })
     return {
       recommendedBoards: [],
-      newBoard: suggested || null,
+      newBoardSpecific: String(p.newBoardSpecific ?? '').trim() || null,
+      newBoardBroad: String(p.newBoardBroad ?? '').trim() || null,
       reasoning: p.reasoning || '',
     }
   }
@@ -121,39 +133,44 @@ export default defineEventHandler(async (event) => {
   })
   const hasStats = statByName.size > 0
 
+  const hasImage = !!imageUrl
   const systemPrompt = `You are a Pinterest board placement assistant. Go through every board in the list and decide which ones this pin belongs on.
 
-You only have text to work with (title, description, filename, keywords). You cannot see the image. This means:
+${hasImage ? 'You have both the image and any available text (title, description, filename, keywords) to work with.' : 'You only have text to work with (title, description, filename, keywords). You cannot see the image.'}
+
+${hasImage ? `When matching boards:
+- Use the image as your primary signal for visual content (colors, style, subject matter, medium).
+- Use text as supporting evidence — explicit words strengthen a match.
+- A board match must be DIRECT and OBVIOUS. Do not follow chains of loose association.
+  ✗ Rock landscape → "Universe" (rocks ≠ space; too abstract)
+  ✗ Rock landscape → "Travel" (no travel context shown)
+  ✓ Rock landscape → "Nature Photography" (directly matches what is seen)
+- If the image is ambiguous and the text gives no clear signal, leave the board out.` : `This means:
 - You MUST base every recommendation on words that are explicitly present in the provided text.
 - You MUST NOT infer what the image might contain beyond what the text states.
-- If the text is sparse or ambiguous, make fewer recommendations — do not guess.
+- If the text is sparse or ambiguous, make fewer recommendations — do not guess.`}
 
-Apply these two rules:
+Apply these rules:
 
 RULE 1 — Catch-all boards (always include):
 If a board name clearly signals it collects everything ("All", "Everything", "All Pins", "My Pins", a bare shop or brand name, etc.), always include it regardless of content.
 
-RULE 2 — Topical boards (evidence required):
-A topical board has a specific theme. Only include it when you can point to a specific word or phrase in the provided text that directly matches that theme.
-- "directly matches" means the text explicitly mentions the topic — not that the topic could be inferred, imagined, or assumed.
-- Example: text says "floral wall art print" → "Botanical Wall Art" board ✓; "Pets" board ✗ (no mention of animals).
-- If you cannot find an explicit textual match, do NOT include the board.${hasStats ? `
-- When multiple topical boards have explicit support, prefer higher-traffic ones.` : ''}
+RULE 2 — Topical boards (strict match only):
+A topical board has a specific theme. Only include it when there is DIRECT, UNAMBIGUOUS evidence from ${hasImage ? 'the image or text' : 'the provided text'} that matches that theme.
+- "Direct" means the content plainly belongs in that category — not that it could plausibly relate through imagination.
+- When in doubt, leave it out. A shorter, accurate list is always better than a longer, inaccurate one.${hasStats ? `
+- When multiple topical boards qualify, prefer higher-traffic ones.` : ''}
 
-RULE 3 — Auto-suggest a new specific board when only catch-alls match:
-If your "recommendedBoards" list contains ONLY catch-all boards (no topical board fits), ALSO populate "newBoard" with one specific topical board name (2–4 words, Title Case) that would suit this pin — give the user a concrete themed option alongside their catch-all collection. If at least one topical board is already in "recommendedBoards", set "newBoard" to null.
-
-Only leave "recommendedBoards" entirely empty AND use "newBoard" when no board at all (not even a catch-all) fits.
-"reasoning" must be one short concrete sentence (max 15 words) naming the specific text evidence. No vague filler.
+If no board fits at all (not even a catch-all), return an empty "recommendedBoards" array.
+"reasoning" must be one short concrete sentence (max 15 words) naming the specific evidence. No vague filler.
 
 Respond with JSON only:
 {
   "recommendedBoards": ["Exact board name from list", "Another exact name"],
-  "newBoard": null,
   "reasoning": "Concrete one-liner citing the evidence."
 }`
 
-  const userPrompt = [
+  const userText = [
     brief ? `Account context: ${brief}` : '',
     title ? `Pin title: "${title}"` : '',
     description ? `Pin description: "${description}"` : '',
@@ -175,7 +192,7 @@ Respond with JSON only:
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: buildUserContent(userText, imageUrl) },
       ],
       response_format: { type: 'json_object' },
       max_tokens: 400,
@@ -213,22 +230,10 @@ Respond with JSON only:
     recommendedBoards.push(name)
   }
 
-  // New-board suggestion is valid when:
-  //   a) No existing boards were recommended at all, OR
-  //   b) Every recommended board is a catch-all (the model should also have
-  //      provided a specific topical option per RULE 3)
-  // Either way, the suggested name must not already exist in the board list.
-  const rawNew = cleanName(parsed.newBoard)
-  const allCatchAll = recommendedBoards.length > 0 && recommendedBoards.every(isCatchAll)
-  const newBoard = (rawNew && !resolve(rawNew) && (recommendedBoards.length === 0 || allCatchAll))
-    ? rawNew
-    : null
-
   await recordUsage(event, user.id, { aiGenerations: 1 })
 
   return {
     recommendedBoards,
-    newBoard,
     reasoning: parsed.reasoning || '',
   }
 })

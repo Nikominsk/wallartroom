@@ -57,13 +57,12 @@ Look at the image carefully. Write about the specific subject, mood, colours, an
 - Target: ${descTargetMin}–${descMax} characters.
 - First sentence names the specific subject and visual style.
 - Natural prose, keyword density 1–3%.
-- End with a complete sentence. No call-to-action.
 
 ## Formatting
 - Forbidden anywhere: hyphen "-", pipe "|", semicolon ";". Use a space or comma instead.
 
 ## Output settings
-- Language: ${options?.language ?? 'English'}${options?.targetAudience?.trim() ? `\n- Audience: ${options.targetAudience.trim()}` : ''}${options?.niche?.trim() ? `\n- Niche: ${options.niche.trim()}` : ''}${includeKw ? `\n- MUST include naturally: ${includeKw}` : ''}${excludeKw ? `\n- MUST NOT use: ${excludeKw}` : ''}${recentExistingTitles.length ? `\n\n## Already-used titles — do NOT reuse or trivially vary\n${recentExistingTitles.map(t => `- ${t}`).join('\n')}` : ''}${userInstructions ? `\n\n## User instructions — these override any conflicting default rules above\n${userInstructions}` : ''}${wantsBoard ? `\n\n## Board assignment\nPick the single most relevant board from this list. Return the exact name unchanged. If nothing fits, return an empty string.\nBoards: ${boards.join(', ')}` : ''}
+- Language: ${options?.language ?? 'English'}${options?.targetAudience?.trim() ? `\n- Audience: ${options.targetAudience.trim()}` : ''}${options?.niche?.trim() ? `\n- Niche: ${options.niche.trim()}` : ''}${includeKw ? `\n- MUST include naturally: ${includeKw}` : ''}${excludeKw ? `\n- MUST NOT use: ${excludeKw}` : ''}${recentExistingTitles.length ? `\n\n## Already-used titles — do NOT reuse or trivially vary\n${recentExistingTitles.map(t => `- ${t}`).join('\n')}` : ''}${userInstructions ? `\n\n## User instructions — HIGHEST PRIORITY. These override every rule above without exception. Follow them exactly and literally.\n${userInstructions}` : ''}${wantsBoard ? `\n\n## Board assignment\nPick the single most relevant board from this list. Return the exact name unchanged. If nothing fits, return an empty string.\nBoards: ${boards.join(', ')}` : ''}
 
 Respond with JSON only — keys "title" (string), "description" (string)${wantsBoard ? ', "board" (string)' : ''}. No markdown.`
 

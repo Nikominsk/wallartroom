@@ -69,6 +69,7 @@
         @check-links="handleCheckLinks"
         @scan-duplicates="handleScanDuplicates"
         @transfer="openTransferModal"
+        @download-selected="handleDownloadSelected"
       />
     </header>
 
@@ -155,7 +156,7 @@
           class="meta-page__btn meta-page__btn--primary"
           :disabled="saving"
           @click="handleSaveAll"
-        >Save all</button>
+        >Save unsaved ({{ totalUnsavedCount }})</button>
       </div>
     </div>
 
@@ -549,23 +550,33 @@
               <div v-else class="bi-modal__empty">No suitable board found for this pin.</div>
             </div>
 
-            <!-- New board suggestion -->
-            <div v-if="boardSuggestionLoadingNew || newBoardSuggestion" class="bi-modal__new-section">
+            <!-- New board suggestions -->
+            <div v-if="boardSuggestionLoadingNew || newBoardSuggestionSpecific || newBoardSuggestionBroad || boardSuggestionNewLoaded" class="bi-modal__new-section">
               <div v-if="boardSuggestionLoadingNew" class="bi-modal__loading-new">
                 <svg class="bi-modal__spinner bi-modal__spinner--sm" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                 </svg>
-                Finding alternative board name…
+                Suggesting new board names…
               </div>
-              <label v-else-if="newBoardSuggestion" class="bi-modal__option">
-                <input type="radio" v-model="boardSuggestionPick" value="new" />
-                <span class="bi-modal__option-name">{{ newBoardSuggestion }}</span>
-                <span class="bi-modal__new-badge">New</span>
-              </label>
+              <template v-else>
+                <label v-if="newBoardSuggestionSpecific" class="bi-modal__option">
+                  <input type="radio" v-model="boardSuggestionPick" value="new-specific" />
+                  <span class="bi-modal__option-name">{{ newBoardSuggestionSpecific }}</span>
+                  <span class="bi-modal__new-badge">Specific</span>
+                </label>
+                <label v-if="newBoardSuggestionBroad" class="bi-modal__option">
+                  <input type="radio" v-model="boardSuggestionPick" value="new-broad" />
+                  <span class="bi-modal__option-name">{{ newBoardSuggestionBroad }}</span>
+                  <span class="bi-modal__new-badge bi-modal__new-badge--broad">Broad</span>
+                </label>
+                <p v-if="!newBoardSuggestionSpecific && !newBoardSuggestionBroad && boardSuggestionResult?.recommendedBoards?.length" class="bi-modal__new-fallback">
+                  {{ boardSuggestionResult.recommendedBoards.length }} existing board{{ boardSuggestionResult.recommendedBoards.length === 1 ? '' : 's' }} could fit — see above.
+                </p>
+              </template>
             </div>
 
             <!-- Actions -->
-            <div v-if="boardSuggestionResult || newBoardSuggestion" class="bi-modal__footer">
+            <div v-if="boardSuggestionResult || newBoardSuggestionSpecific || newBoardSuggestionBroad" class="bi-modal__footer">
               <button
                 class="meta-page__btn meta-page__btn--primary"
                 :disabled="applyingBoardSuggestion || !canApplyBoardSuggestion"
@@ -1078,14 +1089,14 @@ function closeTransferModal() {
   transferError.value = ''
 }
 
-async function handleTransferConfirm({ mode, targetProjectId }) {
+async function handleTransferConfirm({ mode, targetProjectId, fields }) {
   const ids = [...selectedIds.value]
   if (ids.length === 0 || !targetProjectId) return
 
   transferBusy.value = true
   transferError.value = ''
   try {
-    const result = await transferImages(ids, targetProjectId, mode)
+    const result = await transferImages(ids, targetProjectId, mode, fields)
     const movedIds = new Set(result?.movedIds ?? (mode === 'move' ? ids : []))
 
     if (mode === 'move') {
@@ -1161,16 +1172,14 @@ watch(activeId, (newId, oldId) => {
   savedAt.value = null
 })
 
-const totalUnsavedCount = computed(() =>
-  pendingChanges.value.size + (isDirty.value ? 1 : 0)
-)
-watch(totalUnsavedCount, (n) => { if (n === 0) filters.unsaved = '' })
-
 const unsavedIds = computed(() => {
   const s = new Set(pendingChanges.value.keys())
   if (isDirty.value && activeId.value) s.add(activeId.value)
   return s
 })
+
+const totalUnsavedCount = computed(() => unsavedIds.value.size)
+watch(totalUnsavedCount, (n) => { if (n === 0) filters.unsaved = '' })
 
 function onDraftUpdate(updated) {
   activeDraft.value = updated
@@ -1338,8 +1347,6 @@ async function handleSaveAllSelected() {
       toSave.push(activeDraft.value)
     } else if (pendingChanges.value.has(img.id)) {
       toSave.push(pendingChanges.value.get(img.id))
-    } else {
-      toSave.push(img)
     }
   }
   if (toSave.length === 0) return
@@ -1480,9 +1487,9 @@ function closeAiModal() {
 }
 
 // ── Board Intelligence ───────────────────────────────────────────────────────
-const { suggestion: boardSuggestionResult, newBoardSuggestion, loading: boardSuggestionLoading, loadingNew: boardSuggestionLoadingNew, suggestBoard } = useBoardIntelligence()
+const { suggestion: boardSuggestionResult, newBoardSuggestionSpecific, newBoardSuggestionBroad, loading: boardSuggestionLoading, loadingNew: boardSuggestionLoadingNew, newBoardsLoaded: boardSuggestionNewLoaded, suggestBoard } = useBoardIntelligence()
 const showBoardSuggestion = ref(false)
-const boardSuggestionPick = ref(null) // 'existing' | 'new' | null
+const boardSuggestionPick = ref(null) // 'existing' | 'new-specific' | 'new-broad' | null
 
 // Auto-select the top existing recommendation when it arrives.
 watch(boardSuggestionResult, (result) => {
@@ -1491,7 +1498,8 @@ watch(boardSuggestionResult, (result) => {
 
 const canApplyBoardSuggestion = computed(() => {
   if (boardSuggestionPick.value === 'existing') return !!boardSuggestionResult.value?.recommendedBoards?.length
-  if (boardSuggestionPick.value === 'new') return !!newBoardSuggestion.value
+  if (boardSuggestionPick.value === 'new-specific') return !!newBoardSuggestionSpecific.value
+  if (boardSuggestionPick.value === 'new-broad') return !!newBoardSuggestionBroad.value
   return false
 })
 
@@ -1503,6 +1511,7 @@ async function handleSuggestBoard() {
       title: activeDraft.value.pinterest?.title || '',
       description: activeDraft.value.pinterest?.description || '',
       filename: activeDraft.value.filename || '',
+      imageUrl: activeDraft.value.thumbnailUrl || activeDraft.value.mediaUrl || null,
     },
     boards.value,
     { withNewBoard: true },
@@ -1518,8 +1527,13 @@ async function applyBoardSuggestion() {
     let boardId = null
     let boardName = ''
 
-    if (boardSuggestionPick.value === 'new' && newBoardSuggestion.value) {
-      const newB = await addBoard(newBoardSuggestion.value)
+    const newName = boardSuggestionPick.value === 'new-specific'
+      ? newBoardSuggestionSpecific.value
+      : boardSuggestionPick.value === 'new-broad'
+        ? newBoardSuggestionBroad.value
+        : null
+    if (newName) {
+      const newB = await addBoard(newName)
       boardId = newB.id
       boardName = newB.name
     } else if (boardSuggestionPick.value === 'existing') {
@@ -1579,6 +1593,32 @@ const duplicateResult = computed(() => ({
   duplicates: duplicatesList.value,
   freshnessWarnings: freshnessWarnings.value,
 }))
+
+const downloadingZip = ref(false)
+
+async function handleDownloadSelected() {
+  const targets = images.value.filter(i => selectedIds.value.has(i.id))
+  if (!targets.length || downloadingZip.value) return
+  downloadingZip.value = true
+  try {
+    const blob = await $fetch('/api/images/download-zip', {
+      method: 'POST',
+      body: { imageIds: targets.map(i => i.id) },
+      responseType: 'blob',
+    })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `images-${new Date().toISOString().slice(0, 10)}.zip`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(a.href)
+  } catch (e) {
+    console.error('ZIP download failed', e)
+  } finally {
+    downloadingZip.value = false
+  }
+}
 
 function handleScanDuplicates() {
   const targets = selectedCount.value > 0
@@ -3406,7 +3446,7 @@ function goToPage(page) {
     flex-shrink: 0;
   }
 
-  // "New" badge on the new-board checkbox row
+  // "Specific" / "Broad" badges on new-board radio rows
   &__new-badge {
     margin-left: auto;
     font-size: 10px;
@@ -3419,6 +3459,11 @@ function goToPage(page) {
     border-radius: 4px;
     padding: 1px 6px;
     flex-shrink: 0;
+    &--broad {
+      color: #1e40af;
+      background: #dbeafe;
+      border-color: #bfdbfe;
+    }
   }
 
   &__check-row--new {
@@ -3433,6 +3478,13 @@ function goToPage(page) {
     color: #9ca3af;
     text-align: center;
     padding: 16px 0;
+  }
+
+  &__new-fallback {
+    margin: 0;
+    font-size: 12px;
+    color: #9ca3af;
+    font-style: italic;
   }
 
   // Footer buttons

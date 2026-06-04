@@ -131,7 +131,6 @@
             <label class="single-form__label single-form__label--req">Pinterest board</label>
             <div v-if="!readOnly" class="single-form__board-actions">
               <button
-                v-if="boards.length"
                 class="single-form__suggest-btn"
                 type="button"
                 title="AI Board Suggestion"
