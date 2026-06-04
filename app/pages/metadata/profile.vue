@@ -46,7 +46,7 @@
             <path d="M3 3v14h14"/>
             <path d="M7 13l3-4 3 2 3-5"/>
           </svg>
-          Plan usage
+          Plan Usage
         </div>
 
         <div v-for="u in usageRows" :key="u.key" class="profile-credits__row">
@@ -268,11 +268,14 @@ async function handleDeleteAccount() {
   overflow-y: auto;
   padding: 32px 40px 48px;
   max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 
   &__header {
-    margin-bottom: 28px;
+    margin-bottom: 24px;
     border-bottom: 1px solid #ececec;
-    padding-bottom: 20px;
+    padding-bottom: 18px;
   }
 
   &__title {
@@ -280,11 +283,11 @@ async function handleDeleteAccount() {
     font-weight: 700;
     color: $color-primary;
     margin: 0 0 4px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
   }
 
   &__subtitle {
-    font-size: 13.5px;
+    font-size: 13px;
     color: #6b7280;
     margin: 0;
   }
@@ -301,6 +304,7 @@ async function handleDeleteAccount() {
   border: 1px solid #ececec;
   border-radius: 12px;
   padding: 24px;
+  transition: box-shadow 0.15s;
 
   &--loading,
   &--error {
@@ -641,6 +645,20 @@ async function handleDeleteAccount() {
 }
 
 @keyframes profile-danger-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .profile-page {
+    padding: 24px 24px 40px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .profile-page {
+    padding: 16px 14px 36px;
+    padding-left: 54px;
+  }
+}
 
 // ── Beta card ──────────────────────────────────────────────────────────────────
 .profile-card--beta {

@@ -258,7 +258,7 @@
           <section v-show="activeSection === 'export'" class="settings-card">
             <header class="settings-card__head">
               <div>
-                <h2 class="settings-card__title">CSV export timezone</h2>
+                <h2 class="settings-card__title">CSV Export Timezone</h2>
                 <p class="settings-card__hint">
                   Pinterest reads the publish time in the CSV using your Pinterest
                   account's timezone. Set this to the same zone so a pin scheduled
@@ -1419,7 +1419,7 @@ onMounted(() => {
 
     &--active {
       background: color-mix(in srgb, #{$color-accent} 10%, #fff);
-      color: $color-primary;
+      color: $color-accent;
       font-weight: 600;
     }
   }
@@ -1656,9 +1656,10 @@ onMounted(() => {
   font-size: 13px;
   color: $color-primary;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.12s;
 
-  &:hover:not(:disabled) { background: #f3f4f6; }
+  &:hover:not(:disabled) { background: #f3f4f6; transform: translateY(-1px); }
+  &:active:not(:disabled) { transform: translateY(0); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 
   &--primary {
@@ -1667,7 +1668,13 @@ onMounted(() => {
     color: #fff;
     font-weight: 600;
 
-    &:hover:not(:disabled) { background: color-mix(in srgb, #{$color-accent} 94%, #000); border-color: color-mix(in srgb, #{$color-accent} 94%, #000); }
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, #{$color-accent} 90%, #000);
+      border-color: color-mix(in srgb, #{$color-accent} 90%, #000);
+      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.22);
+      transform: translateY(-1px);
+    }
+    &:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
   }
 
   &--sm {
@@ -2170,8 +2177,8 @@ onMounted(() => {
     display: flex;
     gap: 14px;
     align-items: flex-start;
-    background: #f0f9ff;
-    border: 1.5px solid #bae6fd;
+    background: #fafaf9;
+    border: 1px solid #e5e7eb;
     border-radius: 10px;
     padding: 16px 18px;
   }
@@ -2181,7 +2188,7 @@ onMounted(() => {
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: #0ea5e9;
+    background: $color-accent;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2198,14 +2205,14 @@ onMounted(() => {
     display: block;
     font-size: 13px;
     font-weight: 700;
-    color: #0c4a6e;
+    color: $color-primary;
     margin-bottom: 6px;
   }
 
   &__info-text {
     margin: 0 0 10px;
     font-size: 12.5px;
-    color: #075985;
+    color: #4b5563;
     line-height: 1.55;
   }
 
@@ -2213,22 +2220,22 @@ onMounted(() => {
     margin: 0 0 10px;
     padding-left: 18px;
     font-size: 12.5px;
-    color: #075985;
+    color: #4b5563;
     line-height: 1.65;
 
     li + li { margin-top: 3px; }
-    strong { color: #0c4a6e; }
+    strong { color: $color-primary; }
   }
 
   &__info-note {
     margin: 0;
     font-size: 11.5px;
-    color: #0369a1;
+    color: #6b7280;
     line-height: 1.5;
 
     code {
       font-family: 'SFMono-Regular', Consolas, monospace;
-      background: #e0f2fe;
+      background: #f3f4f6;
       border-radius: 4px;
       padding: 1px 5px;
       font-size: 11px;
@@ -2541,6 +2548,20 @@ onMounted(() => {
     cursor: pointer;
 
     input { accent-color: $color-accent; }
+  }
+}
+
+// ── Tablet layout (≤ 768px) ──────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .settings-page {
+    &__sections-nav { width: 160px; padding: 14px 10px; }
+    &__content      { padding: 18px 18px 48px; }
+  }
+  .settings-card {
+    max-width: 100%;
+  }
+  .tpl-form-grid {
+    grid-template-columns: 1fr;
   }
 }
 

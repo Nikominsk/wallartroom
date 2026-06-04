@@ -13,13 +13,13 @@ import type { H3Event } from 'h3'
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const FREE_PLAN_LIMITS = {
-  imageUploads:  200,
-  aiGenerations: 500,
+  imageUploads:   35,
+  aiGenerations: 100,
 } as const
 
 // Per-plan caps. Paid plans use monthly counters (reset each billing cycle).
 const PLAN_LIMITS: Record<string, { imageUploads: number; aiGenerations: number; maxProjects: number }> = {
-  free:    { imageUploads:   200, aiGenerations:   500, maxProjects:  1 },
+  free:    { imageUploads:    35, aiGenerations:   100, maxProjects:  1 },
   starter: { imageUploads:    50, aiGenerations:   200, maxProjects:  1 },
   plus:    { imageUploads:   200, aiGenerations: 1_000, maxProjects:  3 },
   studio:  { imageUploads: 1_500, aiGenerations: 5_000, maxProjects: 10 },

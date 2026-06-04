@@ -41,7 +41,7 @@
           <div class="ps-modal__queue-row">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><path d="M6 3v3l2 1.5"/></svg>
             <template v-if="queueStats.denseEnd">
-              Pins posted until <strong>{{ formatDateDisplay(queueStats.denseEnd) }}</strong>
+              {{ exportedOnly ? 'Exported' : 'Scheduled' }} through <strong>{{ formatDateDisplay(queueStats.denseEnd) }}</strong>
               <span class="ps-modal__queue-days">{{ queueStats.denseEndDaysAhead }}d from now</span>
               <button class="ps-modal__queue-use" :title="`Set start date to ${formatDateDisplay(queueStats.suggestStart)}`" @click="startDate = queueStats.suggestStart">
                 Start {{ formatDateDisplay(queueStats.suggestStart) }} →
@@ -56,13 +56,66 @@
           </div>
           <div v-if="queueStats.outlierCount" class="ps-modal__queue-row ps-modal__queue-row--warn">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1L1 10h10L6 1z"/><path d="M6 5v2M6 8.5h.01"/></svg>
-            {{ queueStats.outlierCount }} single pin{{ queueStats.outlierCount !== 1 ? 's' : '' }} scheduled much later (up to <strong>{{ formatDateDisplay(queueStats.outlierEnd) }}</strong>) — not counted above
+            {{ queueStats.outlierCount }} single pin{{ queueStats.outlierCount !== 1 ? 's' : '' }} scheduled much later (up to <strong>{{ formatDateDisplay(queueStats.outlierEnd) }}</strong>) — sparse days, not counted above
           </div>
         </div>
         <div v-else class="ps-modal__queue">
           <div class="ps-modal__queue-label">Schedule status <a href="/metadata/calendar" target="_blank" class="ps-modal__queue-cal-link">View calendar ↗</a></div>
           <div class="ps-modal__queue-row ps-modal__queue-none">No exported pins with a date yet</div>
         </div>
+      </div>
+
+      <!-- Schedule density sparkline -->
+      <div v-if="chartDays" class="ps-modal__chart">
+        <div class="ps-modal__chart-head">
+          <span class="ps-modal__chart-label">Schedule density</span>
+          <label class="ps-modal__chart-toggle">
+            <input type="checkbox" v-model="exportedOnly" class="ps-modal__chart-toggle-input" />
+            <span class="ps-modal__chart-toggle-box" :class="{ 'ps-modal__chart-toggle-box--on': exportedOnly }" />
+            <span class="ps-modal__chart-toggle-label">Exported only</span>
+          </label>
+        </div>
+        <svg class="ps-modal__chart-svg" :viewBox="`0 0 ${CHART_W} ${CHART_H}`" aria-hidden="true">
+          <!-- Horizontal grid lines at max and mid -->
+          <line :x1="CHART_PAD_L" :y1="CHART_PAD_T" :x2="CHART_W - CHART_PAD_R" :y2="CHART_PAD_T" class="ps-modal__chart-grid" />
+          <line :x1="CHART_PAD_L" :y1="CHART_MID_Y" :x2="CHART_W - CHART_PAD_R" :y2="CHART_MID_Y" class="ps-modal__chart-grid" />
+          <!-- Area fill under the line -->
+          <path :d="chartAreaPath" class="ps-modal__chart-area" />
+          <!-- Line -->
+          <polyline :points="chartPoints" class="ps-modal__chart-line" fill="none" />
+          <!-- Baseline (x-axis) -->
+          <line :x1="CHART_PAD_L" :y1="CHART_BOTTOM" :x2="CHART_W - CHART_PAD_R" :y2="CHART_BOTTOM" class="ps-modal__chart-axis" />
+          <!-- Y-axis labels: max and mid only -->
+          <text :x="CHART_PAD_L - 4" :y="CHART_PAD_T + 1" text-anchor="end" dominant-baseline="hanging" class="ps-modal__chart-ylabel">{{ chartMax }}</text>
+          <text v-if="chartMid < chartMax" :x="CHART_PAD_L - 4" :y="CHART_MID_Y" text-anchor="end" dominant-baseline="middle" class="ps-modal__chart-ylabel">{{ chartMid }}</text>
+          <!-- X-axis labels: only where the line first hits zero after a run of exports -->
+          <template v-for="(d, i) in chartDays" :key="`xl-${i}`">
+            <text
+              v-if="i > 0 && d.count === 0 && chartDays[i - 1].count > 0"
+              :x="chartX(i)"
+              :y="CHART_BOTTOM + 13"
+              text-anchor="middle"
+              class="ps-modal__chart-xlabel"
+            >{{ formatChartDate(d.date) }}</text>
+          </template>
+          <!-- Suggested start marker -->
+          <template v-if="suggestStartIdx >= 0">
+            <line
+              :x1="chartX(suggestStartIdx)"
+              :y1="CHART_PAD_T - 2"
+              :x2="chartX(suggestStartIdx)"
+              :y2="CHART_BOTTOM"
+              class="ps-modal__chart-suggest-line"
+            />
+            <text
+              :x="clampedChartX(suggestStartIdx)"
+              :y="CHART_PAD_T - 3"
+              text-anchor="middle"
+              dominant-baseline="auto"
+              class="ps-modal__chart-suggest-text"
+            >{{ formatChartDate(queueStats.suggestStart) }}</text>
+          </template>
+        </svg>
       </div>
 
       <!-- Counts summary -->
@@ -356,6 +409,18 @@ const remainingSlotsOnDay = computed(() =>
   Math.max(0, perDay.value - existingCountOnStartDay.value)
 )
 
+// ── Exported-only toggle ──────────────────────────────────────────────────────
+
+const exportedOnly = ref(true)
+
+// The active day-count map switches between exported-only and all-scheduled
+// depending on the checkbox. Both come pre-computed from the server.
+const activeDayCounts = computed(() =>
+  exportedOnly.value
+    ? props.scheduleInfo?.exportedDayCounts
+    : props.scheduleInfo?.allDayCounts
+)
+
 // ── Exported queue stats ──────────────────────────────────────────────────────
 
 function dateDiffDays(laterStr, earlierStr) {
@@ -371,7 +436,7 @@ function addDays(dateStr, n) {
 }
 
 const queueStats = computed(() => {
-  const dayCounts = props.scheduleInfo?.exportedDayCounts
+  const dayCounts = activeDayCounts.value
   if (!dayCounts || Object.keys(dayCounts).length === 0) return null
 
   const n = Math.max(1, perDay.value)
@@ -445,6 +510,83 @@ function fmt12Local(date) {
   const ampm = h < 12 ? 'AM' : 'PM'
   const h12 = h % 12 === 0 ? 12 : h % 12
   return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`
+}
+
+// ── Schedule density sparkline ────────────────────────────────────────────────
+
+const CHART_W      = 500
+const CHART_H      = 74
+const CHART_PAD_L  = 28   // left: room for y-axis labels (e.g. "25")
+const CHART_PAD_R  = 6
+const CHART_PAD_T  = 16   // top: room for "start here" label above the line
+const CHART_PAD_B  = 18   // bottom: room for x-axis date labels
+const CHART_IW     = CHART_W - CHART_PAD_L - CHART_PAD_R
+const CHART_IH     = CHART_H - CHART_PAD_T - CHART_PAD_B
+const CHART_BOTTOM = CHART_PAD_T + CHART_IH
+const CHART_MID_Y  = CHART_PAD_T + CHART_IH / 2
+
+const chartDays = computed(() => {
+  const dayCounts = activeDayCounts.value
+  if (!dayCounts || Object.keys(dayCounts).length === 0) return null
+
+  const today  = todayLocalDate()
+  const maxEnd = addDays(today, 90)
+
+  const futureDates = Object.keys(dayCounts).filter(d => d >= today).sort()
+  if (futureDates.length === 0) return null
+
+  const lastExport = futureDates[futureDates.length - 1]
+  const rawEnd     = addDays(lastExport, 2)
+  const endDate    = rawEnd > maxEnd ? maxEnd : rawEnd
+
+  const days = []
+  let cur = today
+  while (cur <= endDate) {
+    days.push({ date: cur, count: dayCounts[cur] ?? 0 })
+    cur = addDays(cur, 1)
+  }
+  return days.length >= 2 ? days : null
+})
+
+const chartMax = computed(() =>
+  Math.max(...(chartDays.value?.map(d => d.count) ?? []), 1)
+)
+const chartMid = computed(() => {
+  const half = chartMax.value / 2
+  return half % 1 === 0 ? half : Math.ceil(half)
+})
+
+function chartX(i) {
+  const total = chartDays.value?.length ?? 1
+  return total <= 1 ? CHART_PAD_L : CHART_PAD_L + (i / (total - 1)) * CHART_IW
+}
+function chartY(count) {
+  return CHART_BOTTOM - (count / chartMax.value) * CHART_IH
+}
+function clampedChartX(i, margin = 22) {
+  return Math.max(CHART_PAD_L + margin, Math.min(CHART_W - CHART_PAD_R - margin, chartX(i)))
+}
+
+const chartPoints = computed(() =>
+  chartDays.value?.map((d, i) => `${chartX(i)},${chartY(d.count)}`).join(' ') ?? ''
+)
+
+const chartAreaPath = computed(() => {
+  if (!chartDays.value || chartDays.value.length < 2) return ''
+  const pts = chartDays.value.map((d, i) => `${chartX(i)},${chartY(d.count)}`).join(' L ')
+  const last = chartX(chartDays.value.length - 1)
+  return `M ${chartX(0)},${CHART_BOTTOM} L ${pts} L ${last},${CHART_BOTTOM} Z`
+})
+
+const suggestStartIdx = computed(() => {
+  if (!chartDays.value || !queueStats.value?.suggestStart) return -1
+  return chartDays.value.findIndex(d => d.date >= queueStats.value.suggestStart)
+})
+
+function formatChartDate(dateStr) {
+  if (!dateStr) return ''
+  const [, m, d] = dateStr.split('-')
+  return `${d}.${m}`
 }
 
 // ── Apply ─────────────────────────────────────────────────────────────────────
@@ -967,6 +1109,130 @@ function handleApply() {
     font-size: 12px;
     color: #dc2626;
     font-weight: 500;
+  }
+
+  // ── Schedule density sparkline ─────────────────────────────────────────────
+
+  &__chart {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 11px 14px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+  }
+
+  &__chart-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  &__chart-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__chart-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  &__chart-toggle-input { display: none; }
+
+  &__chart-toggle-box {
+    flex-shrink: 0;
+    width: 26px;
+    height: 14px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 7px;
+    background: #fff;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 1px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #d1d5db;
+      transition: left 0.15s, background 0.15s;
+    }
+
+    &--on {
+      background: $color-accent;
+      border-color: $color-accent;
+      &::after { left: 13px; background: #fff; }
+    }
+  }
+
+  &__chart-toggle-label {
+    font-size: 10px;
+    color: #6b7280;
+    white-space: nowrap;
+  }
+
+  &__chart-svg {
+    width: 100%;
+    display: block;
+  }
+
+  &__chart-grid {
+    stroke: #e5e7eb;
+    stroke-width: 0.8;
+  }
+
+  &__chart-axis {
+    stroke: #d1d5db;
+    stroke-width: 1;
+  }
+
+  &__chart-area {
+    fill: color-mix(in srgb, #{$color-accent} 11%, transparent);
+  }
+
+  &__chart-line {
+    stroke: $color-accent;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  &__chart-ylabel {
+    font-size: 8px;
+    fill: #9ca3af;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__chart-xlabel {
+    font-size: 8px;
+    fill: #6b7280;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__chart-suggest-line {
+    stroke: $color-accent;
+    stroke-width: 1.5;
+    stroke-dasharray: 3 2;
+    opacity: 0.75;
+  }
+
+  &__chart-suggest-text {
+    font-size: 8px;
+    fill: $color-accent;
+    font-weight: 700;
   }
 }
 </style>

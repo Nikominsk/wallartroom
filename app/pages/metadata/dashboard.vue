@@ -160,7 +160,7 @@
       <div class="dash__card">
         <div class="dash__card-head">
           <span class="dash__card-title">Scheduled Next 7 Days</span>
-          <div class="dash__card-head-right">
+          <div v-if="upcomingVisible" class="dash__card-head-right">
             <label class="dash__filter-check">
               <input type="checkbox" v-model="showOnlyExported" />
               <span>Exported only</span>
@@ -179,7 +179,7 @@
               </button>
               <button
                 class="dash__up-arrow"
-                :disabled="!canScrollRight"
+                :disabled="scrollIndex + 1 >= maxPinsPerDay"
                 aria-label="Scroll right"
                 @click="scrollIndex = Math.min(scrollIndex + 3, maxPinsPerDay - 1)"
               >
@@ -191,7 +191,17 @@
           </div>
         </div>
 
-        <template v-if="upcomingByDay.length">
+        <!-- Load gate: shown until the user requests the data -->
+        <div v-if="!upcomingVisible" class="dash__up-gate">
+          <button class="dash__up-gate-btn" type="button" @click="upcomingVisible = true">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="16" height="13" rx="1.5"/><path d="M2 8h16M6 2v4M14 2v4"/>
+            </svg>
+            Load next 7 days
+          </button>
+        </div>
+
+        <template v-else-if="upcomingByDay.length">
           <div
             v-for="day in upcomingByDay"
             :key="day.key"
@@ -379,6 +389,7 @@ const showOnlyExportedSchedule = ref(true)
 const showOnlyExported = ref(true)
 const scrollIndex = ref(0)
 const thumbLoaded = reactive({})
+const upcomingVisible = ref(false)
 
 watch(showOnlyExported, () => { scrollIndex.value = 0 })
 
@@ -422,7 +433,7 @@ function formatTime(dateStr) {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 28px 32px 48px;
+  padding: 28px 28px 48px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -446,9 +457,9 @@ function formatTime(dateStr) {
   }
 
   &__sub {
-    margin: 3px 0 0;
+    margin: 4px 0 0;
     font-size: 13px;
-    color: #9ca3af;
+    color: #6b7280;
   }
 
   &__refresh {
@@ -464,16 +475,18 @@ function formatTime(dateStr) {
     align-items: center;
     justify-content: center;
     padding: 0;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
 
     &--spin svg { animation: spin 0.7s linear infinite; }
 
     &:hover:not(:disabled) {
-      background: #f9fafb;
+      background: #f3f4f6;
       border-color: #d1d5db;
       color: $color-primary;
+      transform: translateY(-1px);
     }
 
+    &:active:not(:disabled) { transform: translateY(0); }
     &:disabled { opacity: 0.45; cursor: not-allowed; }
   }
 
@@ -488,9 +501,11 @@ function formatTime(dateStr) {
   &__skel-kpi {
     height: 110px;
     background: #fff;
-    border: 1px solid #f0f0f0;
+    border: 1px solid #ececec;
     border-radius: 12px;
-    animation: pulse 1.5s ease-in-out infinite;
+    animation: shimmer 1.6s linear infinite;
+    background: linear-gradient(90deg, #f7f7f7 25%, #efefef 50%, #f7f7f7 75%);
+    background-size: 200% 100%;
   }
 
   &__skel-row {
@@ -500,10 +515,11 @@ function formatTime(dateStr) {
   }
 
   &__skel-card {
-    background: #fff;
-    border: 1px solid #f0f0f0;
+    border: 1px solid #ececec;
     border-radius: 12px;
-    animation: pulse 1.5s ease-in-out infinite;
+    animation: shimmer 1.6s linear infinite;
+    background: linear-gradient(90deg, #f7f7f7 25%, #efefef 50%, #f7f7f7 75%);
+    background-size: 200% 100%;
   }
 
   // ── Pipeline ─────────────────────────────────────────────────────────
@@ -518,12 +534,18 @@ function formatTime(dateStr) {
     position: relative;
     overflow: hidden;
     background: #fff;
-    border: 1px solid #f0f0f0;
+    border: 1px solid #ececec;
     border-radius: 12px;
     padding: 16px 18px 14px;
     display: flex;
     flex-direction: column;
     gap: 3px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+
+    &:hover {
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+      border-color: #e0e0e0;
+    }
 
     &::before {
       content: '';
@@ -596,7 +618,7 @@ function formatTime(dateStr) {
 
   &__card {
     background: #fff;
-    border: 1px solid #f0f0f0;
+    border: 1px solid #ececec;
     border-radius: 12px;
     padding: 20px 22px;
   }
@@ -752,6 +774,41 @@ function formatTime(dateStr) {
     text-align: center;
   }
 
+  // ── Upcoming — load gate ─────────────────────────────────────────────
+
+  &__up-gate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0 24px;
+  }
+
+  &__up-gate-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: $color-primary;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.12s;
+
+    svg { color: #6b7280; flex-shrink: 0; }
+
+    &:hover {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+      transform: translateY(-1px);
+    }
+    &:active { transform: translateY(0); }
+  }
+
   // ── Upcoming — day rows ──────────────────────────────────────────────
 
   &__up-arrows {
@@ -772,14 +829,16 @@ function formatTime(dateStr) {
     justify-content: center;
     color: #6b7280;
     padding: 0;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
 
     &:hover:not(:disabled) {
       background: #f3f4f6;
       border-color: #d1d5db;
       color: $color-primary;
+      transform: translateY(-1px);
     }
 
+    &:active:not(:disabled) { transform: translateY(0); }
     &:disabled { opacity: 0.3; cursor: not-allowed; }
   }
 
@@ -916,23 +975,31 @@ function formatTime(dateStr) {
   to { transform: rotate(360deg); }
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 768px) {
+  .dash {
+    padding: 20px 20px 40px;
+
+    &__pipeline  { grid-template-columns: 1fr 1fr; }
+    &__row2      { grid-template-columns: 1fr; }
+    &__skel-row  { grid-template-columns: 1fr; }
+  }
 }
 
 @media (max-width: 600px) {
   .dash {
     padding: 16px 14px 40px;
 
-    // Extra left padding on the header to clear the fixed hamburger (which
-    // is at left:12px and 34px wide, so content must start at ≥54px from
-    // viewport; 14px container padding + 40px here = 54px).
-    &__head { padding-left: 40px; }
+    &__head { padding-left: 46px; }
 
-    // Stack board-distribution and publishing-schedule cards vertically
-    &__row2     { grid-template-columns: 1fr !important; }
-    &__skel-row { grid-template-columns: 1fr !important; }
+    &__pipeline  { grid-template-columns: 1fr; }
+    &__row2      { grid-template-columns: 1fr; }
+    &__skel-row  { grid-template-columns: 1fr; }
+    &__skel-pipeline { grid-template-columns: 1fr; }
   }
 }
 </style>

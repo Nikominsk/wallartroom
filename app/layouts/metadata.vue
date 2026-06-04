@@ -134,7 +134,7 @@
           class="meta-shell__notify-label"
           :disabled="savingNotifyBanner"
           @click="acceptNotifyBanner"
-        >{{ savingNotifyBanner ? 'Saving…' : '🔔 Notify me at launch' }}</button>
+        >{{ savingNotifyBanner ? 'Saving…' : 'Notify me at launch' }}</button>
       </div>
 
       <!-- ── Legal link ────────────────────────────────────────────── -->
@@ -500,9 +500,14 @@ $sidebar-w-collapsed: 68px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.12s;
 
-    &:hover { background: color-mix(in srgb, #{$color-accent} 90%, #000); }
+    &:hover {
+      background: color-mix(in srgb, #{$color-accent} 90%, #000);
+      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.22);
+      transform: translateY(-1px);
+    }
+    &:active { transform: translateY(0); }
     &:focus-visible { outline: 2px solid $color-accent; outline-offset: 2px; }
 
     svg { flex-shrink: 0; }

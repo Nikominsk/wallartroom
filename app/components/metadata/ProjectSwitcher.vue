@@ -54,7 +54,28 @@
               <span class="proj__check">
                 <svg v-if="p.id === activeProjectId" width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5l3.5 3.5L12 4" /></svg>
               </span>
-              <span class="proj__pick-name">{{ p.name }}</span>
+              <span class="proj__pick-body">
+                <span class="proj__pick-name">{{ p.name }}</span>
+                <svg
+                  v-if="sparklinePoints(p.id)"
+                  viewBox="0 0 100 14"
+                  preserveAspectRatio="none"
+                  class="proj__sparkline"
+                  aria-hidden="true"
+                >
+                  <path :d="sparklineArea(p.id)" class="proj__sparkline-area" />
+                  <polyline :points="sparklinePoints(p.id)" class="proj__sparkline-line" />
+                </svg>
+                <svg
+                  v-else-if="!sparklineFetched"
+                  class="proj__sparkline-loader"
+                  width="10" height="10" viewBox="0 0 22 22" fill="none"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="9" stroke="#e5e7eb" stroke-width="2.5"/>
+                  <path d="M11 2a9 9 0 0 1 9 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+              </span>
             </button>
             <span class="proj__row-actions">
               <button class="proj__mini" type="button" title="Rename" @click.stop="startRename(p)">
@@ -226,9 +247,58 @@ function onDocClick(e) {
   if (open.value && rootEl.value && !rootEl.value.contains(e.target)) open.value = false
 }
 
+// ── Per-project sparklines ────────────────────────────────────────────────────
+
+const sparklineData = ref({})
+const sparklineFetched = ref(false)
+
+async function fetchSparklines() {
+  if (sparklineFetched.value) return
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+    sparklineData.value = await $fetch('/api/metadata/projects/sparklines', { query: { tz } })
+    sparklineFetched.value = true
+  } catch { /* non-critical, fail silently */ }
+}
+
+function buildSparkline(projectId) {
+  const dayCounts = sparklineData.value[projectId]
+  const today = new Date()
+  const counts = []
+  let maxCount = 0
+
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() + i)
+    const key = d.toLocaleDateString('en-CA')
+    const n = dayCounts?.[key] ?? 0
+    counts.push(n)
+    if (n > maxCount) maxCount = n
+  }
+
+  if (maxCount === 0) return null
+
+  const pts = counts.map((n, i) => {
+    const x = (i / 29) * 100
+    const y = 14 - (n / maxCount) * 12
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  })
+
+  return {
+    points: pts.join(' '),
+    area: `M 0,14 L ${pts.join(' L ')} L 100,14 Z`,
+  }
+}
+
+function sparklinePoints(id) { return buildSparkline(id)?.points ?? null }
+function sparklineArea(id)   { return buildSparkline(id)?.area   ?? '' }
+
+// ── Toggle ────────────────────────────────────────────────────────────────────
+
 function toggle() {
   open.value = !open.value
-  if (!open.value) resetEditing()
+  if (open.value) fetchSparklines()
+  else resetEditing()
 }
 
 function resetEditing() {
@@ -494,11 +564,12 @@ async function executeDelete() {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px;
+    padding: 7px 8px;
     border: none;
     background: transparent;
     cursor: pointer;
     font: inherit;
+    text-align: left;
     color: #374151;
 
     &--active { font-weight: 600; color: $color-primary; }
@@ -514,12 +585,52 @@ async function executeDelete() {
     justify-content: center;
   }
 
+  &__pick-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
   &__pick-name {
+    flex: 1;
+    min-width: 0;
+    display: block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 13px;
+    line-height: 1.3;
   }
+
+  &__sparkline {
+    display: block;
+    flex-shrink: 0;
+    width: 52px;
+    height: 14px;
+  }
+
+  &__sparkline-area {
+    fill: color-mix(in srgb, #{$color-accent} 18%, transparent);
+  }
+
+  &__sparkline-line {
+    stroke: $color-accent;
+    stroke-width: 1.5;
+    fill: none;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  &__sparkline-loader {
+    flex-shrink: 0;
+    color: #9ca3af;
+    animation: proj-spin 0.8s linear infinite;
+  }
+
+  @keyframes proj-spin { to { transform: rotate(360deg); } }
 
   &__row-actions {
     display: flex;

@@ -4,7 +4,7 @@
     <!-- ── Header ────────────────────────────────────────────────────────── -->
     <header class="cal__head">
       <div class="cal__head-left">
-        <h1 class="cal__title">Schedule Calendar</h1>
+        <h1 class="cal__title">Calendar</h1>
         <span v-if="data" class="cal__badge">{{ filteredPinCount }} pin{{ filteredPinCount !== 1 ? 's' : '' }}</span>
       </div>
       <div class="cal__head-right">
@@ -96,6 +96,55 @@
       </template>
 
     </div>
+
+    <!-- Monthly board stats widget (fixed, bottom-right) -->
+    <Teleport to="body">
+      <div
+        v-if="showMonthStats && monthTotal > 0"
+        class="cal-stats"
+        @mousemove="onStatsMove"
+      >
+        <button class="cal-stats__close" aria-label="Close" @click="showMonthStats = false">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M1 1l10 10M11 1L1 11"/>
+          </svg>
+        </button>
+        <svg viewBox="0 0 120 120" class="cal-stats__svg" aria-hidden="true">
+          <circle cx="60" cy="60" r="44" fill="none" stroke="#f3f4f6" stroke-width="20" />
+          <g transform="rotate(-90 60 60)">
+            <circle
+              v-for="(s, i) in monthDonutSlices"
+              :key="i"
+              cx="60" cy="60" r="44"
+              fill="none"
+              :stroke="s.color"
+              stroke-width="18"
+              :stroke-dasharray="s.dasharray"
+              stroke-linecap="butt"
+              class="cal-stats__slice"
+              @mouseenter="e => onBoardHover(e, s)"
+              @mouseleave="onBoardLeave"
+            />
+          </g>
+          <text x="60" y="54" text-anchor="middle" dominant-baseline="auto" class="cal-stats__center-num">{{ monthTotal }}</text>
+          <text x="60" y="67" text-anchor="middle" dominant-baseline="auto" class="cal-stats__center-lbl">pins</text>
+        </svg>
+      </div>
+    </Teleport>
+
+    <!-- Cursor-following tooltip for board hover -->
+    <Teleport to="body">
+      <div
+        v-if="hoveredBoard"
+        class="cal-board-tip"
+        :style="{ right: tooltipRight + 'px', top: tooltipY + 'px' }"
+        aria-hidden="true"
+      >
+        <span class="cal-board-tip__dot" :style="{ background: hoveredBoard.color }" />
+        <span class="cal-board-tip__name">{{ hoveredBoard.name }}</span>
+        <strong class="cal-board-tip__count">{{ hoveredBoard.count }}</strong>
+      </div>
+    </Teleport>
 
   </div>
 </template>
@@ -228,6 +277,64 @@ function openDay(cell) {
   })
   window.open(`/metadata?${params.toString()}`, '_blank')
 }
+
+// ── Monthly board stats widget ─────────────────────────────────────────────
+
+const showMonthStats = ref(true)
+const hoveredBoard   = ref(null)
+const tooltipRight   = ref(0)
+const tooltipY       = ref(0)
+
+// Re-show automatically when the user navigates to a different month
+watch([currentMonth, currentYear], () => { showMonthStats.value = true })
+
+// Board distribution for the currently visible (filtered) pins — no extra fetch
+const monthBoardStats = computed(() => {
+  const map = new Map()
+  for (const pin of filteredPins.value) {
+    const board = pin.board || '(No Board)'
+    map.set(board, (map.get(board) ?? 0) + 1)
+  }
+  return [...map.entries()]
+    .map(([name, count]) => ({ name, count, color: colorForBoard(name) }))
+    .sort((a, b) => b.count - a.count)
+})
+
+const monthTotal = computed(() =>
+  monthBoardStats.value.reduce((s, b) => s + b.count, 0)
+)
+
+const monthDonutSlices = computed(() => {
+  const boards = monthBoardStats.value
+  const tot = monthTotal.value
+  if (!tot) return []
+  const R   = 44
+  const C   = 2 * Math.PI * R
+  const GAP = boards.length > 1 ? 2 : 0
+  let cumArc = 0
+  return boards.map(b => {
+    const fullArc   = (b.count / tot) * C
+    const visArc    = Math.max(fullArc - GAP, 1)
+    const rest      = Math.max(C - cumArc - visArc, 0)
+    const dasharray = `0 ${cumArc.toFixed(2)} ${visArc.toFixed(2)} ${rest.toFixed(2)}`
+    cumArc += fullArc
+    return { ...b, dasharray }
+  })
+})
+
+function onBoardHover(e, board) {
+  hoveredBoard.value = board
+  tooltipRight.value = window.innerWidth - e.clientX + 14
+  tooltipY.value = e.clientY - 38
+}
+function onStatsMove(e) {
+  if (!hoveredBoard.value) return
+  tooltipRight.value = window.innerWidth - e.clientX + 14
+  tooltipY.value = e.clientY - 38
+}
+function onBoardLeave() {
+  hoveredBoard.value = null
+}
 </script>
 
 <style scoped lang="scss">
@@ -235,7 +342,7 @@ function openDay(cell) {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 20px 24px 32px;
+  padding: 24px 28px 48px;
   background: $color-bg;
   display: flex;
   flex-direction: column;
@@ -257,11 +364,12 @@ function openDay(cell) {
   }
 
   &__title {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: $color-primary;
     margin: 0;
     line-height: 1;
+    letter-spacing: -0.025em;
   }
 
   &__badge {
@@ -287,6 +395,7 @@ function openDay(cell) {
     gap: 7px;
     cursor: pointer;
     user-select: none;
+    -webkit-user-select: none;
 
     input { display: none; }
   }
@@ -339,9 +448,14 @@ function openDay(cell) {
     color: $color-primary;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.12s, border-color 0.12s;
+    transition: background 0.12s, border-color 0.12s, transform 0.12s;
 
-    &:hover { background: #f3f4f6; border-color: #9ca3af; }
+    &:hover {
+      background: #f3f4f6;
+      border-color: #9ca3af;
+      transform: translateY(-1px);
+    }
+    &:active { transform: translateY(0); }
   }
 
   &__nav {
@@ -363,10 +477,16 @@ function openDay(cell) {
     align-items: center;
     justify-content: center;
     padding: 0;
-    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.12s;
 
-    &:hover:not(:disabled) { background: #f3f4f6; color: $color-primary; border-color: #d1d5db; }
-    &:disabled             { opacity: 0.5; cursor: default; }
+    &:hover:not(:disabled) {
+      background: #f3f4f6;
+      color: $color-primary;
+      border-color: #d1d5db;
+      transform: translateY(-1px);
+    }
+    &:active:not(:disabled) { transform: translateY(0); }
+    &:disabled              { opacity: 0.5; cursor: default; }
   }
 
   &__month-label {
@@ -437,13 +557,15 @@ function openDay(cell) {
     cursor: pointer;
     transition: background 0.1s;
 
-    &:hover { background: #f9fafb; }
+    &:hover { background: #f7f7f7; }
     &--other { background: #fafafa; &:hover { background: #f3f4f6; } }
+    &--today { background: color-mix(in srgb, #{$color-accent} 3%, #fff); }
     &--skel  {
-      background: #f3f4f6;
       cursor: default;
-      animation: cal-pulse 1.6s ease-in-out infinite;
-      &:hover { background: #f3f4f6; }
+      animation: shimmer 1.6s linear infinite;
+      background: linear-gradient(90deg, #f7f7f7 25%, #efefef 50%, #f7f7f7 75%);
+      background-size: 200% 100%;
+      &:hover { background: linear-gradient(90deg, #f7f7f7 25%, #efefef 50%, #f7f7f7 75%); }
     }
   }
 
@@ -509,7 +631,123 @@ function openDay(cell) {
   }
 }
 
-@keyframes cal-spin  { to { transform: rotate(360deg); } }
-@keyframes cal-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@keyframes cal-spin { to { transform: rotate(360deg); } }
+@keyframes shimmer  { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+// ── Monthly board stats widget (teleported to body, fixed bottom-right) ──────
+
+.cal-stats {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 30;
+  width: fit-content;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+  &__close {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    transition: background 0.12s, color 0.12s;
+
+    &:hover { background: #f3f4f6; color: $color-primary; }
+  }
+
+  &__svg {
+    width: 84px;
+    height: 84px;
+    display: block;
+  }
+
+  &__slice {
+    cursor: pointer;
+    transition: opacity 0.12s;
+    &:hover { opacity: 0.75; }
+  }
+
+  &__center-num {
+    font-size: 22px;
+    font-weight: 700;
+    fill: $color-primary;
+    letter-spacing: -0.03em;
+  }
+
+  &__center-lbl {
+    font-size: 9px;
+    fill: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+}
+
+// Cursor-following tooltip shown when hovering a board slice or legend row
+.cal-board-tip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: $color-primary;
+  color: #fff;
+  border-radius: 7px;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__name { font-weight: 500; }
+
+  &__count {
+    font-weight: 700;
+    margin-left: 2px;
+  }
+}
+
+@media (max-width: 600px) {
+  .cal-stats { display: none; }
+}
+
+@media (max-width: 768px) {
+  .cal {
+    padding: 18px 18px 36px;
+    &__head { flex-wrap: wrap; }
+    &__head-right { gap: 6px; }
+    &__cell { min-height: 72px; }
+  }
+}
+
+@media (max-width: 600px) {
+  .cal {
+    padding: 14px 12px 32px;
+    &__head { padding-left: 46px; }
+    &__cell { min-height: 56px; padding: 3px 2px 4px; }
+    &__chip-time { font-size: 7.5px; }
+    &__date { width: 17px; height: 17px; font-size: 10px; }
+  }
+}
 </style>
 

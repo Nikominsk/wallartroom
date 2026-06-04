@@ -9,7 +9,7 @@
         </svg>
         Metadata
       </NuxtLink>
-      <h1 class="csv-page__title">CSV Export History</h1>
+      <h1 class="csv-page__title">Export History</h1>
       <span v-if="!loading && exports.length" class="csv-page__count-badge">
         {{ exports.length }} export{{ exports.length !== 1 ? 's' : '' }}
       </span>
@@ -432,7 +432,9 @@ async function handleDelete(exp) {
 
 <style scoped lang="scss">
 .csv-page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   background: $color-bg;
 
   // ── Header ──────────────────────────────────────────────────────────────────
@@ -441,14 +443,10 @@ async function handleDelete(exp) {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 24px;
-    background: #fff;
-    border-bottom: 1px solid #e5e7eb;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    padding: 24px 28px 0;
+    background: transparent;
     flex-wrap: wrap;
+    margin-bottom: 4px;
   }
 
   &__back {
@@ -471,10 +469,11 @@ async function handleDelete(exp) {
 
   &__title {
     margin: 0;
-    font-size: 17px;
+    font-size: 20px;
     font-weight: 700;
     color: $color-primary;
     flex: 1;
+    letter-spacing: -0.025em;
   }
 
   &__count-badge {
@@ -518,7 +517,7 @@ async function handleDelete(exp) {
   // ── List ──────────────────────────────────────────────────────────────────────
 
   &__list {
-    padding: 20px 24px;
+    padding: 24px 28px 48px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -527,15 +526,14 @@ async function handleDelete(exp) {
   }
 
   @media (max-width: 768px) {
-    &__list { padding: 14px 14px; }
-    &__header { padding: 12px 14px; }
+    &__list   { padding: 16px 16px 40px; }
+    &__header { padding: 16px 16px 0; }
   }
 
   @media (max-width: 600px) {
-    // The hamburger in the layout replaces navigation on phones — hide the
-    // redundant "← Metadata" back link and make room for the hamburger.
     &__back   { display: none; }
-    &__header { padding-left: 54px; }
+    &__header { padding: 14px 14px 0 54px; }
+    &__list   { padding: 14px 14px 36px; }
   }
 }
 
@@ -543,12 +541,15 @@ async function handleDelete(exp) {
 
 .csv-item {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #ececec;
   border-radius: $radius-md;
   overflow: hidden;
-  transition: box-shadow 0.15s;
+  transition: box-shadow 0.15s, border-color 0.15s;
 
-  &:hover { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); }
+  &:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border-color: #e0e0e0;
+  }
 
   &--open {
     border-color: color-mix(in srgb, #{$color-accent} 35%, transparent);
@@ -567,12 +568,12 @@ async function handleDelete(exp) {
     flex-shrink: 0;
     width: 34px;
     height: 34px;
-    background: #f0f4ff;
+    background: color-mix(in srgb, #{$color-accent} 10%, #fff);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #4f46e5;
+    color: $color-accent;
   }
 
   &__info {
@@ -642,9 +643,10 @@ async function handleDelete(exp) {
     color: $color-primary;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s, border-color 0.15s, transform 0.12s;
 
-    &:hover   { background: #f3f4f6; border-color: #d1d5db; }
+    &:hover:not(:disabled) { background: #f3f4f6; border-color: #d1d5db; transform: translateY(-1px); }
+    &:active:not(:disabled) { transform: translateY(0); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
 
     &--set-exported {
@@ -746,11 +748,11 @@ async function handleDelete(exp) {
     align-items: center;
     justify-content: space-between;
     padding: 6px 10px;
-    background: #f0f4ff;
-    border: 1px solid #c7d7fd;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
     border-radius: 7px;
     font-size: 12px;
-    color: #3730a3;
+    color: #374151;
   }
 
   &__breakdown-day { font-weight: 500; }
@@ -760,7 +762,7 @@ async function handleDelete(exp) {
     background: #fff;
     padding: 1px 8px;
     border-radius: 12px;
-    border: 1px solid #c7d7fd;
+    border: 1px solid #e5e7eb;
   }
 
   &__img-state {

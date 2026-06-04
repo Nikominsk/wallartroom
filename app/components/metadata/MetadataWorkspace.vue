@@ -1727,7 +1727,9 @@ async function openPinterestScheduler() {
   pinterestScheduleInfoLoading.value = true
   pinterestScheduleInfo.value = null
   try {
-    pinterestScheduleInfo.value = await $fetch('/api/pinterest/schedule-info')
+    pinterestScheduleInfo.value = await $fetch('/api/pinterest/schedule-info', {
+      query: { tz: exportTimezone.value },
+    })
   } catch {
     pinterestScheduleInfo.value = { latestTimestamp: null, existingTimestamps: [] }
   } finally {
@@ -2981,7 +2983,19 @@ function goToPage(page) {
       border-top: 1px solid #e5e7eb;
       border-radius: $radius-md $radius-md 0 0;
       z-index: 50;
-      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+
+      // Drag-handle indicator
+      &::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: #d1d5db;
+        margin: 10px auto 0;
+        flex-shrink: 0;
+      }
     }
 
     &__grid-area { padding: 10px 12px; }
@@ -3522,14 +3536,17 @@ function goToPage(page) {
     // Single/Multi mode switch is redundant on touch (tap = single, long-tap is rare)
     &__mode-switch { display: none; }
 
-    // Panel: slides up as a full-screen overlay instead of sitting beside the grid
+    // Panel: bottom sheet — leaves the top toolbar accessible for scheduling/export/dropdown
     &__panel {
       position: fixed;
-      inset: 0;
+      inset: auto 0 0 0;
       width: 100% !important;
+      max-height: 68vh;
       z-index: 40;
       border-left: none;
       border-top: 3px solid $color-accent;
+      border-radius: $radius-md $radius-md 0 0;
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
       animation: panel-slide-up 0.2s ease;
     }
 
