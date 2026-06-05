@@ -4,6 +4,7 @@ const ALLOWED = [
   'ai_default_tone',
   'ai_additional_instructions',
   'ai_default_language',
+  'ai_ai_board_language',
   'csv_timezone',
 ]
 
@@ -53,7 +54,7 @@ export default defineEventHandler(async (event) => {
     .from('metadata_settings')
     .update(patch)
     .eq('project_id', projectId)
-    .select('ai_max_title_length, ai_max_description_length, ai_default_tone, ai_additional_instructions, ai_default_language, csv_timezone')
+    .select('ai_max_title_length, ai_max_description_length, ai_default_tone, ai_additional_instructions, ai_default_language, ai_board_language, csv_timezone')
     .single()
 
   if (error) throw createError({ statusCode: 500, statusMessage: error.message })

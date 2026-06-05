@@ -96,19 +96,7 @@
       </ul>
 
       <div class="proj__pop-foot">
-        <form v-if="creating" class="proj__edit" @submit.prevent="confirmCreate">
-          <input
-            ref="createInput"
-            v-model="createValue"
-            class="proj__input"
-            placeholder="Project name"
-            maxlength="120"
-            @keyup.esc="creating = false"
-          >
-          <button class="proj__mini proj__mini--ok" type="submit" title="Create" :disabled="busy">✓</button>
-          <button class="proj__mini" type="button" title="Cancel" @click="creating = false">✕</button>
-        </form>
-        <button v-else class="proj__new" type="button" @click="startCreate">
+        <button class="proj__new" type="button" @click="startCreate">
           <span>＋</span> New project
         </button>
       </div>
@@ -186,6 +174,142 @@
       </div>
     </Teleport>
 
+    <!-- New project modal -->
+    <Teleport to="body">
+      <div v-if="createModal.show" class="proj-upgrade-overlay" @click.self="closeCreateModal">
+        <div class="proj-create-modal">
+
+          <!-- Header -->
+          <div class="proj-create-modal__header">
+            <div class="proj-create-modal__header-left">
+              <div class="proj-create-modal__icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 6a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6Z"/>
+                  <path d="M12 11v4M10 13h4"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="proj-create-modal__title">New project</h2>
+                <p class="proj-create-modal__subtitle">Your workspace for a set of pins.</p>
+              </div>
+            </div>
+            <button class="proj-create-modal__close" type="button" aria-label="Close" @click="closeCreateModal">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13"/></svg>
+            </button>
+          </div>
+
+          <!-- Form -->
+          <form class="proj-create-modal__body" @submit.prevent="confirmCreate">
+
+            <!-- Project name -->
+            <div class="pcm-field">
+              <label class="pcm-field__label" for="proj-name-input">
+                Project name
+                <span class="pcm-field__required" aria-hidden="true">*</span>
+              </label>
+              <input
+                id="proj-name-input"
+                ref="createNameInput"
+                v-model="createModal.name"
+                class="pcm-field__input"
+                type="text"
+                placeholder="e.g. Summer collection"
+                maxlength="120"
+                autocomplete="off"
+                @keyup.esc="closeCreateModal"
+              />
+            </div>
+
+            <!-- Defaults section -->
+            <div class="proj-create-modal__section-head">
+              <span class="proj-create-modal__section-line" />
+              <span class="proj-create-modal__section-label">Defaults</span>
+              <span class="proj-create-modal__section-line" />
+            </div>
+
+            <!-- Two-col row: AI language + Board language -->
+            <div class="proj-create-modal__row">
+              <div class="pcm-field">
+                <label class="pcm-field__label" for="proj-lang-input">AI Language</label>
+                <input
+                  id="proj-lang-input"
+                  v-model="createModal.language"
+                  list="proj-lang-list"
+                  class="pcm-field__input"
+                  placeholder="English"
+                  autocomplete="off"
+                />
+                <datalist id="proj-lang-list">
+                  <option value="English" /><option value="German" /><option value="French" />
+                  <option value="Spanish" /><option value="Italian" /><option value="Dutch" />
+                  <option value="Portuguese" /><option value="Swedish" /><option value="Japanese" />
+                  <option value="Korean" /><option value="Chinese (Simplified)" /><option value="Arabic" />
+                </datalist>
+                <span class="pcm-field__hint">For titles &amp; descriptions.</span>
+              </div>
+
+              <div class="pcm-field">
+                <label class="pcm-field__label" for="proj-board-lang-input">Board Language</label>
+                <input
+                  id="proj-board-lang-input"
+                  v-model="createModal.boardLanguage"
+                  list="proj-board-lang-list"
+                  class="pcm-field__input"
+                  placeholder="English"
+                  autocomplete="off"
+                />
+                <datalist id="proj-board-lang-list">
+                  <option value="English" /><option value="German" /><option value="French" />
+                  <option value="Spanish" /><option value="Italian" /><option value="Dutch" />
+                  <option value="Portuguese" /><option value="Swedish" /><option value="Japanese" />
+                  <option value="Korean" /><option value="Chinese (Simplified)" /><option value="Arabic" />
+                </datalist>
+                <span class="pcm-field__hint">Language of your board names.</span>
+              </div>
+            </div>
+
+            <!-- Timezone -->
+            <div class="pcm-field">
+              <label class="pcm-field__label" for="proj-tz-input">CSV Export Timezone</label>
+              <div class="pcm-field__select-wrap">
+                <svg class="pcm-field__select-icon" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="10" cy="10" r="8"/><path d="M10 6v4l2.5 2.5"/><path d="M2 10h2M16 10h2M10 2v2M10 16v2"/>
+                </svg>
+                <select
+                  id="proj-tz-input"
+                  v-model="createModal.timezone"
+                  class="pcm-field__select"
+                >
+                  <option v-for="tz in METADATA_TIMEZONES" :key="tz.value" :value="tz.value">
+                    {{ tz.label }}
+                  </option>
+                </select>
+                <svg class="pcm-field__select-caret" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4l4 4 4-4"/></svg>
+              </div>
+              <span class="pcm-field__hint">Match your Pinterest account's timezone for accurate pin scheduling.</span>
+            </div>
+
+            <p v-if="errMsg" class="proj-create-modal__error">{{ errMsg }}</p>
+
+            <!-- Actions -->
+            <div class="proj-create-modal__actions">
+              <button
+                type="submit"
+                class="proj-create-modal__submit"
+                :disabled="!createModal.name.trim() || createModal.busy"
+              >
+                <svg v-if="createModal.busy" class="proj-create-modal__spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+                {{ createModal.busy ? 'Creating…' : 'Create project' }}
+              </button>
+              <button type="button" class="proj-create-modal__cancel" @click="closeCreateModal">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Upgrade modal -->
     <Teleport to="body">
       <div v-if="showUpgradeModal" class="proj-upgrade-overlay" @click.self="showUpgradeModal = false">
@@ -211,6 +335,8 @@
 </template>
 
 <script setup>
+import { METADATA_TIMEZONES } from '~/utils/metadataTimezone'
+
 defineProps({ collapsed: { type: Boolean, default: false } })
 const { confirm } = useConfirm()
 
@@ -227,9 +353,8 @@ const busy = ref(false)
 const errMsg = ref('')
 const showUpgradeModal = ref(false)
 
-const creating = ref(false)
-const createValue = ref('')
-const createInput = ref(null)
+const createModal = reactive({ show: false, name: '', language: 'English', boardLanguage: 'English', timezone: 'Europe/Berlin', busy: false })
+const createNameInput = ref(null)
 
 const renamingId = ref(null)
 const renameValue = ref('')
@@ -339,22 +464,37 @@ function startCreate() {
     showUpgradeModal.value = true
     return
   }
-  resetEditing()
-  creating.value = true
-  createValue.value = ''
-  nextTick(() => createInput.value?.focus())
+  open.value = false
+  errMsg.value = ''
+  createModal.name          = ''
+  createModal.language      = 'English'
+  createModal.boardLanguage = 'English'
+  createModal.timezone      = 'Europe/Berlin'
+  createModal.busy          = false
+  createModal.show          = true
+  nextTick(() => createNameInput.value?.focus())
+}
+
+function closeCreateModal() {
+  if (createModal.busy) return
+  createModal.show = false
+  errMsg.value = ''
 }
 
 async function confirmCreate() {
-  const name = createValue.value.trim()
+  const name = createModal.name.trim()
   if (!name) return
-  busy.value = true
+  createModal.busy = true
   errMsg.value = ''
   try {
-    await createProject(name) // reloads into the new project
+    await createProject(name, {
+      language:      createModal.language.trim() || 'English',
+      boardLanguage: createModal.boardLanguage.trim() || 'English',
+      timezone:      createModal.timezone || 'Europe/Berlin',
+    })
   } catch (e) {
     errMsg.value = e?.data?.statusMessage ?? 'Could not create project'
-    busy.value = false
+    createModal.busy = false
   }
 }
 
@@ -710,6 +850,280 @@ async function executeDelete() {
     margin: 4px 6px 2px;
     font-size: 11.5px;
     color: #b91c1c;
+  }
+}
+
+// ── New project modal ─────────────────────────────────────────────────────────
+
+.proj-create-modal {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  max-width: 460px;
+  width: calc(100vw - 32px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 20px 18px;
+    border-bottom: 1px solid #f3f4f6;
+    background: #fafafa;
+  }
+
+  &__header-left {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  &__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: color-mix(in srgb, #{$color-accent} 11%, #fff);
+    color: $color-accent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid color-mix(in srgb, #{$color-accent} 18%, transparent);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: $color-primary;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  &__subtitle {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #9ca3af;
+    line-height: 1.3;
+  }
+
+  &__close {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 8px;
+    color: #9ca3af;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+    &:hover { background: #f3f4f6; border-color: #d1d5db; color: #374151; }
+    &:focus-visible { outline: 2px solid $color-accent; outline-offset: 2px; }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 20px 22px;
+  }
+
+  &__section-head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 2px 0 0;
+  }
+
+  &__section-line {
+    flex: 1;
+    height: 1px;
+    background: #ececec;
+  }
+
+  &__section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #c4c9d4;
+    white-space: nowrap;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  &__error {
+    padding: 9px 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #b91c1c;
+    font-size: 12.5px;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  &__submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    height: 40px;
+    background: $color-accent;
+    border: none;
+    border-radius: 9px;
+    color: #fff;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, #{$color-accent} 88%, #000);
+      box-shadow: 0 4px 16px color-mix(in srgb, #{$color-accent} 32%, transparent);
+      transform: translateY(-1px);
+    }
+    &:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+    &:focus-visible { outline: 2px solid $color-accent; outline-offset: 3px; }
+  }
+
+  &__spinner {
+    animation: proj-spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  &__cancel {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 7px;
+    text-align: center;
+    border-radius: 8px;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover { color: #6b7280; background: #f9fafb; }
+    &:focus-visible { outline: 2px solid $color-accent; outline-offset: 2px; }
+  }
+}
+
+// ── Field component used inside the create modal ──────────────────────────────
+
+.pcm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  &__label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+
+  &__required {
+    color: $color-accent;
+    margin-left: 2px;
+  }
+
+  &__input {
+    width: 100%;
+    height: 37px;
+    padding: 0 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    background: #fafafa;
+    color: $color-primary;
+    box-sizing: border-box;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+
+    &::placeholder { color: #c8cdd6; }
+
+    &:focus {
+      outline: none;
+      border-color: $color-accent;
+      background: #fff;
+      box-shadow: 0 0 0 3px color-mix(in srgb, #{$color-accent} 13%, transparent);
+    }
+  }
+
+  &__select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  &__select-icon {
+    position: absolute;
+    left: 10px;
+    color: #9ca3af;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  &__select {
+    width: 100%;
+    height: 37px;
+    padding: 0 28px 0 30px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+    background: #fafafa;
+    color: $color-primary;
+    box-sizing: border-box;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: $color-accent;
+      background: #fff;
+      box-shadow: 0 0 0 3px color-mix(in srgb, #{$color-accent} 13%, transparent);
+    }
+  }
+
+  &__select-caret {
+    position: absolute;
+    right: 10px;
+    color: #9ca3af;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  &__hint {
+    font-size: 11px;
+    color: #adb5bd;
+    line-height: 1.4;
   }
 }
 

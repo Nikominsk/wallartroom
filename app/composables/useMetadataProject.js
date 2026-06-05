@@ -42,10 +42,10 @@ export function useMetadataProject() {
     }
   }
 
-  async function createProject(name) {
+  async function createProject(name, { language = '', boardLanguage = '', timezone = '' } = {}) {
     const project = await $fetch('/api/metadata/projects', {
       method: 'POST',
-      body: { name },
+      body: { name, ...(language ? { language } : {}), ...(boardLanguage ? { boardLanguage } : {}), ...(timezone ? { timezone } : {}) },
     })
     // Server already set this as the active project — reload into it.
     await switchTo(project.id, { skipActivate: true })

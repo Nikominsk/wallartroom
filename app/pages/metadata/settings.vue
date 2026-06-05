@@ -67,8 +67,16 @@
                 placeholder="New board name"
                 maxlength="80"
               />
-              <button type="submit" class="settings-btn settings-btn--primary" :disabled="!newName || addingBoard">
-                {{ addingBoard ? 'Adding…' : 'Add board' }}
+              <button type="submit" class="settings-btn settings-btn--primary" :disabled="!newName">
+                Add board
+              </button>
+              <button
+                type="button"
+                class="settings-btn settings-btn--primary"
+                :disabled="!hasDirty || savingColors"
+                @click="handleSave"
+              >
+                {{ savingColors ? 'Saving…' : 'Save' }}
               </button>
 
               <!-- Color picker for the new-board row -->
@@ -134,8 +142,81 @@
               Loading boards…
             </div>
 
-            <!-- Existing boards -->
-            <div v-else-if="boards.length" class="board-list">
+            <!-- Board list: pending new + existing -->
+            <div v-else-if="pendingNewBoards.length || boards.length" class="board-list">
+              <!-- Staged (not yet saved) new boards -->
+              <div v-for="(pending, idx) in pendingNewBoards" :key="pending._pendingId" class="board-row board-row--pending">
+                <button
+                  type="button"
+                  class="board-row__swatch"
+                  :style="{ background: pending.color }"
+                  :title="pending.color || 'Auto color'"
+                  aria-label="Choose color"
+                  @click.stop="openPicker(pending._pendingId)"
+                />
+                <span class="board-row__name-label">{{ pending.name }}</span>
+                <span class="board-row__new-badge">unsaved</span>
+                <button
+                  type="button"
+                  class="settings-btn settings-btn--ghost-danger"
+                  title="Remove"
+                  @click="pendingNewBoards.splice(idx, 1)"
+                >
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 4h10M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1M5 4l1 9a1 1 0 001 1h2a1 1 0 001-1l1-9" />
+                  </svg>
+                </button>
+
+                <!-- Color picker popover for staged board -->
+                <div
+                  v-if="pickerOpenFor === pending._pendingId"
+                  class="board-row__picker"
+                  @click.stop
+                >
+                  <p class="board-row__picker-label">Pick a color</p>
+                  <div class="board-row__palette">
+                    <button
+                      v-for="hex in PALETTE"
+                      :key="hex"
+                      type="button"
+                      class="board-row__palette-swatch"
+                      :class="{ 'board-row__palette-swatch--active': pending.color === hex }"
+                      :style="{ background: hex }"
+                      :aria-label="hex"
+                      @click="setPendingColor(pending._pendingId, hex)"
+                    />
+                    <button
+                      type="button"
+                      class="board-row__palette-swatch board-row__palette-swatch--clear"
+                      title="Auto color"
+                      @click="setPendingColor(pending._pendingId, null)"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12L12 2"/></svg>
+                    </button>
+                  </div>
+                  <div class="board-row__hex">
+                    <span class="board-row__hex-prefix">#</span>
+                    <input
+                      v-model="hexDraft"
+                      class="board-row__hex-input"
+                      type="text"
+                      spellcheck="false"
+                      maxlength="7"
+                      placeholder="1d4ed8"
+                      aria-label="Custom hex color"
+                      @keydown.enter.prevent="applyHex"
+                    />
+                    <button type="button" class="board-row__hex-btn" :disabled="hexApplying" @click="applyHex">
+                      <svg v-if="hexApplying" class="board-row__hex-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                      </svg>
+                      <span v-else>Apply</span>
+                    </button>
+                  </div>
+                  <p v-if="hexError" class="board-row__hex-error">{{ hexError }}</p>
+                </div>
+              </div>
+
               <div v-for="board in boards" :key="board.id" class="board-row">
                 <button
                   type="button"
@@ -180,12 +261,6 @@
                     @keydown.enter.prevent="commitName(board)"
                     @keydown.esc="cancelEditName(board)"
                   />
-                  <button
-                    type="button"
-                    class="settings-btn settings-btn--primary settings-btn--sm"
-                    :disabled="!editNames[board.id] || editNames[board.id] === board.name"
-                    @click="commitName(board)"
-                  >Save</button>
                   <button
                     type="button"
                     class="settings-btn settings-btn--sm"
@@ -254,30 +329,71 @@
           </div>
         </section>
 
-          <!-- ── CSV Export ───────────────────────────────────────────────── -->
-          <section v-show="activeSection === 'export'" class="settings-card">
+          <!-- ── AI ────────────────────────────────────────────────────────── -->
+          <section v-show="activeSection === 'ai'" class="settings-card">
             <header class="settings-card__head">
               <div>
-                <h2 class="settings-card__title">CSV Export Timezone</h2>
-                <p class="settings-card__hint">
-                  Pinterest reads the publish time in the CSV using your Pinterest
-                  account's timezone. Set this to the same zone so a pin scheduled
-                  for 3:00 PM is actually posted at 3:00 PM.
-                </p>
+                <h2 class="settings-card__title">AI Generation</h2>
+                <p class="settings-card__hint">Global defaults applied to every AI generation run.</p>
               </div>
             </header>
 
             <form class="settings-card__body settings-card__body--form" @submit.prevent="handleSaveAi">
               <div class="settings-field settings-field--full">
-                <label class="settings-field__label" for="csv-tz">Timezone</label>
-                <select id="csv-tz" v-model="aiDraft.csv_timezone" class="settings-field__input">
-                  <option v-for="tz in METADATA_TIMEZONES" :key="tz.value" :value="tz.value">
-                    {{ tz.label }}
-                  </option>
-                </select>
+                <label class="settings-field__label" for="ai-lang-setting">Generation Language</label>
+                <input
+                  id="ai-lang-setting"
+                  v-model="aiDraft.ai_default_language"
+                  list="ai-lang-list"
+                  class="settings-field__input"
+                  placeholder="English"
+                  autocomplete="off"
+                />
+                <datalist id="ai-lang-list">
+                  <option value="English" />
+                  <option value="German" />
+                  <option value="French" />
+                  <option value="Spanish" />
+                  <option value="Italian" />
+                  <option value="Dutch" />
+                  <option value="Portuguese" />
+                  <option value="Swedish" />
+                  <option value="Japanese" />
+                  <option value="Korean" />
+                  <option value="Chinese (Simplified)" />
+                  <option value="Arabic" />
+                </datalist>
                 <span class="settings-field__hint">
-                  Current offset: <strong>{{ tzOffset || '—' }}</strong>.
-                  Times entered elsewhere in the tool are written to the CSV in this zone.
+                  Used when generating Pinterest titles and descriptions. Pick from the list or type any language.
+                </span>
+              </div>
+
+              <div class="settings-field settings-field--full">
+                <label class="settings-field__label" for="ai-board-lang-setting">Board language</label>
+                <input
+                  id="ai-board-lang-setting"
+                  v-model="aiDraft.ai_board_language"
+                  list="ai-board-lang-list"
+                  class="settings-field__input"
+                  placeholder="English"
+                  autocomplete="off"
+                />
+                <datalist id="ai-board-lang-list">
+                  <option value="English" />
+                  <option value="German" />
+                  <option value="French" />
+                  <option value="Spanish" />
+                  <option value="Italian" />
+                  <option value="Dutch" />
+                  <option value="Portuguese" />
+                  <option value="Swedish" />
+                  <option value="Japanese" />
+                  <option value="Korean" />
+                  <option value="Chinese (Simplified)" />
+                  <option value="Arabic" />
+                </datalist>
+                <span class="settings-field__hint">
+                  Language used for board name recommendations. Set this to match the language your board names are written in.
                 </span>
               </div>
 
@@ -293,6 +409,7 @@
               </div>
             </form>
           </section>
+
         <!-- ── AI Templates ─────────────────────────────────────────────── -->
         <section v-show="activeSection === 'templates'" class="settings-card">
           <header class="settings-card__head">
@@ -348,29 +465,45 @@
 
                 <!-- Expandable options form -->
                 <div v-if="tplExpanded[tpl.id]" class="tpl-row__form">
+
+                  <!-- Fields to generate -->
+                  <div class="tpl-form-section">
+                    <span class="tpl-form-section__label">Fields to generate</span>
+                    <div class="tpl-form-chips">
+                      <label class="tpl-form-chip" :class="{ 'tpl-form-chip--on': tplDrafts[tpl.id].generateFor.pinterestTitle }">
+                        <input type="checkbox" v-model="tplDrafts[tpl.id].generateFor.pinterestTitle" />Title
+                      </label>
+                      <label class="tpl-form-chip" :class="{ 'tpl-form-chip--on': tplDrafts[tpl.id].generateFor.pinterestDescription }">
+                        <input type="checkbox" v-model="tplDrafts[tpl.id].generateFor.pinterestDescription" />Description
+                      </label>
+                      <label class="tpl-form-chip" :class="{ 'tpl-form-chip--on': tplDrafts[tpl.id].generateFor.pinterestBoard }">
+                        <input type="checkbox" v-model="tplDrafts[tpl.id].generateFor.pinterestBoard" />Board
+                      </label>
+                    </div>
+                    <label class="tpl-form-check">
+                      <input type="checkbox" v-model="tplDrafts[tpl.id].skipFilled" />
+                      Skip images where all selected fields are already filled
+                    </label>
+                    <div class="tpl-form-radio-row">
+                      <span class="tpl-form-radio-label">When fields exist:</span>
+                      <label class="tpl-form-radio"><input type="radio" v-model="tplDrafts[tpl.id].overwriteMode" value="missing-only" /> Fill missing only</label>
+                      <label class="tpl-form-radio"><input type="radio" v-model="tplDrafts[tpl.id].overwriteMode" value="replace" /> Replace all</label>
+                    </div>
+                  </div>
+
+                  <!-- Context & output -->
                   <div class="tpl-form-grid">
-                    <div class="tpl-form-field">
-                      <label class="tpl-form-field__label">Niche / topic</label>
-                      <input v-model="tplDrafts[tpl.id].niche" class="tpl-form-field__input" placeholder="e.g. boho living room" />
-                    </div>
-                    <div class="tpl-form-field">
-                      <label class="tpl-form-field__label">Tone / style</label>
-                      <input v-model="tplDrafts[tpl.id].tone" class="tpl-form-field__input" placeholder="e.g. inspiring" />
-                    </div>
-                    <div class="tpl-form-field">
-                      <label class="tpl-form-field__label">Language</label>
-                      <select v-model="tplDrafts[tpl.id].language" class="tpl-form-field__input">
-                        <option>English</option><option>German</option><option>French</option>
-                        <option>Spanish</option><option>Italian</option><option>Dutch</option>
-                      </select>
+                    <div class="tpl-form-field tpl-form-field--full">
+                      <label class="tpl-form-field__label">Additional context</label>
+                      <textarea v-model="tplDrafts[tpl.id].additionalContext" class="tpl-form-field__input tpl-form-field__input--textarea" rows="2" placeholder="e.g. Digital print shop selling boho-style wall art." />
                     </div>
                     <div class="tpl-form-field">
                       <label class="tpl-form-field__label">Target audience</label>
                       <input v-model="tplDrafts[tpl.id].targetAudience" class="tpl-form-field__input" placeholder="e.g. home decorators" />
                     </div>
-                    <div class="tpl-form-field tpl-form-field--full">
-                      <label class="tpl-form-field__label">Additional context</label>
-                      <textarea v-model="tplDrafts[tpl.id].additionalContext" class="tpl-form-field__input tpl-form-field__input--textarea" rows="2" placeholder="e.g. Digital print shop selling boho-style wall art." />
+                    <div class="tpl-form-field">
+                      <label class="tpl-form-field__label">Niche / topic</label>
+                      <input v-model="tplDrafts[tpl.id].niche" class="tpl-form-field__input" placeholder="e.g. boho living room" />
                     </div>
                     <div class="tpl-form-field">
                       <label class="tpl-form-field__label">Include keywords</label>
@@ -380,7 +513,16 @@
                       <label class="tpl-form-field__label">Exclude keywords</label>
                       <input v-model="tplDrafts[tpl.id].excludeKeywords" class="tpl-form-field__input" placeholder="word1, word2" />
                     </div>
+                    <div class="tpl-form-field">
+                      <label class="tpl-form-field__label">Max title length</label>
+                      <input type="number" v-model.number="tplDrafts[tpl.id].maxPinterestTitleLength" class="tpl-form-field__input" min="10" max="255" />
+                    </div>
+                    <div class="tpl-form-field">
+                      <label class="tpl-form-field__label">Max description length</label>
+                      <input type="number" v-model.number="tplDrafts[tpl.id].maxPinterestDescriptionLength" class="tpl-form-field__input" min="10" max="800" />
+                    </div>
                   </div>
+
                   <div class="tpl-row__form-foot">
                     <button class="settings-btn settings-btn--primary" type="button" :disabled="tplSaving[tpl.id]" @click="saveTplOptions(tpl)">
                       {{ tplSaving[tpl.id] ? 'Saving…' : 'Save options' }}
@@ -393,33 +535,52 @@
 
             <!-- New template form -->
             <div v-if="showNewTplForm" class="tpl-new-form">
-              <div class="tpl-form-grid">
-                <div class="tpl-form-field">
+              <!-- Name row -->
+              <div class="tpl-form-grid" style="margin-bottom:10px">
+                <div class="tpl-form-field tpl-form-field--full">
                   <label class="tpl-form-field__label">Template name <span style="color:#ef4444">*</span></label>
                   <input ref="newTplNameInput" v-model="newTpl.name" class="tpl-form-field__input" placeholder="e.g. Boho wall art" maxlength="100" />
                 </div>
-                <div class="tpl-form-field">
-                  <label class="tpl-form-field__label">Niche / topic</label>
-                  <input v-model="newTpl.options.niche" class="tpl-form-field__input" placeholder="e.g. boho living room" />
+              </div>
+
+              <!-- Fields to generate -->
+              <div class="tpl-form-section">
+                <span class="tpl-form-section__label">Fields to generate</span>
+                <div class="tpl-form-chips">
+                  <label class="tpl-form-chip" :class="{ 'tpl-form-chip--on': newTpl.options.generateFor.pinterestTitle }">
+                    <input type="checkbox" v-model="newTpl.options.generateFor.pinterestTitle" />Title
+                  </label>
+                  <label class="tpl-form-chip" :class="{ 'tpl-form-chip--on': newTpl.options.generateFor.pinterestDescription }">
+                    <input type="checkbox" v-model="newTpl.options.generateFor.pinterestDescription" />Description
+                  </label>
+                  <label class="tpl-form-chip" :class="{ 'tpl-form-chip--on': newTpl.options.generateFor.pinterestBoard }">
+                    <input type="checkbox" v-model="newTpl.options.generateFor.pinterestBoard" />Board
+                  </label>
                 </div>
-                <div class="tpl-form-field">
-                  <label class="tpl-form-field__label">Tone / style</label>
-                  <input v-model="newTpl.options.tone" class="tpl-form-field__input" placeholder="e.g. inspiring" />
+                <label class="tpl-form-check">
+                  <input type="checkbox" v-model="newTpl.options.skipFilled" />
+                  Skip images where all selected fields are already filled
+                </label>
+                <div class="tpl-form-radio-row">
+                  <span class="tpl-form-radio-label">When fields exist:</span>
+                  <label class="tpl-form-radio"><input type="radio" v-model="newTpl.options.overwriteMode" value="missing-only" /> Fill missing only</label>
+                  <label class="tpl-form-radio"><input type="radio" v-model="newTpl.options.overwriteMode" value="replace" /> Replace all</label>
                 </div>
-                <div class="tpl-form-field">
-                  <label class="tpl-form-field__label">Language</label>
-                  <select v-model="newTpl.options.language" class="tpl-form-field__input">
-                    <option>English</option><option>German</option><option>French</option>
-                    <option>Spanish</option><option>Italian</option><option>Dutch</option>
-                  </select>
+              </div>
+
+              <!-- Context & output -->
+              <div class="tpl-form-grid">
+                <div class="tpl-form-field tpl-form-field--full">
+                  <label class="tpl-form-field__label">Additional context</label>
+                  <textarea v-model="newTpl.options.additionalContext" class="tpl-form-field__input tpl-form-field__input--textarea" rows="2" placeholder="e.g. Digital print shop selling boho-style wall art." />
                 </div>
                 <div class="tpl-form-field">
                   <label class="tpl-form-field__label">Target audience</label>
                   <input v-model="newTpl.options.targetAudience" class="tpl-form-field__input" placeholder="e.g. home decorators" />
                 </div>
-                <div class="tpl-form-field tpl-form-field--full">
-                  <label class="tpl-form-field__label">Additional context</label>
-                  <textarea v-model="newTpl.options.additionalContext" class="tpl-form-field__input tpl-form-field__input--textarea" rows="2" placeholder="e.g. Digital print shop selling boho-style wall art." />
+                <div class="tpl-form-field">
+                  <label class="tpl-form-field__label">Niche / topic</label>
+                  <input v-model="newTpl.options.niche" class="tpl-form-field__input" placeholder="e.g. boho living room" />
                 </div>
                 <div class="tpl-form-field">
                   <label class="tpl-form-field__label">Include keywords</label>
@@ -429,7 +590,16 @@
                   <label class="tpl-form-field__label">Exclude keywords</label>
                   <input v-model="newTpl.options.excludeKeywords" class="tpl-form-field__input" placeholder="word1, word2" />
                 </div>
+                <div class="tpl-form-field">
+                  <label class="tpl-form-field__label">Max title length</label>
+                  <input type="number" v-model.number="newTpl.options.maxPinterestTitleLength" class="tpl-form-field__input" min="10" max="255" />
+                </div>
+                <div class="tpl-form-field">
+                  <label class="tpl-form-field__label">Max description length</label>
+                  <input type="number" v-model.number="newTpl.options.maxPinterestDescriptionLength" class="tpl-form-field__input" min="10" max="800" />
+                </div>
               </div>
+
               <div class="tpl-row__form-foot">
                 <button class="settings-btn settings-btn--primary" type="button" :disabled="!newTpl.name.trim() || newTplSaving" @click="createNewTpl">
                   {{ newTplSaving ? 'Creating…' : 'Create template' }}
@@ -683,6 +853,25 @@
               <span v-else-if="projectRenameSaved" class="settings-field__hint">Saved.</span>
             </div>
 
+            <!-- CSV Export Timezone -->
+            <div class="settings-field settings-field--full" style="margin-top:20px">
+              <label class="settings-field__label" for="proj-csv-tz">CSV Export Timezone</label>
+              <select id="proj-csv-tz" v-model="aiDraft.csv_timezone" class="settings-field__input" @change="handleSaveAi">
+                <option v-for="tz in METADATA_TIMEZONES" :key="tz.value" :value="tz.value">
+                  {{ tz.label }}
+                </option>
+              </select>
+              <span class="settings-field__hint">
+                Pinterest reads publish times in the CSV using your Pinterest account's timezone.
+                Set this to the same zone so a pin scheduled for 3:00 PM is posted at 3:00 PM.
+                Current offset: <strong>{{ tzOffset || '—' }}</strong>.
+              </span>
+              <div v-if="aiSaved || aiError" style="margin-top:4px">
+                <span v-if="aiSaved" class="settings-card__status settings-card__status--ok">Saved</span>
+                <span v-if="aiError" class="settings-card__status settings-card__status--err">{{ aiError }}</span>
+              </div>
+            </div>
+
             <!-- Delete project (danger zone, consequences spelled out) -->
             <div class="danger-zone" style="margin-top:28px">
               <div class="danger-zone__head">
@@ -755,25 +944,33 @@ const { confirm } = useConfirm()
 // usePinterestBoards.js and FALLBACK_COLORS in dashboard.vue (that subset is
 // the auto-color set used when a board has no explicit color). The rest are
 // extra options — boards store an explicit hex so they don't need a fallback.
+// Pickable swatches — cool → warm spectrum. The FIRST 8 must stay in sync with
+// FALLBACK_PALETTE in usePinterestBoards.js and FALLBACK_COLORS in dashboard.vue.
 const PALETTE = [
-  '#ff6b35',
-  '#6366f1',
-  '#22c55e',
-  '#f59e0b',
-  '#3b82f6',
-  '#ec4899',
-  '#8b5cf6',
-  '#14b8a6',
-  '#ef4444',
-  '#f97316',
-  '#eab308',
-  '#84cc16',
-  '#10b981',
-  '#06b6d4',
-  '#0ea5e9',
-  '#a855f7',
-  '#d946ef',
-  '#64748b',
+  '#ef4444', // red
+  '#f43f5e', // rose
+  '#ec4899', // pink
+  '#d946ef', // fuchsia
+  '#c084fc', // lavender
+  '#a855f7', // purple
+  '#8b5cf6', // violet
+  '#6366f1', // indigo
+  '#818cf8', // periwinkle
+  '#3b82f6', // blue
+  '#0ea5e9', // sky blue
+  '#06b6d4', // cyan
+  '#14b8a6', // teal
+  '#10b981', // emerald
+  '#22c55e', // green
+  '#4ade80', // bright green
+  '#84cc16', // lime
+  '#fde047', // bright yellow
+  '#eab308', // golden yellow
+  '#f59e0b', // amber
+  '#f97316', // orange
+  '#ff6b35', // orange-red
+  '#64748b', // slate
+  '#94a3b8', // light slate
 ]
 
 const sections = [
@@ -783,9 +980,9 @@ const sections = [
     icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 7h12"/></svg>`,
   },
   {
-    id: 'export',
-    label: 'CSV Export',
-    icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1v9M5 7l3 3 3-3"/><path d="M2 11v3a1 1 0 001 1h10a1 1 0 001-1v-3"/></svg>`,
+    id: 'ai',
+    label: 'AI Generation',
+    icon: `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3M8 11v3M2 8h3M11 8h3M4.1 4.1l2.1 2.1M9.8 9.8l2.1 2.1M4.1 11.9l2.1-2.1M9.8 6.2l2.1-2.1"/><circle cx="8" cy="8" r="2"/></svg>`,
   },
   {
     id: 'templates',
@@ -845,6 +1042,59 @@ const hexDraft = ref('')
 const hexError = ref('')
 const hexApplying = ref(false)
 
+// Pending color changes — keyed by board id. Value is hex string or null (= auto).
+// Nothing is written to the DB until the user clicks "Save".
+const pendingColors = reactive({})
+const savingColors  = ref(false)
+const hasDirtyColors = computed(() => Object.keys(pendingColors).length > 0)
+
+const hasDirtyEdit = computed(() => {
+  if (!editingId.value) return false
+  const board = boards.value.find(b => b.id === editingId.value)
+  if (!board) return false
+  return !!editNames[editingId.value] && editNames[editingId.value] !== board.name
+})
+
+const pendingNewBoards = reactive([])
+let _pendingBoardCounter = 0
+
+const hasDirty = computed(() =>
+  hasDirtyColors.value ||
+  pendingNewBoards.length > 0 ||
+  hasDirtyEdit.value
+)
+
+async function handleSave() {
+  savingColors.value = true
+  addError.value = ''
+  // Staged new boards (added via "Add board" button)
+  for (let i = pendingNewBoards.length - 1; i >= 0; i--) {
+    const p = pendingNewBoards[i]
+    try {
+      await addBoard(p.name, p.color)
+      pendingNewBoards.splice(i, 1)
+    } catch (e) {
+      addError.value = e?.data?.statusMessage ?? e?.message ?? 'Could not add board'
+    }
+  }
+  // Commit active name edit
+  if (editingId.value) {
+    const board = boards.value.find(b => b.id === editingId.value)
+    if (board) await commitName(board)
+  }
+  // Save pending color changes
+  for (const [id, color] of Object.entries(pendingColors)) {
+    rowError[id] = ''
+    try {
+      await updateBoard(id, { color })
+      delete pendingColors[id]
+    } catch (e) {
+      rowError[id] = e?.data?.statusMessage ?? 'Could not save color'
+    }
+  }
+  savingColors.value = false
+}
+
 function normalizeHex(v) {
   const m = /^#?([0-9a-fA-F]{6})$/.exec(String(v ?? '').trim())
   return m ? `#${m[1].toLowerCase()}` : null
@@ -864,20 +1114,26 @@ async function applyHex() {
     return
   }
 
+  const pending = pendingNewBoards.find(p => p._pendingId === pickerOpenFor.value)
+  if (pending) {
+    pending.color = hex
+    pickerOpenFor.value = null
+    hexDraft.value = ''
+    return
+  }
+
   const board = boards.value.find(b => b.id === pickerOpenFor.value)
   if (!board) return
 
-  hexApplying.value = true
-  rowError[board.id] = ''
-  try {
-    await updateBoard(board.id, { color: hex })
-    pickerOpenFor.value = null
-    hexDraft.value = ''
-  } catch (e) {
-    hexError.value = e?.data?.statusMessage ?? 'Could not save color'
-  } finally {
-    hexApplying.value = false
-  }
+  pendingColors[board.id] = hex
+  pickerOpenFor.value = null
+  hexDraft.value = ''
+}
+
+function setPendingColor(pendingId, color) {
+  const p = pendingNewBoards.find(b => b._pendingId === pendingId)
+  if (p) p.color = color ?? pickFreshColor()
+  pickerOpenFor.value = null
 }
 
 watch(boards, (list) => {
@@ -898,6 +1154,13 @@ const newSwatchStyle = computed(() => {
 })
 
 function swatchStyleFor(board) {
+  // Show the pending (unsaved) color immediately for visual feedback
+  if (board.id in pendingColors) {
+    const pending = pendingColors[board.id]
+    if (pending) return { background: pending }
+    const style = chipStyleForName(board.name)
+    return style ? { background: style.background } : { background: '#f3f4f6' }
+  }
   if (board.color) return { background: board.color }
   const style = chipStyleForName(board.name)
   return style ? { background: style.background } : { background: '#f3f4f6' }
@@ -914,14 +1177,9 @@ function setNewColor(hex) {
   pickerOpenFor.value = null
 }
 
-async function setColor(board, color) {
+function setColor(board, color) {
   pickerOpenFor.value = null
-  rowError[board.id] = ''
-  try {
-    await updateBoard(board.id, { color })
-  } catch (e) {
-    rowError[board.id] = e?.data?.statusMessage ?? 'Could not save color'
-  }
+  pendingColors[board.id] = color   // null = reset to auto; saved on "Save"
 }
 
 function startEditName(board) {
@@ -949,19 +1207,16 @@ async function commitName(board) {
   }
 }
 
-async function handleAddBoard() {
+function handleAddBoard() {
   addError.value = ''
   if (!newName.value) return
-  addingBoard.value = true
-  try {
-    await addBoard(newName.value, newColor.value ?? pickFreshColor())
-    newName.value = ''
-    newColor.value = null
-  } catch (e) {
-    addError.value = e?.data?.statusMessage ?? e?.message ?? 'Could not add board'
-  } finally {
-    addingBoard.value = false
-  }
+  pendingNewBoards.push({
+    _pendingId: `pending-${++_pendingBoardCounter}`,
+    name: newName.value,
+    color: newColor.value ?? PALETTE[Math.floor(Math.random() * PALETTE.length)],
+  })
+  newName.value = ''
+  newColor.value = null
 }
 
 async function handleDelete(board) {
@@ -987,6 +1242,7 @@ async function handleDelete(board) {
     invalidateImagesCache()
     delete editNames[board.id]
     delete rowError[board.id]
+    delete pendingColors[board.id]
   } catch (e) {
     rowError[board.id] = e?.data?.statusMessage ?? 'Could not delete board'
   } finally {
@@ -1031,6 +1287,8 @@ async function handleSaveAi() {
   aiSaved.value = false
   try {
     await saveSettings({ ...aiDraft })
+    await loadSettings(true)
+    syncDraftFromSettings()
     aiSaved.value = true
     setTimeout(() => { aiSaved.value = false }, 2500)
   } catch (e) {
@@ -1060,14 +1318,22 @@ watch(templates, (list) => {
 
 function buildTplDraft(tpl) {
   const o = tpl.options ?? {}
+  const gf = o.generateFor ?? {}
   return {
-    niche: o.niche ?? '',
-    tone: o.tone ?? '',
-    language: o.language ?? 'English',
-    targetAudience: o.targetAudience ?? '',
-    additionalContext: o.additionalContext ?? '',
-    includeKeywords: o.includeKeywords ?? '',
-    excludeKeywords: o.excludeKeywords ?? '',
+    generateFor: {
+      pinterestTitle:       gf.pinterestTitle       ?? true,
+      pinterestDescription: gf.pinterestDescription ?? true,
+      pinterestBoard:       gf.pinterestBoard       ?? false,
+    },
+    skipFilled:                     o.skipFilled                     ?? false,
+    overwriteMode:                  o.overwriteMode                  ?? 'missing-only',
+    additionalContext:               o.additionalContext               ?? '',
+    targetAudience:                  o.targetAudience                  ?? '',
+    niche:                           o.niche                           ?? '',
+    includeKeywords:                 o.includeKeywords                 ?? '',
+    excludeKeywords:                 o.excludeKeywords                 ?? '',
+    maxPinterestTitleLength:         o.maxPinterestTitleLength         ?? 100,
+    maxPinterestDescriptionLength:   o.maxPinterestDescriptionLength   ?? 300,
   }
 }
 
@@ -1091,7 +1357,12 @@ async function saveTplOptions(tpl) {
   tplSaving[tpl.id] = true
   tplRowError[tpl.id] = ''
   try {
-    const merged = { ...(tpl.options ?? {}), ...tplDrafts[tpl.id] }
+    const draft = tplDrafts[tpl.id]
+    const merged = {
+      ...(tpl.options ?? {}),
+      ...draft,
+      generateFor: { ...((tpl.options?.generateFor) ?? {}), ...draft.generateFor },
+    }
     await updateTemplate(tpl.id, { options: merged })
   } catch (e) {
     tplRowError[tpl.id] = e?.data?.statusMessage ?? 'Could not save'
@@ -1121,7 +1392,18 @@ const newTplError     = ref('')
 const newTplNameInput = ref(null)
 
 function makeEmptyOptions() {
-  return { niche: '', tone: '', language: 'English', targetAudience: '', additionalContext: '', includeKeywords: '', excludeKeywords: '' }
+  return {
+    generateFor: { pinterestTitle: true, pinterestDescription: true, pinterestBoard: false },
+    skipFilled: false,
+    overwriteMode: 'missing-only',
+    additionalContext: '',
+    targetAudience: '',
+    niche: '',
+    includeKeywords: '',
+    excludeKeywords: '',
+    maxPinterestTitleLength: 100,
+    maxPinterestDescriptionLength: 300,
+  }
 }
 const newTpl = reactive({ name: '', options: makeEmptyOptions() })
 
@@ -1882,6 +2164,23 @@ onMounted(() => {
     border-color: #e5e7eb;
   }
 
+  &--pending {
+    background: color-mix(in srgb, #{$color-accent} 4%, #fff);
+  }
+
+  &__new-badge {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: $color-accent;
+    background: color-mix(in srgb, #{$color-accent} 12%, #fff);
+    border: 1px solid color-mix(in srgb, #{$color-accent} 25%, #fff);
+    border-radius: 999px;
+    padding: 2px 7px;
+  }
+
   &__icon-btn {
     display: flex;
     align-items: center;
@@ -1920,7 +2219,7 @@ onMounted(() => {
     border-radius: 10px;
     padding: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-    min-width: 220px;
+    min-width: 248px;
   }
 
   &__picker-label {
@@ -2167,6 +2466,93 @@ onMounted(() => {
       line-height: 1.45;
     }
   }
+}
+
+// ── Template form: fields-to-generate block ───────────────────────────────────
+
+.tpl-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 10px;
+
+  &__label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9ca3af;
+  }
+}
+
+.tpl-form-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tpl-form-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.13s, background 0.13s, color 0.13s;
+
+  input { display: none; }
+  &:hover { border-color: $color-accent; color: $color-primary; }
+  &--on {
+    border-color: $color-accent;
+    background: color-mix(in srgb, #{$color-accent} 8%, #fff);
+    color: $color-primary;
+    font-weight: 600;
+  }
+}
+
+.tpl-form-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: $color-primary;
+  cursor: pointer;
+  user-select: none;
+
+  input { accent-color: $color-accent; margin: 0; flex-shrink: 0; }
+}
+
+.tpl-form-radio-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.tpl-form-radio-label {
+  font-size: 11.5px;
+  color: #9ca3af;
+}
+
+.tpl-form-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: $color-primary;
+  cursor: pointer;
+  user-select: none;
+
+  input { accent-color: $color-accent; margin: 0; flex-shrink: 0; }
 }
 
 // ── Pinterest CSV Import ───────────────────────────────────────────────────────

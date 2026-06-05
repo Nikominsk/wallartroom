@@ -273,18 +273,7 @@
               Output settings
             </h3>
 
-            <div class="ai-modal__field-row ai-modal__field-row--3">
-              <div class="ai-modal__field">
-                <label class="ai-modal__label" for="ai-lang">Language</label>
-                <select id="ai-lang" class="ai-modal__input" v-model="options.language">
-                  <option>English</option>
-                  <option>German</option>
-                  <option>French</option>
-                  <option>Spanish</option>
-                  <option>Italian</option>
-                  <option>Dutch</option>
-                </select>
-              </div>
+            <div class="ai-modal__field-row ai-modal__field-row--2">
               <div class="ai-modal__field">
                 <label class="ai-modal__label" for="ai-title-len">Max title length</label>
                 <input id="ai-title-len" class="ai-modal__input" type="number" v-model.number="options.maxPinterestTitleLength" min="10" max="255" />
@@ -376,8 +365,9 @@ async function saveAsTemplate() {
   saving.value   = true
   saveError.value = ''
   try {
+    const { language: _lang, ...rest } = props.options
     await createTemplate(name, {
-      ...props.options,
+      ...rest,
       generateFor: { ...props.options.generateFor },
     })
     showSaveForm.value = false

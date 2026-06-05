@@ -4,25 +4,16 @@ function defaultOptions() {
       pinterestTitle: true,
       pinterestDescription: true,
       pinterestBoard: true,
-      adobeStockTitle: false,
-      adobeStockDescription: false,
-      adobeStockKeywords: false,
     },
     additionalContext: '',
-    tone: '',
     targetAudience: '',
     niche: '',
     includeKeywords: '',
     excludeKeywords: '',
     language: 'English',
+    boardLanguage: 'English',
     maxPinterestTitleLength: 100,
-    // The configured max is sent to the AI as the target ceiling. It is NOT
-    // used to truncate the response — see server/api/generate-metadata.post.js.
     maxPinterestDescriptionLength: 300,
-    maxAdobeStockTitleLength: 200,
-    maxAdobeStockDescriptionLength: 500,
-    adobeStockKeywordCount: 49,
-    usePromptAsContext: true,
     skipFilled: true,
     overwriteMode: 'missing-only',
   }
@@ -124,12 +115,9 @@ export function useAiMetadataGeneration() {
     if (!options.skipFilled) return true
     // Skip the image only when every selected field is already filled.
     const allFilled =
-      (!options.generateFor.pinterestTitle        || !!img.pinterest.title) &&
-      (!options.generateFor.pinterestDescription  || !!img.pinterest.description) &&
-      (!options.generateFor.pinterestBoard        || !!img.pinterest.board) &&
-      (!options.generateFor.adobeStockTitle       || !!img.adobeStock.title) &&
-      (!options.generateFor.adobeStockDescription || !!img.adobeStock.description) &&
-      (!options.generateFor.adobeStockKeywords    || !!img.adobeStock.keywords?.length)
+      (!options.generateFor.pinterestTitle       || !!img.pinterest.title) &&
+      (!options.generateFor.pinterestDescription || !!img.pinterest.description) &&
+      (!options.generateFor.pinterestBoard       || !!img.pinterest.board)
     return !allFilled
   }
 

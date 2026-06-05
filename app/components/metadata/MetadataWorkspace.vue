@@ -1382,15 +1382,15 @@ const { options: aiOptions, progress: aiProgress, generate, cancel: cancelAi, re
 const { settings: aiDefaults, load: loadAiDefaults } = useMetadataSettings()
 
 // Seed the per-session AI options from the saved Settings defaults so users
-// don't have to re-enter their preferred tone / lengths every visit. Settings
+// don't have to re-enter their preferred lengths / language every visit. Settings
 // are loaded lazily — the watcher catches the load and applies once.
 let aiDefaultsApplied = false
 function applyAiDefaults() {
   if (aiDefaultsApplied || !aiDefaults.value) return
   aiOptions.maxPinterestTitleLength = aiDefaults.value.ai_max_title_length ?? aiOptions.maxPinterestTitleLength
   aiOptions.maxPinterestDescriptionLength = aiDefaults.value.ai_max_description_length ?? aiOptions.maxPinterestDescriptionLength
-  if (aiDefaults.value.ai_default_tone) aiOptions.tone = aiDefaults.value.ai_default_tone
   if (aiDefaults.value.ai_default_language) aiOptions.language = aiDefaults.value.ai_default_language
+  if (aiDefaults.value.ai_board_language) aiOptions.boardLanguage = aiDefaults.value.ai_board_language
   if (aiDefaults.value.ai_additional_instructions) {
     aiOptions.additionalContext = aiDefaults.value.ai_additional_instructions
   }

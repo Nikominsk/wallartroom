@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   const { data, error } = await client
     .from('metadata_settings')
-    .select('ai_max_title_length, ai_max_description_length, ai_default_tone, ai_additional_instructions, ai_default_language, csv_timezone')
+    .select('ai_max_title_length, ai_max_description_length, ai_default_tone, ai_additional_instructions, ai_default_language, ai_board_language, csv_timezone')
     .eq('project_id', projectId)
     .maybeSingle()
 
@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
     ai_default_tone: '',
     ai_additional_instructions: '',
     ai_default_language: 'English',
+    ai_board_language: 'English',
     csv_timezone: 'Europe/Berlin',
   }
 })

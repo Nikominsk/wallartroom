@@ -4,9 +4,9 @@
 const FALLBACK = {
   ai_max_title_length: 100,
   ai_max_description_length: 300,
-  ai_default_tone: '',
   ai_additional_instructions: '',
   ai_default_language: 'English',
+  ai_board_language: 'English',
   csv_timezone: 'Europe/Berlin',
 }
 
