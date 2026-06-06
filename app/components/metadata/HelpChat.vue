@@ -65,9 +65,9 @@
 
           <!-- Greeting -->
           <div class="help-popup__msg help-popup__msg--bot">
-            <div class="help-popup__bot-icon">W</div>
+            <div class="help-popup__bot-icon">P</div>
             <div class="help-popup__bubble">
-              Hi! 👋 How can I help you today? I can answer questions about how to use WallArtRoom.
+              Hi! 👋 How can I help you today? I can answer questions about how to use PixSchedule.
             </div>
           </div>
 

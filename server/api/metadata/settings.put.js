@@ -4,7 +4,7 @@ const ALLOWED = [
   'ai_default_tone',
   'ai_additional_instructions',
   'ai_default_language',
-  'ai_ai_board_language',
+  'ai_board_language',
   'csv_timezone',
 ]
 

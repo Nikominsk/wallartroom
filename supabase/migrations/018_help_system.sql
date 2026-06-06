@@ -37,9 +37,9 @@ CREATE POLICY "auth_read_help_kb" ON help_knowledge_base
 
 -- ── Seed the knowledge base ────────────────────────────────────────────────────
 INSERT INTO help_knowledge_base (id, content) VALUES (1, $KB$
-# WallArtRoom — Complete User Guide
+# PixSchedule — Complete User Guide
 
-WallArtRoom is a Pinterest workflow automation platform designed for wall art creators, digital artists, and print-on-demand sellers. It streamlines the entire process from uploading artwork images to generating AI-powered Pinterest metadata, scheduling pins, and exporting data for Pinterest.
+PixSchedule is a Pinterest workflow automation platform designed for wall art creators, digital artists, and print-on-demand sellers. It streamlines the entire process from uploading artwork images to generating AI-powered Pinterest metadata, scheduling pins, and exporting data for Pinterest.
 
 ## Dashboard
 The Dashboard (/metadata/dashboard) gives you an overview of your pin activity: total images uploaded, pins by status (draft, scheduled, exported), recent activity, and performance trends. Use it to track your workflow at a glance.
@@ -115,7 +115,7 @@ Set your timezone so that scheduled dates and CSV exports display in your local 
 View your current plan (Free or Pro) and upgrade options. Free plan users see their current usage vs. limits for uploads and AI generations.
 
 ## Projects
-WallArtRoom supports multiple independent projects — each with its own images, pins, boards, and settings. Use the project switcher at the bottom of the sidebar to switch between projects or create a new one. Projects are useful if you manage multiple Pinterest accounts or different product lines.
+PixSchedule supports multiple independent projects — each with its own images, pins, boards, and settings. Use the project switcher at the bottom of the sidebar to switch between projects or create a new one. Projects are useful if you manage multiple Pinterest accounts or different product lines.
 
 ## Plans
 
@@ -147,10 +147,10 @@ Q: How do I export pins to Pinterest?
 A: In the Schedules view, select the pins you want, click "Export CSV", and download the file. Upload the CSV via Pinterest's bulk pin uploader (pinterest.com/business/hub/pin-builder).
 
 Q: Can I schedule a pin for a specific time of day?
-A: Yes. When setting a publish date, you can also pick a time. WallArtRoom uses your configured timezone (Settings → Timezone).
+A: Yes. When setting a publish date, you can also pick a time. PixSchedule uses your configured timezone (Settings → Timezone).
 
 Q: How do I import my Pinterest Analytics data?
-A: Go to Pinterest Business → Analytics → Export data. Download the CSV. Then go to WallArtRoom → Settings → Pinterest → Import Analytics, and upload the file. The AI will use this data for smarter metadata generation.
+A: Go to Pinterest Business → Analytics → Export data. Download the CSV. Then go to PixSchedule → Settings → Pinterest → Import Analytics, and upload the file. The AI will use this data for smarter metadata generation.
 
 Q: I accidentally marked a pin as exported. Can I undo it?
 A: Yes. Open the Exported view, select the pin, and use "Move to Draft" to reset its status.
@@ -168,5 +168,5 @@ Q: I reached my free plan AI generation limit. What now?
 A: Upgrade to Pro for unlimited AI generations. Go to Settings → Billing.
 
 Q: My CSV export is not uploading to Pinterest. Why?
-A: Make sure the CSV columns match Pinterest's expected format. WallArtRoom generates standard Pinterest-compatible CSV files. Common issues: the image URL must be publicly accessible, and the board name must exactly match an existing board on your Pinterest account.
+A: Make sure the CSV columns match Pinterest's expected format. PixSchedule generates standard Pinterest-compatible CSV files. Common issues: the image URL must be publicly accessible, and the board name must exactly match an existing board on your Pinterest account.
 $KB$) ON CONFLICT (id) DO NOTHING;

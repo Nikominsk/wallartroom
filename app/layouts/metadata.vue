@@ -6,9 +6,9 @@
     <aside class="meta-shell__sidebar" :class="{ 'meta-shell__sidebar--mob-open': mobileNavOpen }" :aria-expanded="!collapsed">
       <!-- ── Brand + collapse toggle ─────────────────────────────────── -->
       <div class="meta-shell__brand">
-        <NuxtLink to="/metadata" class="meta-shell__brand-link" :title="collapsed ? 'WallArtRoom' : ''">
+        <NuxtLink to="/metadata" class="meta-shell__brand-link" :title="collapsed ? 'PixSchedule' : ''">
           <img src="/favicon.ico" class="meta-shell__brand-mark" alt="" width="28" height="28" />
-          <span class="meta-shell__brand-text">Wall<span>Art</span>Room</span>
+          <span class="meta-shell__brand-text">Pix<span>Schedule</span></span>
         </NuxtLink>
         <button
           class="meta-shell__collapse"
@@ -181,7 +181,7 @@
         <div class="notify-banner__inner">
           <span class="notify-banner__badge">Beta</span>
           <p class="notify-banner__text">
-            WallArtRoom is free while in beta. Want to know when paid plans launch?
+            PixSchedule is free while in beta. Want to know when paid plans launch?
           </p>
           <button
             class="notify-banner__yes"

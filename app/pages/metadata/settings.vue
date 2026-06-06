@@ -480,10 +480,6 @@
                         <input type="checkbox" v-model="tplDrafts[tpl.id].generateFor.pinterestBoard" />Board
                       </label>
                     </div>
-                    <label class="tpl-form-check">
-                      <input type="checkbox" v-model="tplDrafts[tpl.id].skipFilled" />
-                      Skip images where all selected fields are already filled
-                    </label>
                     <div class="tpl-form-radio-row">
                       <span class="tpl-form-radio-label">When fields exist:</span>
                       <label class="tpl-form-radio"><input type="radio" v-model="tplDrafts[tpl.id].overwriteMode" value="missing-only" /> Fill missing only</label>
@@ -557,10 +553,6 @@
                     <input type="checkbox" v-model="newTpl.options.generateFor.pinterestBoard" />Board
                   </label>
                 </div>
-                <label class="tpl-form-check">
-                  <input type="checkbox" v-model="newTpl.options.skipFilled" />
-                  Skip images where all selected fields are already filled
-                </label>
                 <div class="tpl-form-radio-row">
                   <span class="tpl-form-radio-label">When fields exist:</span>
                   <label class="tpl-form-radio"><input type="radio" v-model="newTpl.options.overwriteMode" value="missing-only" /> Fill missing only</label>
@@ -1325,7 +1317,6 @@ function buildTplDraft(tpl) {
       pinterestDescription: gf.pinterestDescription ?? true,
       pinterestBoard:       gf.pinterestBoard       ?? false,
     },
-    skipFilled:                     o.skipFilled                     ?? false,
     overwriteMode:                  o.overwriteMode                  ?? 'missing-only',
     additionalContext:               o.additionalContext               ?? '',
     targetAudience:                  o.targetAudience                  ?? '',
@@ -1394,7 +1385,6 @@ const newTplNameInput = ref(null)
 function makeEmptyOptions() {
   return {
     generateFor: { pinterestTitle: true, pinterestDescription: true, pinterestBoard: false },
-    skipFilled: false,
     overwriteMode: 'missing-only',
     additionalContext: '',
     targetAudience: '',

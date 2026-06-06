@@ -997,6 +997,26 @@ const filteredImages = computed(() => {
   return list
 })
 
+// Keep the selection a subset of what's actually visible. When a selected image
+// leaves the filtered view — e.g. you clear its board while filtering by "has a
+// board" — it must not stay selected behind the scenes (bulk actions would still
+// hit it). We only drop VALID images that fell out of the filter; invalid-image
+// selections are tracked separately (scheduler skipped-count) so are left alone.
+watch(filteredImages, (list) => {
+  if (!selectedIds.value.size) return
+  // With "only selected" on, the view IS the selection, so pruning would fight
+  // the user as they layer on other filters — skip it.
+  if (filters.onlySelected) return
+  const visibleIds = new Set(list.map(i => i.id))
+  const dropIds = validImages.value
+    .filter(i => selectedIds.value.has(i.id) && !visibleIds.has(i.id))
+    .map(i => i.id)
+  if (!dropIds.length) return
+  const next = new Set(selectedIds.value)
+  for (const id of dropIds) next.delete(id)
+  selectedIds.value = next
+})
+
 // ── Invalid images modal ─────────────────────────────────────────────────────
 const showInvalidImages = ref(false)
 
@@ -1309,6 +1329,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 // ── Single image save ─────────────────────────────────────────────────────────
 async function handleSaveSingle() {
   if (!activeDraft.value) return
+  const savedId = activeDraft.value.id
   await saveImage(activeDraft.value)
   if (!saveError.value) {
     imageAtLoad.value = JSON.parse(JSON.stringify(activeDraft.value))
@@ -1318,6 +1339,13 @@ async function handleSaveSingle() {
       const m = new Map(pendingChanges.value)
       m.delete(activeId.value)
       pendingChanges.value = m
+    }
+    // If the saved edit pushed the image out of the active filter (e.g. you
+    // cleared its board while filtering by "has a board"), it's no longer in the
+    // view — deselect it and close the detail panel so nothing dangles.
+    if (!filteredImages.value.some(i => i.id === savedId)) {
+      if (selectedIds.value.has(savedId)) toggle(savedId)
+      if (activeId.value === savedId) activeId.value = null
     }
   }
 }
@@ -1408,6 +1436,13 @@ async function handleGenerate() {
   if (!aiTargetSnapshot.value.length) return
   const batchedSaves = []
 
+  // The board list is cached per-tab, so a board added in another tab (or the
+  // settings page) won't be in this tab's state yet. Pull the current list from
+  // the server before generating so the AI maps against up-to-date boards.
+  if (aiOptions.generateFor.pinterestBoard) {
+    await loadBoards(true).catch(() => {})
+  }
+
   await generate(
     aiTargetSnapshot.value,
     (updated) => {
@@ -1479,6 +1514,9 @@ function openAiModal() {
   if (aiProgress.status === 'done' || aiProgress.status === 'cancelled') resetAiProgress()
   aiTargetSnapshot.value = [...aiTargetImages.value]
   showAiModal.value = true
+  // Refresh boards so the modal's board count and the Board option reflect any
+  // boards added elsewhere (other tab / settings) since this tab last loaded.
+  loadBoards(true).catch(() => {})
 }
 
 function closeAiModal() {

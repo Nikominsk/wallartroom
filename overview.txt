@@ -1,9 +1,9 @@
-WallArtRoom — App Overview
+PixSchedule — App Overview
 ==========================
 
 What it is
 ----------
-WallArtRoom is a Pinterest productivity tool built for creators who sell wall art,
+PixSchedule is a Pinterest productivity tool built for creators who sell wall art,
 prints, and digital downloads. It takes the manual work out of turning a batch of
 generated or photographed images into fully optimized, publish-ready Pinterest pins.
 The target users are solo creators, digital artists, and small print-on-demand shops

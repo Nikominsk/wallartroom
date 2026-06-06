@@ -4,8 +4,8 @@
     <header class="admin__head">
       <div class="admin__head-left">
         <NuxtLink to="/metadata" class="admin__brand">
-          <span class="admin__brand-mark">W</span>
-          <span class="admin__brand-text">Wall<span>Art</span>Room</span>
+          <span class="admin__brand-mark">P</span>
+          <span class="admin__brand-text">Pix<span>Schedule</span></span>
         </NuxtLink>
         <div class="admin__crumbs">
           <span class="admin__crumb-current">Admin</span>

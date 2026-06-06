@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
           method: 'HEAD',
           redirect: 'manual',
           signal: controller.signal,
-          headers: { 'User-Agent': 'WallArtRoom-LinkChecker/1.0' },
+          headers: { 'User-Agent': 'PixSchedule-LinkChecker/1.0' },
         })
 
         clearTimeout(timeout)

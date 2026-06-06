@@ -14,7 +14,6 @@ function defaultOptions() {
     boardLanguage: 'English',
     maxPinterestTitleLength: 100,
     maxPinterestDescriptionLength: 300,
-    skipFilled: true,
     overwriteMode: 'missing-only',
   }
 }
@@ -94,6 +93,9 @@ export function useAiMetadataGeneration() {
     failedCount: 0,
     skippedCount: 0,
     duplicateRetryCount: 0,
+    // Images where a board was requested but none could be assigned (no existing
+    // board fit). Only meaningful when board generation is part of the run.
+    boardUnassignedCount: 0,
     failedIds: [],
     lastError: null,   // last error message seen, shown in the UI
   })
@@ -107,18 +109,9 @@ export function useAiMetadataGeneration() {
     progress.failedCount = 0
     progress.skippedCount = 0
     progress.duplicateRetryCount = 0
+    progress.boardUnassignedCount = 0
     progress.failedIds = []
     progress.lastError = null
-  }
-
-  function needsGeneration(img) {
-    if (!options.skipFilled) return true
-    // Skip the image only when every selected field is already filled.
-    const allFilled =
-      (!options.generateFor.pinterestTitle       || !!img.pinterest.title) &&
-      (!options.generateFor.pinterestDescription || !!img.pinterest.description) &&
-      (!options.generateFor.pinterestBoard       || !!img.pinterest.board)
-    return !allFilled
   }
 
   async function generate(images, onUpdate, generateFn) {
@@ -144,13 +137,6 @@ export function useAiMetadataGeneration() {
 
         const img = images[head++]
 
-        if (!needsGeneration(img)) {
-          progress.imageStatuses[img.id] = 'skipped'
-          progress.skippedCount++
-          progress.current++
-          continue
-        }
-
         progress.imageStatuses[img.id] = 'generating'
         progress.current++
 
@@ -175,6 +161,12 @@ export function useAiMetadataGeneration() {
             adobeStock: { ...img.adobeStock, ...partial.adobeStock },
             updatedAt:  new Date().toISOString(),
           }
+          // Board was requested for this image but no existing board fit — count
+          // it so the user sees how many pins were left without a board.
+          if (options.generateFor.pinterestBoard && !updated.pinterest.board) {
+            progress.boardUnassignedCount++
+          }
+
           progress.imageStatuses[img.id] = 'done'
           progress.successCount++
           onUpdate(updated)

@@ -87,7 +87,7 @@
         <div class="profile-beta__head">
           <div class="profile-beta__badge">Beta</div>
           <div>
-            <h2 class="profile-beta__title">You're using WallArtRoom Beta</h2>
+            <h2 class="profile-beta__title">You're using PixSchedule Beta</h2>
             <p class="profile-beta__text">
               The app is currently in beta. All features are free right now. Paid
               subscription plans are coming soon. Check the box below to get one email

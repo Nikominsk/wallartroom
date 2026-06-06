@@ -2,7 +2,7 @@
   <div class="pricing-page">
     <header class="pp-top">
       <div class="pp-top-inner">
-        <NuxtLink to="/" class="pp-brand">Wall<span>Art</span>Room</NuxtLink>
+        <NuxtLink to="/" class="pp-brand">Pix<span>Schedule</span></NuxtLink>
         <nav class="pp-nav">
           <NuxtLink to="/">Home</NuxtLink>
           <NuxtLink to="/pricing">Pricing</NuxtLink>
@@ -101,8 +101,8 @@
 
     <footer class="pp-footer">
       <div class="pp-footer-inner">
-        <div>WallArtRoom · The Pinterest Revenue OS</div>
-        <div>© 2026 WallArtRoom · API-compliant, no risky scraping</div>
+        <div>PixSchedule · The Pinterest Revenue OS</div>
+        <div>© 2026 PixSchedule · API-compliant, no risky scraping</div>
       </div>
     </footer>
   </div>
@@ -183,7 +183,7 @@ const comparisonRows = [
 ]
 
 const faq = [
-  { q: 'Is there a free plan?', a: 'Yes — during beta you can use WallArtRoom for free with a single project, 200 lifetime uploads, and 500 AI generations.' },
+  { q: 'Is there a free plan?', a: 'Yes — during beta you can use PixSchedule for free with a single project, 200 lifetime uploads, and 500 AI generations.' },
   { q: 'Do upload limits reset monthly?', a: 'Yes. Paid plan upload and AI generation limits reset at the start of each billing cycle.' },
   { q: 'Can I switch plans?', a: 'Anytime. Upgrading is instant. Downgrading takes effect at the end of your billing cycle.' },
   { q: 'Is there an annual discount?', a: 'Not currently — monthly billing only. Annual plans may be added in the future.' },

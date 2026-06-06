@@ -4,7 +4,7 @@
 
     <header>
       <nav class="nav">
-        <a class="logo" href="/">Wall<span>Art</span>Room</a>
+        <a class="logo" href="/">Pix<span>Schedule</span></a>
         <a class="cta" href="/">Open Visualizer</a>
       </nav>
     </header>
@@ -269,7 +269,7 @@
     </main>
 
     <footer>
-      © 2026 WallArtRoom · Discover wall art and visualize it directly
+      © 2026 PixSchedule · Discover wall art and visualize it directly
     </footer>
 
   </section>

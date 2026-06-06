@@ -4,9 +4,9 @@
     <!-- ── Nav ──────────────────────────────────────────────────────────────── -->
     <header class="nav">
       <div class="nav__inner">
-        <a class="nav__brand" href="#top" aria-label="WallArtRoom home">
+        <a class="nav__brand" href="#top" aria-label="PixSchedule home">
           <img class="nav__mark" src="/favicon.ico" alt="" aria-hidden="true" width="26" height="26" />
-          <span class="nav__name">Wall<em>Art</em>Room</span>
+          <span class="nav__name">Pix<em>Schedule</em></span>
         </a>
         <nav class="nav__links" aria-label="Site navigation">
           <a href="#features">Features</a>
@@ -81,8 +81,9 @@
             <div class="hero__eyebrow">
               <!-- Pinterest brand badge — instantly recognisable red P logo -->
               <span class="badge badge--pinterest">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-label="Pinterest" role="img">
-                  <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
+                <svg width="13" height="13" viewBox="0 0 24 24" aria-label="Pinterest" role="img">
+                  <circle cx="12" cy="12" r="12" fill="#fff"/>
+                  <path fill="#E60023" d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
                 </svg>
                 For Pinterest
               </span>
@@ -162,8 +163,9 @@
         <div class="container stats-bar__inner">
           <div class="stat" v-for="s in stats" :key="s.label">
             <div class="stat__value-row">
-              <svg v-if="s.pinterest" width="18" height="18" viewBox="0 0 24 24" fill="#E60023" aria-hidden="true">
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
+              <svg v-if="s.pinterest" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="12" fill="#fff"/>
+                <path fill="#E60023" d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
               </svg>
               <span class="stat__value">{{ s.value }}</span>
             </div>
@@ -263,7 +265,7 @@
               From a personal hack<br>to a tool <em>anyone can use.</em>
             </h2>
 
-            <p>WallArtRoom didn't start as a product. I generated images with MidJourney and needed a faster way to turn them into publish-ready Pinterest pins. So I wrote my own Python script. It automated 75% of the work instantly. I knew the idea was worth taking further.</p>
+            <p>PixSchedule didn't start as a product. I generated images with MidJourney and needed a faster way to turn them into publish-ready Pinterest pins. So I wrote my own Python script. It automated 75% of the work instantly. I knew the idea was worth taking further.</p>
             <p>Over time I turned it into this: what worked for me should work for every creator facing the same grind. No scripts. No setup. No technical knowledge required.</p>
 
             <a
@@ -284,7 +286,7 @@
           <div class="story__visual">
             <img
               :src="heroLaptopImg"
-              alt="WallArtRoom dashboard showing the tool behind the analytics results"
+              alt="PixSchedule dashboard showing the tool behind the analytics results"
               class="story__laptop"
               loading="lazy"
               decoding="async"
@@ -430,7 +432,7 @@
       <!-- ══ FOOTER ──────────────────────────────────────────────────────────── -->
       <footer class="footer">
         <div class="container footer__inner">
-          <span class="footer__brand">Wall<em>Art</em>Room</span>
+          <span class="footer__brand">Pix<em>Schedule</em></span>
           <p class="footer__copy">© {{ year }} · The Pinterest Revenue OS</p>
           <nav class="footer__links" aria-label="Footer links">
             <NuxtLink to="/privacy">Privacy</NuxtLink>
@@ -471,7 +473,7 @@ const pinImg3 = galImg11
 const pinImg4 = galImg09
 
 useHead({
-  title: 'WallArtRoom: Pinterest AI Workflow for Creators',
+  title: 'PixSchedule: Pinterest AI Workflow for Creators',
   meta: [
     {
       name: 'description',
@@ -805,7 +807,9 @@ h2 {
   flex-shrink: 0;
 
   &--pinterest {
-    background: #E60023;
+    background: transparent;
+    color: #1a1714;
+    padding-left: 0;
     gap: 6px;
   }
 }

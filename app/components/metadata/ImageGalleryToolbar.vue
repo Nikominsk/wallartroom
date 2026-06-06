@@ -40,6 +40,7 @@
       <button
         class="gallery-toolbar__btn"
         :class="{ 'gallery-toolbar__btn--active': showFilters }"
+        title="Filters match each image's last saved values. Unsaved edits aren't counted — e.g. if you change a board name but don't save, the filter won't pick it up until you do."
         @click="showFilters = !showFilters"
       >
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">

@@ -1,18 +1,18 @@
 <template>
   <div class="priv">
     <div class="priv__inner">
-      <NuxtLink to="/" class="priv__back">← WallArtRoom</NuxtLink>
+      <NuxtLink to="/" class="priv__back">← PixSchedule</NuxtLink>
       <h1 class="priv__h1">Privacy Policy</h1>
       <p class="priv__date">Last updated: May 2026</p>
 
       <p class="priv__lead">
-        WallArtRoom is a Pinterest metadata management tool. This policy explains what data we collect,
+        PixSchedule is a Pinterest metadata management tool. This policy explains what data we collect,
         how we use it, and what cookies we set.
       </p>
 
       <section class="priv__section">
         <h2 class="priv__h2">1. Who we are</h2>
-        <p>WallArtRoom is operated as a sole-trader product. For privacy enquiries contact:
+        <p>PixSchedule is operated as a sole-trader product. For privacy enquiries contact:
           <a href="mailto:digidesignadobe@gmail.com" class="priv__link">digidesignadobe@gmail.com</a>
         </p>
       </section>
@@ -101,7 +101,7 @@
 
 <script setup>
 definePageMeta({ layout: false })
-useHead({ title: 'Privacy Policy · WallArtRoom' })
+useHead({ title: 'Privacy Policy · PixSchedule' })
 </script>
 
 <style scoped lang="scss">

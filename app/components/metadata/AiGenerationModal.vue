@@ -107,13 +107,18 @@
               <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5l3 3 7-7"/></svg>
               {{ progress.successCount }} updated
             </span>
-            <span class="ai-modal__stat ai-modal__stat--skip">{{ progress.skippedCount }} skipped</span>
+            <span v-if="progress.skippedCount" class="ai-modal__stat ai-modal__stat--skip">{{ progress.skippedCount }} skipped</span>
             <span v-if="progress.failedCount" class="ai-modal__stat ai-modal__stat--fail" :title="progress.lastError ?? ''">{{ progress.failedCount }} failed</span>
             <span
               v-if="progress.duplicateRetryCount"
               class="ai-modal__stat ai-modal__stat--retry"
               title="Titles returned as duplicates and re-generated"
             >{{ progress.duplicateRetryCount }} retried</span>
+            <span
+              v-if="options.generateFor.pinterestBoard && progress.boardUnassignedCount"
+              class="ai-modal__stat ai-modal__stat--noboard"
+              title="No existing board matched these images, so no board was assigned"
+            >{{ progress.boardUnassignedCount }} no board</span>
           </div>
 
           <!-- Setup summary -->
@@ -131,7 +136,7 @@
             <div class="ai-modal__setup-row">
               <span class="ai-modal__setup-key">Condition</span>
               <span class="ai-modal__setup-val">
-                {{ overwriteLabel }}<template v-if="options.skipFilled"> · skip if all filled</template>
+                {{ overwriteLabel }}
               </span>
             </div>
           </div>
@@ -186,17 +191,10 @@
                 <input type="checkbox" v-model="options.generateFor.pinterestBoard" :disabled="!hasBoardsConfigured" />
                 <span>Board</span>
               </label>
-              <button v-if="!hasBoardsConfigured" class="ai-modal__inline-link" type="button" @click="$emit('manage-boards')">
-                Add a board first →
-              </button>
+              <span class="ai-modal__board-count">{{ boardCount }} board{{ boardCount === 1 ? '' : 's' }}</span>
             </div>
 
             <div class="ai-modal__fill-group">
-              <label class="ai-modal__check ai-modal__check--prominent">
-                <input type="checkbox" v-model="options.skipFilled" />
-                <span>Skip images where all selected fields are already filled</span>
-              </label>
-
               <div class="ai-modal__overwrite-row">
                 <span class="ai-modal__overwrite-label">When fields exist:</span>
                 <label class="ai-modal__radio">
@@ -748,6 +746,13 @@ function handleClose() {
   &:hover { text-decoration: underline; }
 }
 
+.ai-modal__board-count {
+  align-self: center;
+  font-size: 12px;
+  color: #9ca3af;
+  padding: 0 2px;
+}
+
 // ── Fill / skip group (section 1) ─────────────────────────────────────────────
 .ai-modal__fill-group {
   display: flex;
@@ -992,6 +997,7 @@ function handleClose() {
   &--skip  { color: #9ca3af; }
   &--fail  { color: #ef4444; }
   &--retry { color: #d97706; }
+  &--noboard { color: #d97706; }
 }
 
 .ai-modal__setup {

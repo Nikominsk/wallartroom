@@ -1,4 +1,4 @@
--- Waitlist for the WallArtRoom launch. Email-only signups stored here until
+-- Waitlist for the PixSchedule launch. Email-only signups stored here until
 -- the product is ready to invite users in.
 
 create table if not exists waitlist (

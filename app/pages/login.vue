@@ -3,7 +3,7 @@
     <div class="login-page__card">
       <NuxtLink to="/" class="login-page__brand">
         <img src="/favicon.ico" class="login-page__brand-icon" alt="" width="40" height="40" />
-        <span class="login-page__brand-name">Wall<span>Art</span>Room</span>
+        <span class="login-page__brand-name">Pix<span>Schedule</span></span>
       </NuxtLink>
 
       <h1 class="login-page__title">{{ titleText }}</h1>

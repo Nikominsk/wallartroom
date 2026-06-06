@@ -108,6 +108,24 @@ const props = defineProps({
 
 defineEmits(['manage-boards', 'open-ai'])
 
+// When "Clear this field" is ticked, empty the input above it too — a disabled
+// box still showing the old text is confusing. Apply logic ignores the value
+// while clear is on, so this is purely so the UI matches what will happen.
+for (const key of Object.keys(props.spec)) {
+  watch(() => props.spec[key].clear, (isClear) => {
+    if (!isClear) return
+    const field = props.spec[key]
+    if (key === 'pinterestBoard') {
+      field.boardId = null
+      field.boardName = ''
+    } else if (Array.isArray(field.value)) {
+      field.value = []
+    } else {
+      field.value = ''
+    }
+  })
+}
+
 function onBoardSelect(boardId) {
   const b = props.boards.find(b => b.id === boardId) || null
   props.spec.pinterestBoard.boardId = b?.id ?? null
@@ -153,7 +171,9 @@ export const BulkField = defineComponent({
       ]),
       props.enabled
         ? h('div', { class: 'bulk-field__content' }, [
-            slots.default?.(),
+            // A disabled <fieldset> natively disables every control inside it, so
+            // ticking "Clear" greys out the input(s) above regardless of type.
+            h('fieldset', { class: 'bulk-field__fields', disabled: props.clear }, [slots.default?.()]),
             h('label', { class: 'bulk-field__clear' }, [
               h('input', {
                 type: 'checkbox',
@@ -332,6 +352,16 @@ export const BulkField = defineComponent({
 :deep(.bulk-field__toggle-label) { font-size: 13px; font-weight: 500; color: $color-primary; }
 
 :deep(.bulk-field__content) { padding-left: 23px; display: flex; flex-direction: column; gap: 6px; }
+
+/* Transparent wrapper: no box of its own, but its `disabled` attr greys out
+   the controls inside when "Clear" is ticked. */
+:deep(.bulk-field__fields) {
+  display: contents;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
 
 :deep(.bulk-field__clear) {
   display: flex;
