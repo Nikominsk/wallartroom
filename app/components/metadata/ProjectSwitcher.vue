@@ -57,17 +57,18 @@
               <span class="proj__pick-body">
                 <span class="proj__pick-name">{{ p.name }}</span>
                 <svg
-                  v-if="sparklinePoints(p.id)"
+                  v-if="sparklineFetched"
                   viewBox="0 0 100 14"
                   preserveAspectRatio="none"
                   class="proj__sparkline"
+                  :class="{ 'proj__sparkline--empty': sparklineEmpty(p.id) }"
                   aria-hidden="true"
                 >
                   <path :d="sparklineArea(p.id)" class="proj__sparkline-area" />
                   <polyline :points="sparklinePoints(p.id)" class="proj__sparkline-line" />
                 </svg>
                 <svg
-                  v-else-if="!sparklineFetched"
+                  v-else
                   class="proj__sparkline-loader"
                   width="10" height="10" viewBox="0 0 22 22" fill="none"
                   aria-hidden="true"
@@ -401,22 +402,26 @@ function buildSparkline(projectId) {
     if (n > maxCount) maxCount = n
   }
 
-  if (maxCount === 0) return null
+  const empty = maxCount === 0
 
+  // When nothing is scheduled, draw a flat baseline so the chart still
+  // renders as "empty" rather than disappearing entirely.
   const pts = counts.map((n, i) => {
     const x = (i / 29) * 100
-    const y = 14 - (n / maxCount) * 12
+    const y = empty ? 13 : 14 - (n / maxCount) * 12
     return `${x.toFixed(1)},${y.toFixed(1)}`
   })
 
   return {
+    empty,
     points: pts.join(' '),
     area: `M 0,14 L ${pts.join(' L ')} L 100,14 Z`,
   }
 }
 
-function sparklinePoints(id) { return buildSparkline(id)?.points ?? null }
-function sparklineArea(id)   { return buildSparkline(id)?.area   ?? '' }
+function sparklinePoints(id) { return buildSparkline(id).points }
+function sparklineArea(id)   { return buildSparkline(id).area }
+function sparklineEmpty(id)  { return buildSparkline(id).empty }
 
 // ── Toggle ────────────────────────────────────────────────────────────────────
 
@@ -750,6 +755,11 @@ async function executeDelete() {
     flex-shrink: 0;
     width: 52px;
     height: 14px;
+
+    &--empty {
+      .proj__sparkline-area { fill: transparent; }
+      .proj__sparkline-line { stroke: #e5e7eb; }
+    }
   }
 
   &__sparkline-area {

@@ -168,7 +168,7 @@
         </div>
 
         <!-- Description -->
-        <div class="gallery-toolbar__filter-group">
+        <div v-if="caps.showDescriptionFilter !== false" class="gallery-toolbar__filter-group">
           <div class="gallery-toolbar__filter-head">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 3h9M1.5 6h9M1.5 9h6"/></svg>
             <span class="gallery-toolbar__filter-label">Description</span>
@@ -185,7 +185,7 @@
         </div>
 
         <!-- Board -->
-        <div v-if="boards.length" class="gallery-toolbar__filter-group">
+        <div v-if="boards.length && caps.showBoardFilter !== false" class="gallery-toolbar__filter-group">
           <div class="gallery-toolbar__filter-head">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1a2.5 2.5 0 012.5 2.5C8.5 5.5 6 10 6 10S3.5 5.5 3.5 3.5A2.5 2.5 0 016 1z"/><circle cx="6" cy="3.5" r="1" fill="currentColor" stroke="none"/></svg>
             <span class="gallery-toolbar__filter-label">Board</span>
@@ -234,13 +234,15 @@
             <span class="gallery-toolbar__filter-label">Scheduled</span>
           </div>
           <div class="gallery-toolbar__pills">
-            <button :class="['gallery-toolbar__pill', !filters.pinterestDate && !filters.pinterestDateFrom && !filters.pinterestDateTo && 'gallery-toolbar__pill--active']" title="Any" @click="updateScheduledPill('')">All</button>
-            <button :class="['gallery-toolbar__pill', filters.pinterestDate === 'set' && 'gallery-toolbar__pill--active']" title="Date set" @click="updateScheduledPill('set')">
-              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l2.5 2.5 5.5-5.5"/></svg>
-            </button>
-            <button :class="['gallery-toolbar__pill', filters.pinterestDate === 'missing' && 'gallery-toolbar__pill--active']" title="Missing date" @click="updateScheduledPill('missing')">
-              <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
-            </button>
+            <template v-if="caps.showScheduledPills !== false">
+              <button :class="['gallery-toolbar__pill', !filters.pinterestDate && !filters.pinterestDateFrom && !filters.pinterestDateTo && 'gallery-toolbar__pill--active']" title="Any" @click="updateScheduledPill('')">All</button>
+              <button :class="['gallery-toolbar__pill', filters.pinterestDate === 'set' && 'gallery-toolbar__pill--active']" title="Date set" @click="updateScheduledPill('set')">
+                <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l2.5 2.5 5.5-5.5"/></svg>
+              </button>
+              <button :class="['gallery-toolbar__pill', filters.pinterestDate === 'missing' && 'gallery-toolbar__pill--active']" title="Missing date" @click="updateScheduledPill('missing')">
+                <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+              </button>
+            </template>
             <span class="gallery-toolbar__daterange gallery-toolbar__daterange--inline">
               <input type="date" class="gallery-toolbar__date-input" :value="filters.pinterestDateFrom" title="From" @change="updateFilter('pinterestDateFrom', $event.target.value)" />
               <span class="gallery-toolbar__daterange-sep">–</span>

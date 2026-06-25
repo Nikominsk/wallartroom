@@ -110,7 +110,7 @@
               <span class="dash__card-meta">next 6 weeks · {{ totalScheduled }} scheduled</span>
             </div>
           </div>
-          <svg viewBox="0 0 420 148" class="dash__bar-svg" aria-hidden="true">
+          <svg :viewBox="`0 0 420 ${BAR_BASELINE + 28}`" class="dash__bar-svg" aria-hidden="true">
             <defs>
               <clipPath
                 v-for="(w, i) in barData"
@@ -120,16 +120,21 @@
                 <rect
                   v-if="w.barH > 0"
                   :x="w.cx - 20"
-                  :y="108 - w.barH"
+                  :y="BAR_BASELINE - w.barH"
                   width="40"
                   :height="w.barH"
                   rx="5"
                 />
               </clipPath>
             </defs>
-            <line x1="14" y1="108" x2="406" y2="108" stroke="#e5e7eb" stroke-width="1" />
+            <!-- grid lines at 33% and 66% -->
+            <line v-for="pct in [1/3, 2/3]" :key="pct"
+              x1="14" :y1="BAR_BASELINE - pct * BAR_MAX_H" x2="406" :y2="BAR_BASELINE - pct * BAR_MAX_H"
+              stroke="#f0f0f0" stroke-width="1"
+            />
+            <line x1="14" :y1="BAR_BASELINE" x2="406" :y2="BAR_BASELINE" stroke="#e5e7eb" stroke-width="1" />
             <g v-for="(w, i) in barData" :key="i">
-              <rect :x="w.cx - 20" y="14" width="40" height="94" rx="5" fill="#f9fafb" />
+              <rect :x="w.cx - 20" y="14" width="40" :height="BAR_BASELINE - 14" rx="5" fill="#f9fafb" />
               <g v-if="w.count > 0" :clip-path="`url(#bc-${i})`">
                 <rect
                   v-for="(r, ri) in w.rects"
@@ -148,7 +153,7 @@
                 text-anchor="middle"
                 class="dash__bar-val"
               >{{ w.count }}</text>
-              <text :x="w.cx" y="130" text-anchor="middle" class="dash__bar-lbl">{{ w.weekLabel }}</text>
+              <text :x="w.cx" :y="BAR_BASELINE + 20" text-anchor="middle" class="dash__bar-lbl">{{ w.weekLabel }}</text>
             </g>
           </svg>
           <p v-if="totalScheduled === 0" class="dash__no-data">No pins scheduled for the next 6 weeks.</p>
@@ -265,11 +270,110 @@
       <button class="dash__error-btn" @click="refresh">Try again</button>
     </div>
 
+    <!-- ── Pinterest API Tester — owner-only ────────────────────────────── -->
+    <div v-if="isOwner" class="ptest">
+      <div class="ptest__head">
+        <div class="ptest__brand">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="12" fill="#E60023"/>
+            <path fill="#fff" d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
+          </svg>
+          <span class="ptest__brand-name">Pinterest API Tester</span>
+          <span class="ptest__badge">Trial</span>
+        </div>
+        <p class="ptest__desc">Test the Pinterest v5 API with your trial access token. Calls are proxied server-side.</p>
+      </div>
+
+      <!-- Token + environment row -->
+      <div class="ptest__config">
+        <div class="ptest__token-wrap">
+          <label class="ptest__label">Access Token</label>
+          <div class="ptest__token-row">
+            <input
+              v-model="ptToken"
+              :type="ptShowToken ? 'text' : 'password'"
+              class="ptest__token-input"
+              placeholder="Paste your Pinterest access token…"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" class="ptest__eye" :title="ptShowToken ? 'Hide' : 'Show'" @click="ptShowToken = !ptShowToken">
+              <svg v-if="ptShowToken" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="ptest__env-wrap">
+          <label class="ptest__label">Environment</label>
+          <div class="ptest__env-tabs">
+            <button
+              v-for="e in ['production', 'sandbox']"
+              :key="e"
+              type="button"
+              class="ptest__env-tab"
+              :class="{ 'ptest__env-tab--active': ptEnv === e }"
+              @click="ptEnv = e"
+            >{{ e }}</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Endpoint buttons -->
+      <div class="ptest__actions">
+        <button
+          v-for="ep in ptEndpoints"
+          :key="ep.key"
+          type="button"
+          class="ptest__action-btn"
+          :class="{ 'ptest__action-btn--active': ptActiveEndpoint === ep.key, 'ptest__action-btn--loading': ptLoading && ptActiveEndpoint === ep.key }"
+          :disabled="!ptToken.trim() || ptLoading"
+          @click="ptRun(ep.key)"
+        >
+          <span class="ptest__action-method">GET</span>
+          <span class="ptest__action-path">{{ ep.path }}</span>
+          <svg v-if="ptLoading && ptActiveEndpoint === ep.key" class="ptest__action-spin" width="12" height="12" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="#e5e7eb" stroke-width="2.5"/>
+            <path d="M11 3a8 8 0 0 1 8 8" stroke="#E60023" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Status bar -->
+      <div v-if="ptResult || ptError" class="ptest__status-bar" :class="ptError ? 'ptest__status-bar--err' : (ptResult?.ok ? 'ptest__status-bar--ok' : 'ptest__status-bar--err')">
+        <template v-if="ptResult">
+          <span class="ptest__status-code">{{ ptResult.status }}</span>
+          <span class="ptest__status-text">{{ ptResult.statusText }}</span>
+          <span class="ptest__status-sep">·</span>
+          <span class="ptest__status-url">{{ ptResult.url }}</span>
+          <span class="ptest__status-sep">·</span>
+          <span class="ptest__status-ms">{{ ptResult.ms }}ms</span>
+        </template>
+        <template v-else>
+          <span class="ptest__status-code">Error</span>
+          <span class="ptest__status-text">{{ ptError }}</span>
+        </template>
+        <button type="button" class="ptest__status-clear" @click="ptResult = null; ptError = null">✕</button>
+      </div>
+
+      <!-- Response viewer -->
+      <div v-if="ptResult" class="ptest__response">
+        <div class="ptest__response-head">
+          <span class="ptest__response-title">Response</span>
+          <button type="button" class="ptest__copy-btn" @click="ptCopy">{{ ptCopied ? '✓ Copied' : 'Copy JSON' }}</button>
+        </div>
+        <pre class="ptest__json" v-html="ptHighlighted" />
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 definePageMeta({ layout: 'metadata' })
+
+const currentUser = useSupabaseUser()
+const isOwner = computed(() => currentUser.value?.email === 'nniko.geuenich@gmail.com')
 
 const FALLBACK_COLORS = ['#ff6b35', '#6366f1', '#22c55e', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6']
 const STATUS_COLORS = {
@@ -346,23 +450,25 @@ const donutSlices = computed(() => {
 
 // ── Stacked bar chart ──────────────────────────────────────────────────────
 
+// Bar chart layout constants — also used in the SVG template.
+const BAR_MAX_H   = 152   // max bar height in SVG units
+const BAR_BASELINE = 172  // y position of the zero line
+
 const barData = computed(() => {
   if (!data.value) return []
   const weeks = data.value.weeklySchedule
   const exportedOnly = showOnlyExportedSchedule.value
   const max = Math.max(...weeks.map(w => exportedOnly ? (w.exportedCount ?? 0) : w.count), 1)
-  const MAX_H = 94
-  const BASELINE = 108
 
   return weeks.map((w, i) => {
     const count = exportedOnly ? (w.exportedCount ?? 0) : w.count
     const segsSource = exportedOnly ? (w.exportedSegments ?? []) : (w.segments ?? [])
     const cx = 52 + i * 64
-    const totalBarH = (count / max) * MAX_H
-    const barY = BASELINE - totalBarH
+    const totalBarH = (count / max) * BAR_MAX_H
+    const barY = BAR_BASELINE - totalBarH
 
     const rects = []
-    let yBottom = BASELINE
+    let yBottom = BAR_BASELINE
     const segs = [...segsSource].sort((a, b) => b.count - a.count)
     for (const seg of segs) {
       const segH = count > 0 ? (seg.count / count) * totalBarH : 0
@@ -380,6 +486,7 @@ const totalScheduled = computed(() => {
   const key = showOnlyExportedSchedule.value ? 'exportedCount' : 'count'
   return data.value.weeklySchedule.reduce((s, w) => s + (w[key] ?? 0), 0)
 })
+
 
 // ── Upcoming pins ──────────────────────────────────────────────────────────
 
@@ -425,6 +532,64 @@ const canScrollRight = computed(() => scrollIndex.value < maxPinsPerDay.value - 
 
 function formatTime(dateStr) {
   return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+// ── Pinterest API Tester ───────────────────────────────────────────────────
+
+const ptToken   = ref(import.meta.client ? (localStorage.getItem('pt_token') ?? '') : '')
+const ptEnv     = ref('production')
+const ptLoading = ref(false)
+const ptResult  = ref(null)
+const ptError   = ref(null)
+const ptCopied  = ref(false)
+const ptShowToken       = ref(false)
+const ptActiveEndpoint  = ref(null)
+
+watch(ptToken, v => { if (import.meta.client) localStorage.setItem('pt_token', v) })
+
+const ptEndpoints = [
+  { key: 'user_account', path: '/v5/user_account',  label: 'User Account' },
+  { key: 'boards',       path: '/v5/boards',         label: 'Boards'       },
+  { key: 'pins',         path: '/v5/pins',           label: 'Pins'         },
+]
+
+async function ptRun(endpoint) {
+  ptActiveEndpoint.value = endpoint
+  ptResult.value  = null
+  ptError.value   = null
+  ptLoading.value = true
+  try {
+    const res = await $fetch('/api/pinterest/api-test', {
+      method: 'POST',
+      body:   { token: ptToken.value, environment: ptEnv.value, endpoint },
+    })
+    ptResult.value = res
+  } catch (err) {
+    ptError.value = err?.data?.statusMessage ?? err?.message ?? 'Request failed'
+  } finally {
+    ptLoading.value = false
+  }
+}
+
+const ptHighlighted = computed(() => {
+  if (!ptResult.value) return ''
+  const json = JSON.stringify(ptResult.value.data, null, 2)
+  return json
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (m) => {
+      let cls = 'pt-num'
+      if (/^"/.test(m)) cls = /:$/.test(m) ? 'pt-key' : 'pt-str'
+      else if (/true|false/.test(m)) cls = 'pt-bool'
+      else if (/null/.test(m)) cls = 'pt-null'
+      return `<span class="${cls}">${m}</span>`
+    })
+})
+
+async function ptCopy() {
+  if (!ptResult.value) return
+  await navigator.clipboard.writeText(JSON.stringify(ptResult.value.data, null, 2))
+  ptCopied.value = true
+  setTimeout(() => { ptCopied.value = false }, 1800)
 }
 </script>
 
@@ -709,6 +874,13 @@ function formatTime(dateStr) {
     display: flex;
     flex-direction: column;
     gap: 7px;
+    max-height: 180px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
   }
 
   &__legend-row {
@@ -766,6 +938,7 @@ function formatTime(dateStr) {
     font-size: 10px;
     fill: #9ca3af;
   }
+
 
   &__no-data {
     margin: -2px 0 0;
@@ -1002,4 +1175,324 @@ function formatTime(dateStr) {
     &__skel-pipeline { grid-template-columns: 1fr; }
   }
 }
+
+// ── Pinterest API Tester ─────────────────────────────────────────────────────
+.ptest {
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__brand-name {
+    font-size: 13.5px;
+    font-weight: 650;
+    color: $color-primary;
+    letter-spacing: -0.01em;
+  }
+
+  &__badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #E60023;
+    background: rgba(230, 0, 35, 0.08);
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+
+  &__desc {
+    margin: 0;
+    font-size: 12.5px;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+
+  &__config {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__token-wrap {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__env-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__token-row {
+    display: flex;
+    gap: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fafafa;
+    transition: border-color 0.15s;
+
+    &:focus-within { border-color: #E60023; background: #fff; }
+  }
+
+  &__token-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 13px;
+    color: $color-primary;
+    outline: none;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    min-width: 0;
+
+    &::placeholder { color: #c4c9d4; font-family: inherit; }
+  }
+
+  &__eye {
+    flex-shrink: 0;
+    width: 36px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+
+    &:hover { color: $color-primary; }
+  }
+
+  &__env-tabs {
+    display: flex;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 38px;
+  }
+
+  &__env-tab {
+    flex: 1;
+    border: none;
+    background: #fafafa;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0 14px;
+    text-transform: capitalize;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+
+    & + & { border-left: 1px solid #e5e7eb; }
+
+    &--active {
+      background: #E60023;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    &:not(&--active):hover { background: #f3f4f6; color: $color-primary; }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: $color-primary;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+
+    &:hover:not(:disabled) {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+      transform: translateY(-1px);
+    }
+    &:active:not(:disabled) { transform: translateY(0); }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    &--active {
+      border-color: #E60023;
+      background: rgba(230,0,35,0.04);
+    }
+  }
+
+  &__action-method {
+    font-size: 10px;
+    font-weight: 700;
+    color: #22c55e;
+    letter-spacing: 0.05em;
+    background: rgba(34, 197, 94, 0.1);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  &__action-path {
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+    color: #374151;
+  }
+
+  &__action-spin {
+    animation: spin 0.75s linear infinite;
+    flex-shrink: 0;
+  }
+
+  &__status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    flex-wrap: wrap;
+
+    &--ok  { background: rgba(34,197,94,0.08);  color: #166534; }
+    &--err { background: rgba(239,68,68,0.08);  color: #991b1b; }
+  }
+
+  &__status-code {
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  &__status-sep { opacity: 0.4; }
+
+  &__status-url {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.7;
+    font-size: 11px;
+  }
+
+  &__status-ms { opacity: 0.6; flex-shrink: 0; }
+
+  &__status-clear {
+    margin-left: auto;
+    flex-shrink: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 11px;
+    opacity: 0.5;
+    padding: 0 2px;
+    transition: opacity 0.15s;
+    color: inherit;
+
+    &:hover { opacity: 1; }
+  }
+
+  &__response {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  &__response-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  &__response-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__copy-btn {
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #E60023;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0.8;
+    transition: opacity 0.15s;
+
+    &:hover { opacity: 1; }
+  }
+
+  &__json {
+    margin: 0;
+    padding: 14px 16px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.65;
+    color: #374151;
+    background: #fdfdfd;
+    overflow-x: auto;
+    max-height: 480px;
+    overflow-y: auto;
+    white-space: pre;
+  }
+}
+
+// JSON syntax colours
+:deep(.pt-key)  { color: #6366f1; }
+:deep(.pt-str)  { color: #059669; }
+:deep(.pt-num)  { color: #d97706; }
+:deep(.pt-bool) { color: #E60023; font-weight: 600; }
+:deep(.pt-null) { color: #9ca3af; font-style: italic; }
 </style>

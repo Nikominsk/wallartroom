@@ -314,7 +314,7 @@ const ORDER_OPTIONS = [
   {
     value: 'optimized',
     title: 'Optimized schedule',
-    desc: 'Pins from the same board are spread as far apart as possible across all scheduled days.',
+    desc: 'Pins from the same board are spaced evenly across all scheduled days, so each category gets the widest possible gap between pins.',
   },
 ]
 
@@ -345,32 +345,40 @@ watch(orderMode, (mode) => {
     }
     orderedImages.value = arr
   } else if (mode === 'optimized') {
+    // Group images by board, then spread each board's pins evenly across the
+    // whole sequence so the gap between any two pins of the same board is as
+    // large and consistent as possible — giving Pinterest more time to
+    // evaluate each pin of a category before the next one in that category
+    // is published.
     const bucketMap = new Map()
     for (const img of props.images) {
       const key = img.pinterest?.board || ''
       if (!bucketMap.has(key)) bucketMap.set(key, [])
       bucketMap.get(key).push(img)
     }
-    const buckets = [...bucketMap.values()].map(b => [...b])
-    const result  = []
-    let lastIdx   = -1
-    while (true) {
-      const nonEmpty = buckets
-        .map((b, i) => ({ b, i }))
-        .filter(x => x.b.length > 0)
-        .sort((a, b) => b.b.length - a.b.length)
-      if (nonEmpty.length === 0) break
-      const pick = nonEmpty.find(x => x.i !== lastIdx) ?? nonEmpty[0]
-      result.push(pick.b.shift())
-      lastIdx = pick.i
+    const buckets = [...bucketMap.values()]
+
+    // Assign each pin an ideal fractional position in [0, 1): the i-th of a
+    // board's c pins sits at (i + 0.5) / c. A board with 2 pins → 0.25, 0.75;
+    // with 4 pins → 0.125, 0.375, 0.625, 0.875. Sorting all pins by this
+    // position interleaves the boards with maximally even spacing.
+    const spread = []
+    for (const bucket of buckets) {
+      const c = bucket.length
+      bucket.forEach((img, i) => {
+        spread.push({ img, pos: (i + 0.5) / c, size: c })
+      })
     }
-    orderedImages.value = result
+    // Tie-break by larger board first so the most frequent categories keep the
+    // most even cadence when positions coincide.
+    spread.sort((a, b) => a.pos - b.pos || b.size - a.size)
+    orderedImages.value = spread.map(s => s.img)
   }
 })
 
 const orderStatus = computed(() => {
   if (orderMode.value === 'random')    return 'Randomly shuffled — each time you select this you get a new sequence.'
-  if (orderMode.value === 'optimized') return 'Board-optimized — pins from the same board are spaced as far apart as possible across the scheduled days.'
+  if (orderMode.value === 'optimized') return 'Board-optimized — pins from the same board are spaced evenly across the scheduled days for the widest possible gap between each category.'
   return 'Dates are assigned following the current gallery order.'
 })
 

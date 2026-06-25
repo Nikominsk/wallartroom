@@ -4,13 +4,15 @@ const REQUIRED_FIELDS = [
   { key: 'title', label: 'Pinterest title', get: img => img.pinterest.title },
   { key: 'mediaUrl', label: 'Media URL', get: img => img.mediaUrl },
   { key: 'description', label: 'Pinterest description', get: img => img.pinterest.description },
+  // Pinterest won't accept a scheduled pin without a board, so images missing a
+  // board reference are skipped rather than exported.
+  { key: 'board', label: 'Pinterest board', get: img => img.pinterest.board },
   { key: 'publishDate', label: 'Pinterest publish date', get: img => img.pinterest.publishDate },
 ]
 
 // Fields treated as optional for Pinterest CSV export. The image still ships,
 // but the modal surfaces a count so the user knows what's missing.
 const OPTIONAL_FIELDS = [
-  { key: 'board', label: 'Pinterest board', get: img => img.pinterest.board },
   { key: 'link', label: 'Redirect URL', get: img => img.pinterest.link },
 ]
 

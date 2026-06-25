@@ -5,6 +5,7 @@
       'img-card--selected': selected,
       'img-card--active': active,
       'img-card--focused': focused,
+      'img-card--export-warn': exportIssues?.size > 0,
     }"
     @click="$emit('card-click', $event)"
   >
@@ -37,6 +38,50 @@
           <circle cx="8.5" cy="8.5" r="1.5" />
           <path d="M21 15l-5-5L5 21" />
         </svg>
+      </div>
+
+      <!-- Export issue flags: shown when this image can't be exported -->
+      <div v-if="exportIssues?.size > 0" class="img-card__export-flags">
+        <span
+          v-if="exportIssues.has('dup-title')"
+          class="img-card__export-flag img-card__export-flag--dup"
+          title="Duplicate title — Pinterest rejects files with duplicate titles"
+        >
+          <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="5" width="9" height="9" rx="1.5"/>
+            <path d="M11 5V3a1 1 0 00-1-1H3a1 1 0 00-1 1v7a1 1 0 001 1h2"/>
+          </svg>
+        </span>
+        <span
+          v-if="exportIssues.has('no-board')"
+          class="img-card__export-flag img-card__export-flag--missing"
+          title="No board — Pinterest requires a board for every pin"
+        >
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 1a2.5 2.5 0 012.5 2.5C8.5 5.5 6 10 6 10S3.5 5.5 3.5 3.5A2.5 2.5 0 016 1z"/>
+            <path d="M3.5 3.5L8.5 8.5"/>
+          </svg>
+        </span>
+        <span
+          v-if="exportIssues.has('no-date')"
+          class="img-card__export-flag img-card__export-flag--missing"
+          title="No publish date — Pinterest requires a scheduled date"
+        >
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="2" width="10" height="9" rx="1.5"/>
+            <path d="M1 5h10M4 1v2M8 1v2M4.5 7.5l3 0M6 6.5v2"/>
+          </svg>
+        </span>
+        <span
+          v-if="exportIssues.has('past-date')"
+          class="img-card__export-flag img-card__export-flag--past"
+          title="Past date — publish date is in the past, Pinterest won't accept it"
+        >
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="6" r="5"/>
+            <path d="M6 3.5v3l1.5 1.5"/>
+          </svg>
+        </span>
       </div>
     </div>
 
@@ -140,6 +185,7 @@ const props = defineProps({
   pinterestComplete: Boolean,
   adobeStockComplete: Boolean,
   mode: { type: String, default: 'pinterest' }, // 'pinterest' | 'adobe'
+  exportIssues: { type: Object, default: null }, // Set<'dup-title'|'no-board'|'no-date'> | null
 })
 defineEmits(['card-click', 'toggle-select'])
 
@@ -183,6 +229,20 @@ watch(safeImgSrc, () => { imgLoaded.value = false })
   &--focused:not(&--selected):not(&--active) {
     border-color: #3b82f6 !important;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+  }
+
+  &--export-warn:not(&--selected):not(&--active) {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+  }
+
+  &--export-warn &__image::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(239, 68, 68, 0.28);
+    pointer-events: none;
+    z-index: 1;
   }
 
   &__checkbox {
@@ -275,6 +335,31 @@ watch(safeImgSrc, () => { imgLoaded.value = false })
     background: #f97316;
     border: 1.5px solid #fff;
     z-index: 3;
+  }
+
+  &__export-flags {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    display: flex;
+    gap: 3px;
+    z-index: 4;
+  }
+
+  &__export-flag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+
+    &--dup     { background: #ef4444; }
+    &--missing { background: #ef4444; }
+    &--past    { background: #3b82f6; }
   }
 
   &__placeholder {

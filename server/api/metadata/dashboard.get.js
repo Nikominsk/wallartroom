@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
     exported: exportedCount,
   }
 
-  // Board distribution (top 7 by count)
+  // Board distribution (all boards, sorted by count descending)
   const boardMap = new Map()
   for (const p of all) {
     const name = p.board?.trim() || '(No Board)'
@@ -58,7 +58,6 @@ export default defineEventHandler(async (event) => {
   const boardCounts = [...boardMap.entries()]
     .map(([name, count]) => ({ name, count, color: boardColorMap.get(name) ?? null }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 7)
 
   // Weekly schedule — next 6 weeks, with per-board segments
   const weeklySchedule = Array.from({ length: 6 }, (_, i) => {

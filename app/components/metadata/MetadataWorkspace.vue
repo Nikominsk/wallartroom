@@ -160,6 +160,52 @@
       </div>
     </div>
 
+    <!-- ── Export pre-validation banner ──────────────────────────────────── -->
+    <div v-if="showExportValidationBanner && !showExportIssuesOnly" class="meta-page__export-vbanner">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-page__export-vbanner-icon"><path d="M10 2l8 16H2L10 2z"/><path d="M10 8v4M10 14h.01"/></svg>
+      <div class="meta-page__export-vbanner-body">
+        <span class="meta-page__export-vbanner-headline">
+          {{ exportIssuesMap.size }} image{{ exportIssuesMap.size !== 1 ? 's' : '' }} can't export as-is
+        </span>
+        <span class="meta-page__export-vbanner-pills">
+          <span v-if="exportValidationStats.dupTitle" class="meta-page__export-vbanner-pill meta-page__export-vbanner-pill--dup">
+            {{ exportValidationStats.dupTitle }} duplicate title{{ exportValidationStats.dupTitle !== 1 ? 's' : '' }}
+          </span>
+          <span v-if="exportValidationStats.noBoard" class="meta-page__export-vbanner-pill meta-page__export-vbanner-pill--miss">
+            {{ exportValidationStats.noBoard }} no board
+          </span>
+          <span v-if="exportValidationStats.noDate" class="meta-page__export-vbanner-pill meta-page__export-vbanner-pill--miss">
+            {{ exportValidationStats.noDate }} no date
+          </span>
+          <span v-if="exportValidationStats.pastDate" class="meta-page__export-vbanner-pill meta-page__export-vbanner-pill--past">
+            {{ exportValidationStats.pastDate }} past date{{ exportValidationStats.pastDate !== 1 ? 's' : '' }}
+          </span>
+        </span>
+        <span v-if="exportValidationStats.pastDate" class="meta-page__export-vbanner-mindate">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="5"/><path d="M6 3.5v3l1.5 1.5"/></svg>
+          Earliest allowed publish date: {{ exportMinDateStr }}
+        </span>
+        <span class="meta-page__export-vbanner-hint">Select the flagged images and use AI generate to fix them.</span>
+      </div>
+      <div class="meta-page__export-vbanner-actions">
+        <button class="meta-page__export-vbanner-btn meta-page__export-vbanner-btn--go" @click="filterExportIssues">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+          Filter invalid images
+        </button>
+        <button class="meta-page__export-vbanner-btn" @click="dismissExportValidation">Dismiss</button>
+      </div>
+    </div>
+    <div v-if="showExportValidationBanner && showExportIssuesOnly" class="meta-page__export-vbanner meta-page__export-vbanner--filter">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="meta-page__export-vbanner-icon"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+      <span class="meta-page__export-vbanner-headline">
+        Showing {{ exportIssuesMap.size }} invalid image{{ exportIssuesMap.size !== 1 ? 's' : '' }} — select them and use AI generate to fix issues
+      </span>
+      <button class="meta-page__export-vbanner-btn meta-page__export-vbanner-btn--clear" @click="dismissExportValidation">
+        <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13"/></svg>
+        Clear filter
+      </button>
+    </div>
+
     <!-- ── Body (only scrollable area) ────────────────────────────────────── -->
     <div class="meta-page__body">
 
@@ -203,6 +249,7 @@
           :is-pinterest-complete="isPinterestComplete"
           :is-adobe-stock-complete="isAdobeStockComplete"
           :mode="mode"
+          :export-issues-map="exportIssuesMap"
           @card-click="handleCardClick"
           @toggle-select="toggle"
         />
@@ -398,7 +445,11 @@
         </div>
 
         <!-- Slim alert strip (only when something needs attention) -->
-        <div v-if="csvValidation.invalid.length || csvOptionalSummary.length || csvValidation.valid.length > CSV_EXPORT_LIMIT" class="meta-page__export-alerts">
+        <div v-if="exportDuplicateTitleIds.size > 0 || csvValidation.invalid.length || csvOptionalSummary.length || csvValidation.valid.length > CSV_EXPORT_LIMIT" class="meta-page__export-alerts">
+          <div v-if="exportDuplicateTitleIds.size > 0" class="meta-page__export-alert meta-page__export-alert--error">
+            <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="10" cy="10" r="8"/><path d="M10 6v4M10 14h.01"/></svg>
+            <strong>{{ exportDuplicateTitleIds.size }} image{{ exportDuplicateTitleIds.size !== 1 ? 's' : '' }} with duplicate titles</strong>&nbsp;— Pinterest rejects files with duplicate titles. Deselect or fix the highlighted pins.
+          </div>
           <div v-if="csvValidation.invalid.length" class="meta-page__export-alert meta-page__export-alert--warn">
             <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10 2l8 16H2L10 2z"/><path d="M10 8v4M10 14h.01"/></svg>
             <strong>{{ csvValidation.invalid.length }} skipped</strong>&nbsp;— missing:&nbsp;{{ csvSkippedByField.map(([f, c]) => `${c}× ${f}`).join(', ') }}
@@ -440,7 +491,10 @@
                   v-for="img in csvValidation.valid.slice(0, CSV_EXPORT_LIMIT)"
                   :key="img.id"
                   class="meta-page__export-row"
-                  :class="{ 'meta-page__export-row--unchecked': !exportSelectedIds.has(img.id) }"
+                  :class="{
+                    'meta-page__export-row--unchecked': !exportSelectedIds.has(img.id),
+                    'meta-page__export-row--dup': exportDuplicateTitleIds.has(img.id),
+                  }"
                 >
                   <td class="meta-page__export-col--check">
                     <input type="checkbox" :checked="exportSelectedIds.has(img.id)" @change="toggleExportImage(img.id)" />
@@ -452,7 +506,12 @@
                       class="meta-page__export-thumb"
                     />
                   </td>
-                  <td><div class="meta-page__export-cell">{{ img.pinterest?.title }}</div></td>
+                  <td>
+                    <div class="meta-page__export-cell">
+                      {{ img.pinterest?.title }}
+                      <span v-if="exportDuplicateTitleIds.has(img.id)" class="meta-page__export-dup-badge">duplicate</span>
+                    </div>
+                  </td>
                   <td><div class="meta-page__export-cell">{{ img.pinterest?.description }}</div></td>
                   <td class="meta-page__export-col--board">
                     <template v-if="img.pinterest?.boards?.length">
@@ -482,7 +541,7 @@
         </div>
 
         <div class="meta-page__modal-footer">
-          <button class="meta-page__btn meta-page__btn--primary" :disabled="!exportSelectedImages.length" @click="handleDownloadCsv">
+          <button class="meta-page__btn meta-page__btn--primary" :disabled="!exportSelectedImages.length || exportDuplicateTitleIds.size > 0" @click="handleDownloadCsv">
             Download {{ exportSelectedImages.length }} as CSV
           </button>
           <button class="meta-page__btn" @click="showExport = false">Cancel</button>
@@ -978,6 +1037,13 @@ watch(
 )
 
 
+// These must live before filteredImages so the computed getter can reference
+// them without hitting the temporal dead zone on the server.
+const exportIssuesMap = ref(new Map())       // Map<id, Set<'dup-title'|'no-board'|'no-date'|'past-date'>>
+const showExportValidationBanner = ref(false)
+const showExportIssuesOnly = ref(false)
+const exportMinDateStr = ref('')             // set at click time to avoid SSR date mismatch
+
 // Wrap the gallery's filtered images so route-level status presets and "must
 // have a publish date" (Schedules view) are enforced regardless of what the
 // user does in the toolbar.
@@ -993,6 +1059,9 @@ const filteredImages = computed(() => {
     list = list.filter(i => unsavedIds.value.has(i.id))
   } else if (filters.unsaved === 'missing') {
     list = list.filter(i => !unsavedIds.value.has(i.id))
+  }
+  if (showExportIssuesOnly.value && exportIssuesMap.value.size > 0) {
+    list = list.filter(i => exportIssuesMap.value.has(i.id))
   }
   return list
 })
@@ -1694,6 +1763,12 @@ const viewCaps = computed(() => {
     showTitleFilter: !isExported,
     showUnsavedFilter: !isExported,
     showExportedDateFilter: isExported,
+    // On the Exported view every pin already has a description, board and
+    // schedule date, so the has/missing toggles are meaningless there: hide
+    // Description + Board entirely and reduce Scheduled to just the date range.
+    showDescriptionFilter: !isExported,
+    showBoardFilter: !isExported,
+    showScheduledPills: !isExported,
   }
 })
 
@@ -1787,7 +1862,6 @@ const CSV_EXPORT_LIMIT = 100
 const { validate, downloadCsv } = usePinterestCsvExport()
 const showExport = ref(false)
 const exportSelectedIds = ref(new Set())
-
 // CSV publish dates are written as wall-clock in this zone (set in Settings to
 // match the Pinterest account timezone). The preview shows the same string so
 // what the user sees is exactly what Pinterest receives.
@@ -1846,14 +1920,91 @@ const exportSomeSelected = computed(() =>
   csvValidation.value.valid.slice(0, CSV_EXPORT_LIMIT).some(img => exportSelectedIds.value.has(img.id))
 )
 
+// Duplicate-title detection among selected images — Pinterest rejects files with duplicate titles.
+const exportDuplicateTitleIds = computed(() => {
+  const titleCount = new Map()
+  for (const img of exportSelectedImages.value) {
+    const t = (img.pinterest?.title || '').trim()
+    if (!t) continue
+    titleCount.set(t, (titleCount.get(t) ?? 0) + 1)
+  }
+  const ids = new Set()
+  for (const img of exportSelectedImages.value) {
+    const t = (img.pinterest?.title || '').trim()
+    if (t && titleCount.get(t) > 1) ids.add(img.id)
+  }
+  return ids
+})
+
+
 function boardChipStyle(name) {
   return chipStyleForName(name)
 }
 
 function openExport() {
+  const images = csvExportImages.value
+  const now = new Date()
+  // Capture the minimum allowed date at click time so it's shown in the banner.
+  exportMinDateStr.value = now.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+
+  // Only detect dup-titles among images that are otherwise valid for export —
+  // images already excluded (no board, no date, etc.) don't affect the modal's
+  // duplicate count, so counting them here would produce a misleading mismatch.
+  const validForExport = csvValidation.value.valid
+
+  const titleCount = new Map()
+  for (const img of validForExport) {
+    const t = (img.pinterest?.title || '').trim()
+    if (t) titleCount.set(t, (titleCount.get(t) ?? 0) + 1)
+  }
+  const dupTitleIds = new Set()
+  for (const img of validForExport) {
+    const t = (img.pinterest?.title || '').trim()
+    if (t && titleCount.get(t) > 1) dupTitleIds.add(img.id)
+  }
+
+  const issues = new Map()
+  for (const img of images) {
+    const s = new Set()
+    if (dupTitleIds.has(img.id))                                                    s.add('dup-title')
+    if (!img.pinterest?.board)                                                      s.add('no-board')
+    if (!img.pinterest?.publishDate)                                                s.add('no-date')
+    else if (new Date(img.pinterest.publishDate) <= now)                            s.add('past-date')
+    if (s.size > 0) issues.set(img.id, s)
+  }
+
+  if (issues.size > 0) {
+    exportIssuesMap.value = issues
+    showExportValidationBanner.value = true
+    return
+  }
+
+  exportIssuesMap.value = new Map()
   exportSelectedIds.value = new Set(csvValidation.value.valid.slice(0, CSV_EXPORT_LIMIT).map(img => img.id))
   showExport.value = true
 }
+
+function filterExportIssues() {
+  showExportIssuesOnly.value = true
+}
+
+function dismissExportValidation() {
+  showExportValidationBanner.value = false
+  showExportIssuesOnly.value = false
+  exportIssuesMap.value = new Map()
+}
+
+const exportValidationStats = computed(() => {
+  let dupTitle = 0, noBoard = 0, noDate = 0, pastDate = 0
+  for (const s of exportIssuesMap.value.values()) {
+    if (s.has('dup-title'))  dupTitle++
+    if (s.has('no-board'))   noBoard++
+    if (s.has('no-date'))    noDate++
+    if (s.has('past-date'))  pastDate++
+  }
+  const valid = csvValidation.value.valid.length
+  return { dupTitle, noBoard, noDate, pastDate, valid }
+})
 
 function toggleExportAll() {
   const limited = csvValidation.value.valid.slice(0, CSV_EXPORT_LIMIT)
@@ -2119,6 +2270,130 @@ function goToPage(page) {
     box-shadow: none;
     padding: 0;
     margin: 0;
+  }
+
+  // ── Export pre-validation banner ─────────────────────────────────────────────
+
+  &__export-vbanner {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: #fff7ed;
+    border-bottom: 1px solid #fed7aa;
+    flex-wrap: wrap;
+
+    &--filter {
+      background: #fef2f2;
+      border-bottom-color: #fca5a5;
+    }
+  }
+
+  &__export-vbanner-icon {
+    flex-shrink: 0;
+    color: #ea580c;
+  }
+
+  &__export-vbanner-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__export-vbanner-headline {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #7c2d12;
+    white-space: nowrap;
+  }
+
+  &__export-vbanner-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  &__export-vbanner-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+
+    &--dup  { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; }
+    &--miss { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+    &--past { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+  }
+
+  &__export-vbanner-mindate {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #1e40af;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+
+  &__export-vbanner-hint {
+    font-size: 11.5px;
+    color: #9a3412;
+    font-style: italic;
+    white-space: nowrap;
+  }
+
+  &__export-vbanner-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  &__export-vbanner-btn {
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid #fdba74;
+    border-radius: 7px;
+    background: #fff;
+    font: inherit;
+    font-size: 12px;
+    color: #9a3412;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s;
+
+    &:hover { background: #fff7ed; }
+
+    &--go {
+      background: #ea580c;
+      border-color: #ea580c;
+      color: #fff;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+
+      &:hover { background: #c2410c; border-color: #c2410c; }
+    }
+
+    &--clear {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: #fff;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+
+      &:hover { background: #dc2626; border-color: #dc2626; }
+    }
   }
 
   // ── Actions bar ──────────────────────────────────────────────────────────────
@@ -2880,6 +3155,12 @@ function goToPage(page) {
       color: #9a3412;
       svg { color: #ea580c; }
     }
+
+    &--error {
+      background: #fef2f2;
+      color: #991b1b;
+      svg { color: #dc2626; }
+    }
   }
 
   // ── Export body (table fills all remaining space) ─────────────────────────────
@@ -2952,6 +3233,24 @@ function goToPage(page) {
     transition: background 0.1s;
     &:hover { background: #fafafa; }
     &--unchecked { opacity: 0.42; }
+    &--dup { background: #fff0f0; }
+    &--dup:hover { background: #ffe4e4; }
+  }
+
+  &__export-dup-badge {
+    display: inline-block;
+    margin-left: 5px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #b91c1c;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+    white-space: nowrap;
   }
 
   &__export-thumb {

@@ -1,5 +1,7 @@
 // GET /api/metadata/projects/sparklines?tz=Europe/Berlin
 // Returns per-project daily scheduled-pin counts for the next 30 days.
+// Only exported pins are counted — the sparkline reflects what's actually
+// been scheduled for publishing, not unexported drafts.
 // Used by the project-switcher dropdown to render a mini sparkline per project.
 
 export default defineEventHandler(async (event) => {
@@ -33,6 +35,7 @@ export default defineEventHandler(async (event) => {
     .from('pinterest_image')
     .select('project_id, publish_date')
     .in('project_id', ids)
+    .eq('status', 'exported')
     .not('publish_date', 'is', null)
     .gte('publish_date', utcFrom.toISOString())
     .lt('publish_date', utcTo.toISOString())

@@ -534,7 +534,10 @@ function onBoardLeave() {
     border: 1px solid #e5e7eb;
     border-radius: $radius-md;
     overflow: hidden;
-    flex: 1;
+    // Grow to fill on tall screens, but never shrink below the cells' natural
+    // height — when the month doesn't fit, `.cal` shows a vertical scrollbar
+    // instead of clipping the bottom rows.
+    flex: 1 0 auto;
   }
 
   // ── Weekday header (first 7 cells of the grid) ────────────────────
